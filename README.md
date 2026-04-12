@@ -36,6 +36,7 @@ Si prefieres ver cada paso por separado, o el one-liner no te funciona:
 git clone https://github.com/GustavoCarreno/claude-skills $env:TEMP\claude-skills-tmp
 New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude\skills" | Out-Null
 Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\comunicados-formales-es-mx" "$env:USERPROFILE\.claude\skills\"
+Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\comunicados-formales-respaldo" "$env:USERPROFILE\.claude\skills\"
 Remove-Item -Recurse -Force "$env:TEMP\claude-skills-tmp"
 ```
 
@@ -64,6 +65,16 @@ Aplica la estructura clásica de carta formal mexicana — lugar y fecha, destin
 **Ejemplo de uso en Claude Code:**
 
 > *"Carga la skill comunicados-formales-es-mx. Luego escríbeme una carta formal al inquilino de la nave 42 solicitándole ajustar el patrón de circulación de sus tractocamiones, referenciando la cláusula 4.2 del contrato, con tono colegial que preserve la relación. Contexto: llevan 3 años en el parque sin incidentes."*
+
+### `comunicados-formales-respaldo`
+
+Skill de respaldo para el momento Matrix: si la skill declarativa (`comunicados-formales-es-mx`) no produce suficiente diferencia visible, esta la reemplaza. En lugar de reglas, contiene **3 ejemplos completos** de cartas formales mexicanas que el agente imita directamente por pattern-matching:
+
+1. **Observación contractual a broker intermediario** — tractocamiones dañando concreto, tono colegial, acuse de recibo
+2. **Solicitud de aclaración a proveedor de mantenimiento** — impermeabilización incompleta, solicitud de visita técnica
+3. **Notificación de cambio de condición a inquilino** — trabajos de rehabilitación vial, acceso temporal restringido
+
+Ambas skills (`comunicados-formales-es-mx` y `comunicados-formales-respaldo`) se instalan automáticamente con el one-liner de instalación. Solo se activa una a la vez — usar la de respaldo solo si la primaria no produce mejora visible.
 
 ## Actualizar skills a la versión más reciente
 
