@@ -37,10 +37,11 @@ git clone https://github.com/GustavoCarreno/claude-skills $env:TEMP\claude-skill
 New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude\skills" | Out-Null
 Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\comunicados-formales-es-mx" "$env:USERPROFILE\.claude\skills\"
 Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\comunicados-formales-respaldo" "$env:USERPROFILE\.claude\skills\"
+Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\youtube-research" "$env:USERPROFILE\.claude\skills\"
 Remove-Item -Recurse -Force "$env:TEMP\claude-skills-tmp"
 ```
 
-Cuatro líneas: clone al temporal, create skills dir, copy de la skill, cleanup. Funciona sin necesidad de ejecutar `install.ps1`.
+Clone al temporal, create skills dir, copy de las skills, cleanup. Funciona sin necesidad de ejecutar `install.ps1`.
 
 **Requisito:** Git for Windows debe estar instalado. Si no lo tienes, bájalo de [git-scm.com/download/win](https://git-scm.com/download/win).
 
@@ -75,6 +76,25 @@ Skill de respaldo para el momento Matrix: si la skill declarativa (`comunicados-
 3. **Notificación de cambio de condición a inquilino** — trabajos de rehabilitación vial, acceso temporal restringido
 
 Ambas skills (`comunicados-formales-es-mx` y `comunicados-formales-respaldo`) se instalan automáticamente con el one-liner de instalación. Solo se activa una a la vez — usar la de respaldo solo si la primaria no produce mejora visible.
+
+### `youtube-research`
+
+Investigación de videos de YouTube desde Claude Code: extraer **transcripción** limpia, **metadata** (título, canal, duración, views, descripción) y **búsqueda** por query (top N videos sobre un tema). Útil para digerir un video sin verlo completo, resumir charlas largas, o investigar un tema sin salir del agente.
+
+**Prerrequisito adicional:** instalar [yt-dlp](https://github.com/yt-dlp/yt-dlp). La skill te avisa si no está. Instalación:
+
+- **Windows:** `winget install -e --id yt-dlp.yt-dlp --accept-source-agreements --accept-package-agreements --silent` (instala también `ffmpeg` como dependencia, útil si después quieres extraer audio)
+- **Linux / macOS:** `pip install --user --break-system-packages yt-dlp`
+
+**Ejemplos de uso en Claude Code:**
+
+> *"Tráeme la transcripción de https://youtu.be/XXXXX y dame un resumen con insights, crítica y opinión."*
+
+> *"Búscame los top 5 videos de YouTube sobre 'parques industriales en Mexicali' y dame la tabla con URLs."*
+
+> *"De este video https://youtu.be/XXXXX, dame solo la metadata — no necesito el transcript."*
+
+La skill incluye un helper Node (`clean-vtt.js`) que limpia los subtítulos VTT auto-generados de YouTube con el algoritmo canónico (última línea de cada cue + dedupe consecutivo). Funciona idéntico en Windows, Linux y macOS porque Node.js ya viene con Claude Code.
 
 ## Actualizar skills a la versión más reciente
 
