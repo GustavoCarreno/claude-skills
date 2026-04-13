@@ -96,6 +96,30 @@ Investigación de videos de YouTube desde Claude Code: extraer **transcripción*
 
 La skill incluye un helper Node (`clean-vtt.js`) que limpia los subtítulos VTT auto-generados de YouTube con el algoritmo canónico (última línea de cada cue + dedupe consecutivo). Funciona idéntico en Windows, Linux y macOS porque Node.js ya viene con Claude Code.
 
+### `presentacion-elegante`
+
+Wrapper sobre la skill oficial `document-skills:pptx` de Anthropic que fuerza calidad ejecutiva por default cuando se pide crear una presentación. Se activa automáticamente con triggers como "hazme una presentación", "armar un deck", "build slides about X", y **no** dispara al sólo leer un `.pptx` existente.
+
+Las 4 no-negociables que impone:
+
+1. **Contra defaults aburridos:** declara paleta + font pairing + motif visual antes de escribir código. Prohibido azul genérico + Arial + título+bullets.
+2. **Contra contenido placeholder-ish:** todo dato (nombre, cifra, stat) viene de la conversación o archivos adjuntos. Si falta algo crítico, pregunta en lugar de inventar.
+3. **Por slide:** al menos 1 elemento visual no-decorativo, layouts varían, máximo 1 slide puro "título + bullets" en todo el deck.
+4. **Contra QA visual saltado:** export obligatorio a imágenes + dispatch de subagente para inspección visual + mínimo 1 ciclo completo fix/re-render/verify antes de declarar "listo".
+
+**Prerrequisito:** tener el plugin `document-skills` instalado en Claude Code:
+
+```
+/plugin marketplace add anthropics/skills
+/plugin install document-skills@anthropic-agent-skills
+```
+
+**Bypass:** para drafts rápidos sin discipline, mueve temporalmente el folder `~/.claude/skills/presentacion-elegante` fuera de esa ubicación y reinicia Claude Code (el SKILL.md documenta el procedimiento exacto).
+
+**Ejemplo de uso:**
+
+> *"Hazme una presentación ejecutiva de 5 slides sobre el estado actual del parque, basada en los pendientes del CLAUDE.md y los comunicados de las últimas 2 semanas, dirigida al dueño. Salida en `reportes/status-2026-04.pptx`."*
+
 ## Actualizar skills a la versión más reciente
 
 Re-corre el mismo comando de instalación que usaste originalmente. El script sobrescribe cada skill con la versión más reciente del repo. No hay proceso separado de "update" — la instalación idempotente es el update.
