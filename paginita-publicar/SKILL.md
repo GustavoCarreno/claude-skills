@@ -1,6 +1,6 @@
 ---
 name: paginita-publicar
-description: Publicar, actualizar, eliminar y listar subpáginas HTML/markdown bajo un slug dueño en paginita.de via HTTP API. Activar cuando el usuario diga "paginita" en contexto de publicar contenido web — temporal o con nombre. También cuando pida crear una página para ver en celular, compartir por link, o publicar algo rápido.
+description: Publicar, actualizar, eliminar y listar subpáginas HTML/markdown bajo un slug dueño en paginita.de via HTTP API. Activar cuando el usuario diga "paginita", "página" o "sitio web" en contexto de publicar contenido web (temporal o con nombre), no necesariamente la palabra "paginita". También cuando pida crear una página para ver en celular, compartir por link, publicar algo rápido, o subir un documento como página web.
 ---
 
 # Paginita — publicar subpáginas via HTTP API
