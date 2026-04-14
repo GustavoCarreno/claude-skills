@@ -38,6 +38,8 @@ New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude\skills" | Ou
 Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\comunicados-formales-es-mx" "$env:USERPROFILE\.claude\skills\"
 Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\comunicados-formales-respaldo" "$env:USERPROFILE\.claude\skills\"
 Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\youtube-research" "$env:USERPROFILE\.claude\skills\"
+Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\presentacion-elegante" "$env:USERPROFILE\.claude\skills\"
+Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\paginita-publicar" "$env:USERPROFILE\.claude\skills\"
 Remove-Item -Recurse -Force "$env:TEMP\claude-skills-tmp"
 ```
 
@@ -119,6 +121,34 @@ Las 4 no-negociables que impone:
 **Ejemplo de uso:**
 
 > *"Hazme una presentación ejecutiva de 5 slides sobre el estado actual del parque, basada en los pendientes del CLAUDE.md y los comunicados de las últimas 2 semanas, dirigida al dueño. Salida en `reportes/status-2026-04.pptx`."*
+
+### `paginita-publicar`
+
+Publica, actualiza, elimina y lista subpáginas en [paginita.de](https://paginita.de) bajo tu slug dueño, directo desde Claude Code vía API HTTP (sin SSH, sin subir archivos a mano). Útil para compartir un reporte por link con un cliente, publicar una guía para verla en el celular, o armar un mini-sitio interno que vive bajo `paginita.de/<tu-slug>/<nombre>/`.
+
+**Prerrequisito:** ya tienes una paginita activa (tu slug dueño registrado en paginita.de). Si no tienes una, pídela por email a `perfil@paginita.de`.
+
+**Setup primera vez:** cuando corras la skill por primera vez, te pedirá tu **API key**. Para generarla, entra a `https://paginita.de/<tu-slug>/admin/#clave=<tu-clave-admin>`, en la sección *"Subpáginas"* clic en **"Generar API Key"**. La key te llega por email. La pegas una vez, la skill la guarda en `~/.config/paginita/credentials` (permisos 600, solo tu usuario la lee) y nunca más te la pregunta.
+
+**Qué puede hacer:**
+
+- **Publicar con nombre** → `paginita.de/<slug>/<nombre>/` (permanente, hasta que la borres)
+- **Publicar sin nombre** → `paginita.de/<slug>/temporales/<uuid>/` (expira en 7 días por default)
+- **Actualizar** una subpágina existente, mismo nombre, mismo slug: sobrescribe contenido
+- **Listar** todas tus subpáginas activas
+- **Eliminar** una subpágina por nombre
+
+El contenido puede ser **markdown** (el backend lo renderiza con template paginita, Space Mono, responsive) o **HTML crudo** autocontenido (se detecta por el inicio del archivo).
+
+**Ejemplos de uso en Claude Code:**
+
+> *"Publica `reporte-al-jefe.md` como paginita permanente con nombre `reporte-abril`."*
+
+> *"Toma el contenido de este chat y publícalo en paginita — temporal está bien, lo voy a compartir por WhatsApp ahora."*
+
+> *"Lista mis paginitas y dame las URLs."*
+
+> *"Borra la paginita `reporte-marzo`, ya no la necesito."*
 
 ## Actualizar skills a la versión más reciente
 
