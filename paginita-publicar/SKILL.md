@@ -31,7 +31,7 @@ export PAGINITA_ENV="prd"   # dev | qas | prd
 Si no existe `PAGINITA_API_KEY` (archivo ausente o variable vacía tras source):
 
 1. **Pedir al usuario su API key**. Instrucciones para que la obtenga:
-   > Visita `https://paginita.de/<slug>/admin/#clave=<clave_admin>` (o pídeme `clave_admin` por email a `ayuda@paginita.de` si no la recuerdas). En la sección **"Subpáginas (N/100)"** clic en **"Generar API Key"**. La key te llega por email + se muestra enmascarada en el panel.
+   > Visita `https://paginita.de/<slug>/admin/#clave=<clave_admin>` (si no recuerdas tu `clave_admin`, escribe a `hola@paginita.de` — te llega la guía automática con el link a tu panel admin con clave incluida; **no** escribas a `ayuda@paginita.de`, ese buzón es soporte humano). En la sección **"Subpáginas (N/100)"** clic en **"Generar API Key"**. La key te llega por email + se muestra enmascarada en el panel.
 
 2. Cuando el usuario provea la key, **guardarla automáticamente** (no pedirle que edite el archivo a mano):
 
