@@ -122,6 +122,20 @@ Las 4 no-negociables que impone:
 
 > *"Hazme una presentación ejecutiva de 5 slides sobre el estado actual del parque, basada en los pendientes del CLAUDE.md y los comunicados de las últimas 2 semanas, dirigida al dueño. Salida en `reportes/status-2026-04.pptx`."*
 
+### `instalar-lanzador-rc-linux`
+
+Deja una máquina Linux lista para **lanzar, retomar y cerrar sesiones de Claude Code desde el teléfono**, con la bitácora automática que mantiene el `CLAUDE.md` de cada proyecto al día sin que nadie lo pida. Procedimiento verificado de punta a punta en una VM limpia de Ubuntu Server 24.04, no escrito de memoria: cada comando se corrió en ese orden.
+
+Cubre los ocho pasos completos: descarte previo de la máquina, prerrequisitos (incluido que en Linux **no hace falta Node.js**), levantar la tailnet desde cero con sus tres interruptores de consola, el lanzador con su venv, las unidades de systemd con los dos gotchas que lo rompen en silencio (`KillMode=process` y el `PATH` que systemd no hereda), publicarlo con `tailscale serve`, los hooks de la bitácora, y la verificación en orden.
+
+**Prerrequisitos:** una máquina con systemd que vaya a quedar encendida, `sudo`, una cuenta de Anthropic con plan que incluya Claude Code, y **una persona con su teléfono a la mano**: crear la tailnet y autenticar las apps no se puede automatizar.
+
+**Ejemplo de uso en Claude Code:**
+
+> *"Instálame el lanzador rc en esta máquina."*
+
+> *"Deja lista esta laptop para que yo pueda abrir sesiones de Claude desde el celular."*
+
 ### `paginita-publicar`
 
 Publica, actualiza, elimina y lista subpáginas en [paginita.de](https://paginita.de) bajo tu slug dueño, directo desde Claude Code vía API HTTP (sin SSH, sin subir archivos a mano). Útil para compartir un reporte por link con un cliente, publicar una guía para verla en el celular, o armar un mini-sitio interno que vive bajo `paginita.de/<tu-slug>/<nombre>/`.
