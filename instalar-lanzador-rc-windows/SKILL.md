@@ -20,6 +20,14 @@ está verificado más recientemente.
 > Son de Claude Code y no del sistema operativo, así que aplican igual, pero **la primera vez
 > que se use esta guía en Windows conviene confirmarlas** y corregir aquí lo que salga
 > distinto.
+>
+> **La sección A4 se corrió en Windows el 3 de agosto**, con dos matices que conviene tener
+> presentes: los seis IDs de `winget` están **verificados uno por uno**, pero **Node y
+> `yt-dlp` ya estaban instalados en esa VM**, así que su instalación no se ejercitó desde
+> cero. Todo lo demás de A4 (LibreOffice, Pandoc, Tesseract con su español, Poppler, los
+> paquetes de Python y npm, el `NODE_PATH`, el plugin y las cuatro pruebas de archivo) se
+> instaló y se probó ahí. **La prueba 5, correr `presentacion-elegante` completa, está
+> pendiente en los dos sistemas** porque necesita una sesión autenticada.
 
 ## Qué queda funcionando
 
@@ -32,6 +40,7 @@ está verificado más recientemente.
 | Crear un proyecto nuevo | Botón "+ Nuevo proyecto", con nombre y contexto |
 | Subir archivos desde el teléfono | Caen en `bandeja/` dentro del proyecto |
 | **La bitácora se escribe sola** | Al cerrar, el `CLAUDE.md` del proyecto queda actualizado sin pedirlo |
+| **Documentos de oficina de verdad** | Pide un Word, un Excel con fórmulas o una presentación y salen archivos que abren en Office |
 
 ## Antes de empezar
 
@@ -68,8 +77,9 @@ perdida y una mala primera impresión.
 
 # FASE A · La base
 
-**Lo que deja instalado:** Claude Code funcionando, la carpeta de proyectos y la bitácora
-automática. **Corresponde al módulo 1 del programa.**
+**Lo que deja instalado:** Claude Code funcionando, la carpeta de proyectos, la bitácora
+automática y el runtime que necesitan las skills de documentos.
+**Corresponde al módulo 1 del programa.**
 
 Es entregable completa por sí sola: si el área de sistemas del cliente bloquea Tailscale,
 la fase B no se puede montar y **la fase A sigue siendo una entrega íntegra**, no media.
@@ -169,6 +179,163 @@ sustituyendo `<python>` y `<usuario>`:
 
 > ⚠️ **Si `settings.json` ya existe, fusionar, no sobrescribir.** El primer arranque del paso
 > 1b ya escribió cosas ahí.
+
+---
+
+## A4. El runtime que las skills dan por hecho
+
+
+**Este paso existe porque las skills que se entregan instaladas no traen lo que
+necesitan para correr.** Se instalan con un comando y eso es gratis, pero por dentro
+asumen un runtime que solo viene preinstalado en el entorno de Anthropic. En una laptop
+recién comprada no hay nada de eso, y **falla tarde, ya con la persona esperando su
+documento**.
+
+Lo concreto: `presentacion-elegante` envuelve a `document-skills:pptx`, y su ciclo de
+revisión visual necesita LibreOffice y Poppler. `youtube-research` necesita `yt-dlp` y
+`ffmpeg`. Sin A4, esas skills aparecen en la lista y no funcionan.
+
+**Son dos capas:** el plugin `document-skills` (que trae las skills y sus scripts) y el
+runtime del sistema (que esos scripts invocan). Instalar solo la primera no sirve de nada.
+
+> ✅ **Poppler sí existe para Windows y está en `winget`.** Es `oschwartz10612.Poppler`, la
+> compilación que la propia documentación de `pdf2image` recomienda. **No hace falta aceptar
+> ninguna degradación del ciclo de revisión visual**, que era la duda abierta antes de
+> medirlo en la VM.
+
+### A4a. Todo lo que sale de winget
+
+```powershell
+$ids = @(
+  "TheDocumentFoundation.LibreOffice",
+  "JohnMacFarlane.Pandoc",
+  "tesseract-ocr.tesseract",
+  "oschwartz10612.Poppler",
+  "OpenJS.NodeJS",
+  "yt-dlp.yt-dlp"
+)
+foreach ($id in $ids) {
+  winget install -e --id $id --accept-source-agreements --accept-package-agreements --silent
+}
+```
+
+**IDs verificados en la VM**, no supuestos. Dos notas sobre elecciones que no son obvias:
+
+- **`tesseract-ocr.tesseract` es el oficial y va en 5.5**, más nuevo que el de UB Mannheim
+  (`UB-Mannheim.TesseractOCR`, en 5.4). Cualquiera de los dos sirve; se prefiere el oficial.
+- **`yt-dlp.yt-dlp` arrastra `ffmpeg` como dependencia**, así que no hay que instalarlo
+  aparte. Es el que necesita `youtube-research`.
+
+> ⚠️ **`winget` deja el PATH viejo en la consola en curso**, el mismo aviso de A1. Abrir una
+> consola nueva antes de verificar nada de aquí.
+
+### A4b. Los dos que NO se registran solos en el PATH
+
+**Medido en la VM: LibreOffice y Tesseract se instalan en `Program Files` y no se agregan
+al PATH.** Poppler y Pandoc sí lo hacen. Como las skills los invocan por nombre, sin esto
+fallan con "no se reconoce el comando":
+
+```powershell
+$agregar = @("C:\Program Files\LibreOffice\program", "C:\Program Files\Tesseract-OCR")
+$actual = [Environment]::GetEnvironmentVariable("Path", "User")
+foreach ($d in $agregar) {
+  if ((Test-Path $d) -and ($actual -notlike "*$d*")) { $actual = $actual.TrimEnd(";") + ";" + $d }
+}
+[Environment]::SetEnvironmentVariable("Path", $actual, "User")
+```
+
+### A4c. El español de Tesseract, que no viene incluido
+
+**El paquete instala solo `eng` y `osd`.** Sin esto, el OCR de un documento en español
+devuelve basura en vez de fallar, que es peor porque nadie lo nota:
+
+```powershell
+Invoke-WebRequest -UseBasicParsing `
+  -Uri "https://github.com/tesseract-ocr/tessdata/raw/main/spa.traineddata" `
+  -OutFile "C:\Program Files\Tesseract-OCR\tessdata\spa.traineddata"
+```
+
+Son unos 18 MB. Verificar con `tesseract --list-langs`, tiene que aparecer `spa`.
+
+### A4d. Los paquetes de lenguaje
+
+```powershell
+python -m pip install openpyxl pandas "markitdown[pptx]" Pillow defusedxml lxml `
+                     pytesseract pdf2image pypdf pdfplumber reportlab
+
+npm install -g docx pptxgenjs react react-dom react-icons sharp
+
+# require() no resuelve paquetes npm globales desde una carpeta cualquiera
+[Environment]::SetEnvironmentVariable("NODE_PATH", (npm root -g).Trim(), "User")
+```
+
+> 📌 **En Windows `pip install` a secas sí funciona.** No aplica el
+> `externally-managed-environment` (PEP 668) que obliga a `--break-system-packages` en
+> Ubuntu 24.04, así que el comando es más corto que el de Linux. Es de las pocas cosas que
+> aquí salen más fáciles.
+
+> ⚠️ **`NODE_PATH` no es opcional.** `docx` y `pptxgenjs` quedan instalados global, pero las
+> skills corren sus scripts desde el proyecto de quien las usa, y desde ahí `require()` no
+> los encuentra. Verificar en una consola nueva, **parado en otra carpeta**:
+> `cd $env:TEMP; node -e "require('docx'); require('sharp'); console.log('OK')"`.
+
+### A4e. El plugin de documentos
+
+```powershell
+claude plugin marketplace add anthropics/skills
+claude plugin install document-skills@anthropic-agent-skills
+claude plugin list          # debe decir "enabled"
+```
+
+### A4f. Lo que hay que hacer distinto que en Linux
+
+> ⚠️ **Los scripts auxiliares del plugin NO corren en Windows, y hay que saberlo antes de
+> seguir su documentación al pie de la letra.** `xlsx/scripts/recalc.py` y
+> `pptx/scripts/thumbnail.py` fallan con
+> `module 'socket' has no attribute 'AF_UNIX'`, porque los dos pasan por
+> `pptx/scripts/office/soffice.py`, que es un shim pensado para el entorno aislado de
+> Anthropic (detecta sockets de dominio Unix bloqueados y compila un `.so` para rodearlos).
+> Nada de eso existe en Windows.
+>
+> **La buena noticia es que ahí ese shim no hace falta para nada: `soffice` directo
+> funciona.** Donde la documentación del plugin diga
+> `python scripts/office/soffice.py ...`, en Windows va `soffice` a secas.
+> (`pptx/scripts/clean.py` sí corre, porque no toca LibreOffice.)
+
+```powershell
+# Recalcular un Excel (el equivalente de recalc.py)
+soffice --headless --convert-to xlsx --outdir recalculado archivo.xlsx
+
+# Revisión visual de una presentación (el equivalente de thumbnail.py)
+soffice --headless --convert-to pdf --outdir rev archivo.pptx
+pdftoppm -jpeg -r 150 rev\archivo.pdf rev\diapo
+```
+
+> 📌 **`soffice.exe` sí espera a terminar en Windows**, o sea que el archivo ya existe
+> cuando el comando regresa y no hace falta meter una espera artificial. Se comprobó
+> revisando el archivo inmediatamente después. `soffice.com` se comporta igual.
+
+### A4g. Las cinco pruebas de aceptación
+
+**No dar A4 por terminado sin correrlas.** Cada una revienta por una pieza distinta.
+
+| # | Prueba | Qué pieza demuestra |
+|---|---|---|
+| 1 | Generar un `.docx` y convertirlo a PDF | npm `docx` más `soffice` |
+| 2 | Generar un `.xlsx` **con una fórmula y leer su resultado** | LibreOffice recalculando |
+| 3 | Generar un `.pptx` y sacarle la imagen de revisión | `pptxgenjs`, `sharp`, `soffice`, `pdftoppm` |
+| 4 | Leer un PDF escaneado con OCR | Tesseract con el español de A4c |
+| 5 | Correr `presentacion-elegante` de punta a punta | Que todo lo anterior esté bien cableado |
+
+> ⚠️ **La prueba 2 es la filosa y hay que leerla bien.** `openpyxl` escribe la fórmula pero
+> **no la evalúa**, así que sin LibreOffice el archivo sale con las celdas de resultado
+> **vacías** y nadie se entera hasta que el cliente lo abre. Medido en la VM: leído sin
+> recalcular da `A3=None`; tras pasar por LibreOffice da `A3=1540`. Una prueba que solo
+> verifique "se generó el archivo" **pasa igual con el defecto adentro**.
+
+> ⚠️ **En la prueba 4, `pytesseract` puede no encontrar el ejecutable** aunque esté en el
+> PATH del sistema. Si pasa, fijarlo explícito en el script:
+> `pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"`.
 
 ---
 
@@ -333,9 +500,10 @@ propia**, salvo que lo pida.
 
 ## 7. Verificación, en orden
 
-> **Cómo se reparte por fases:** los renglones 1, 2 y 7 cierran la **fase A** (el servicio
-> local y la bitácora); del 3 al 6 cierran la **fase B**, y necesitan el teléfono. Si solo se
-> contrató la fase A, la verificación termina ahí y eso es una entrega completa.
+> **Cómo se reparte por fases:** los renglones 1, 2, 7 y 8 cierran la **fase A** (el servicio
+> local, la bitácora y el runtime de documentos); del 3 al 6 cierran la **fase B**, y
+> necesitan el teléfono. Si solo se contrató la fase A, la verificación termina en el 8 y eso
+> es una entrega completa.
 
 
 | # | Qué | Cómo | Esperado |
@@ -347,6 +515,7 @@ propia**, salvo que lo pida.
 | 5 | Cierra | tocar el proyecto → "Terminar sesión" | desaparece de la app |
 | 6 | Retoma | tocar un proyecto apagado | lista sus sesiones previas |
 | 7 | La bitácora | ver el recuadro de abajo, que tiene truco | el `CLAUDE.md` de ese proyecto trae una entrada nueva |
+| 8 | El runtime de documentos | las cinco pruebas de A4g | los cinco archivos salen bien, **con el Excel trayendo resultados y no celdas vacías** |
 
 > ⚠️ **El 403 del renglón 2 es la respuesta correcta, no una falla.** La raíz exige la
 > identidad que inyecta Tailscale, que en local no existe. **Medir salud con `/salud`, nunca
@@ -418,3 +587,9 @@ Decirlo antes de instalarla en casa de un cliente:
 | La raíz da 403 y parece roto | Es correcto sin identidad de Tailscale; medir con `/salud` |
 | Acentos rotos en el `CLAUDE.md` global | Se guardó en cp1252; usar `Set-Content -Encoding utf8` |
 | La bitácora nunca escribe y no avisa | `raiz_proyectos` apunta a una carpeta que no existe |
+| `soffice` o `tesseract` "no se reconoce" | Se instalan en `Program Files` sin registrarse en el PATH. Ver A4b |
+| `module 'socket' has no attribute 'AF_UNIX'` | Se corrió un script auxiliar del plugin, que es solo para Linux. Usar `soffice` directo. Ver A4f |
+| `Cannot find module 'docx'` o `'pptxgenjs'` | Falta `NODE_PATH`. Ver A4d |
+| El Excel sale con las celdas de resultado vacías | Falta LibreOffice o no se recalculó. `openpyxl` escribe la fórmula pero no la evalúa. Ver A4g |
+| El OCR devuelve basura en un documento en español | Falta `spa.traineddata`; el paquete solo trae inglés. Ver A4c |
+| `presentacion-elegante` no produce nada útil | Falta el plugin `document-skills`; la skill no tiene a qué delegar. Ver A4e |

@@ -13,6 +13,11 @@ cerrar cada sesión.
 cloud image, sin nada preinstalado). Cada comando de aquí se corrió de verdad, en ese
 orden. Para Windows existe el equivalente en `instalar-lanzador-rc-windows`.
 
+> 📌 **A4 se verificó recreando la VM desde cero y corriendo la sección tal como quedó
+> escrita**, no reconstruyéndola de una exploración previa. Lo único pendiente ahí es la
+> **prueba 5** (correr `presentacion-elegante` completa), que necesita una sesión
+> autenticada; las cuatro pruebas de archivo sí se corrieron y pasaron.
+
 ## Qué queda funcionando
 
 
@@ -24,6 +29,7 @@ orden. Para Windows existe el equivalente en `instalar-lanzador-rc-windows`.
 | Crear un proyecto nuevo | Botón "+ Nuevo proyecto", con nombre y contexto |
 | Subir archivos desde el teléfono | Caen en `bandeja/` dentro del proyecto |
 | **La bitácora se escribe sola** | Al cerrar, el `CLAUDE.md` del proyecto queda actualizado sin pedirlo |
+| **Documentos de oficina de verdad** | Pide un Word, un Excel con fórmulas o una presentación y salen archivos que abren en Office |
 
 ## El reparto, y conviene decirlo antes de empezar
 
@@ -49,8 +55,9 @@ frente a un navegador. Planear la sesión de instalación con esa persona presen
 
 # FASE A · La base
 
-**Lo que deja instalado:** Claude Code funcionando, la carpeta de proyectos y la bitácora
-automática. **Corresponde al módulo 1 del programa.**
+**Lo que deja instalado:** Claude Code funcionando, la carpeta de proyectos, la bitácora
+automática y el runtime que necesitan las skills de documentos.
+**Corresponde al módulo 1 del programa.**
 
 Es entregable completa por sí sola: si el área de sistemas del cliente bloquea Tailscale,
 la fase B no se puede montar y **la fase A sigue siendo una entrega íntegra**, no media.
@@ -73,9 +80,12 @@ curl -fsSL https://claude.ai/install.sh | bash
 | tmux | `tmux -V` | Es la capa de sesión del lanzador en Linux; sin él no lanza nada |
 | Claude Code | `claude --version` | Ver la advertencia del PATH abajo |
 
-> ⚠️ **En Linux NO hace falta Node.js.** El instalador nativo de `claude.ai/install.sh`
-> trae su propio runtime y deja el binario en `~/.local/bin/claude`. Es la diferencia
-> más grande contra el procedimiento de Windows, donde sí hay que instalar Node.
+> ⚠️ **Claude Code en Linux no necesita Node.js, pero el paso A4 sí.** El instalador
+> nativo de `claude.ai/install.sh` trae su propio runtime y deja el binario en
+> `~/.local/bin/claude`, así que para *lanzar sesiones* no hace falta Node. En cambio las
+> skills de documentos (`docx`, `pptx`) sí lo usan, así que **si se va a hacer A4, y casi
+> siempre se hace, Node entra como prerrequisito de todos modos** y conviene instalarlo
+> aquí. Ojo con la versión: **la de los repos de Ubuntu 24.04 es demasiado vieja**, ver A4.
 
 > ⚠️ **El instalador avisa que `~/.local/bin` no está en el PATH, y hay que hacerle caso:**
 > `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc`. Abrir una terminal nueva
@@ -191,6 +201,136 @@ Los cuatro hooks, en `~/.claude/settings.json`, dentro de `"hooks"`:
 > ⚠️ **Si `~/.claude/settings.json` ya existe, hay que fusionar, no sobrescribir.** En una
 > máquina recién instalada no existe todavía, pero en una que ya usaba Claude Code sí, y
 > pisarlo se lleva su configuración por delante.
+
+---
+
+## A4. El runtime que las skills dan por hecho
+
+
+**Este paso existe porque las skills que se entregan instaladas no traen lo que
+necesitan para correr.** Se instalan con un comando y eso es gratis, pero por dentro
+asumen un runtime que solo viene preinstalado en el entorno de Anthropic. En una
+laptop recién comprada no hay nada de eso, y el modo de fallar es el peor posible:
+**falla tarde, ya con la persona esperando su documento**.
+
+Lo concreto: `presentacion-elegante` envuelve a `document-skills:pptx`, y su ciclo de
+revisión visual necesita LibreOffice y Poppler. `youtube-research` necesita `yt-dlp` y
+`ffmpeg`. Sin A4, esas skills aparecen en la lista y no funcionan.
+
+**Son dos capas, y se confunden fácil:** el plugin `document-skills` (que trae las
+skills y sus scripts), y el runtime del sistema (que los scripts invocan). Instalar solo
+la primera no sirve de nada.
+
+### A4a. El runtime del sistema
+
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+  libreoffice pandoc poppler-utils tesseract-ocr tesseract-ocr-spa ffmpeg
+```
+
+Entre 1 y 3 minutos según la conexión, y unos 2.6 GB de disco. Sin licenciamiento de por
+medio. **Todo A4 junto (runtime, Node, paquetes y plugin) pesa unos 4 GB.**
+
+> ⚠️ **`tesseract-ocr-spa` va aparte y es fácil olvidarlo.** El paquete base solo trae
+> inglés, así que sin él el OCR de un documento en español devuelve basura en vez de
+> fallar, que es peor. Verificar con `tesseract --list-langs`, tiene que aparecer `spa`.
+
+### A4b. Node, en la versión correcta
+
+**No sirve el Node de los repos de Ubuntu.** Trae la 18, y `sharp` (que `pptx` usa para
+las imágenes) exige 20.9 o mayor. Instalado con `apt`, `require('sharp')` truena con
+`Could not load the "sharp" module`, y no al instalar sino al generar la presentación.
+
+```bash
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt-get install -y nodejs
+node --version   # tiene que decir v22.x, no v18.x
+```
+
+### A4c. Los paquetes de lenguaje
+
+```bash
+# Python. El --break-system-packages NO es opcional en Ubuntu 24.04, ver el aviso abajo.
+pip3 install --user --break-system-packages \
+  openpyxl pandas "markitdown[pptx]" Pillow defusedxml lxml \
+  pytesseract pdf2image pypdf pdfplumber reportlab yt-dlp
+
+# Node
+sudo npm install -g docx pptxgenjs react react-dom react-icons sharp
+```
+
+> ⚠️ **`pip3 install` a secas falla en Ubuntu 24.04**, con un error de
+> `externally-managed-environment` (PEP 668). Un venv tampoco sirve aquí, porque los
+> scripts del plugin se invocan con el `python3` del sistema y no verían el venv. La
+> salida es `--user --break-system-packages`, que es además lo que ya usa la skill
+> `youtube-research`.
+
+> ⚠️ **`~/.local/bin` tiene que estar en el PATH**, o `markitdown` y `yt-dlp` quedan
+> instalados pero no se encuentran. Es el mismo aviso de A1, que reaparece aquí.
+
+### A4d. El gotcha que rompe `docx` y `pptx` sin decir por qué
+
+**Un paquete npm instalado global NO se resuelve con `require()` desde una carpeta
+cualquiera.** Las skills corren sus scripts desde el proyecto de quien las usa, o sea
+desde cualquier lado, así que `require('docx')` falla con `Cannot find module` aunque
+`npm list -g` lo muestre instalado. Se arregla con una variable, de una vez y para siempre:
+
+```bash
+cat >> ~/.profile <<'EOF'
+
+# Las skills de documentos corren node desde carpetas arbitrarias; sin esto,
+# require() no encuentra los paquetes npm globales.
+export NODE_PATH="/usr/lib/node_modules"
+EOF
+```
+
+Abrir una terminal nueva después. **Verificar desde una carpeta que no sea la de
+instalación**, que es justo lo que distingue esta prueba:
+
+```bash
+cd /tmp && node -e 'require("docx"); require("sharp"); console.log("OK")'
+```
+
+### A4e. El plugin de documentos
+
+Los dos slash commands que documenta `presentacion-elegante` funcionan, pero **hay
+equivalente de línea de comandos**, que es lo que conviene en una instalación:
+
+```bash
+claude plugin marketplace add anthropics/skills
+claude plugin install document-skills@anthropic-agent-skills
+claude plugin list          # debe decir "enabled"
+```
+
+### A4f. Las cinco pruebas de aceptación
+
+**No dar A4 por terminado sin correrlas.** Cada una revienta por una pieza distinta, y
+la segunda es la que de verdad importa.
+
+| # | Prueba | Qué pieza demuestra |
+|---|---|---|
+| 1 | Generar un `.docx` y convertirlo a PDF | npm `docx` más `soffice` |
+| 2 | Generar un `.xlsx` **con una fórmula y leer su resultado** | LibreOffice recalculando |
+| 3 | Generar un `.pptx` y sacarle la imagen de revisión | `pptxgenjs`, `sharp`, `soffice`, `pdftoppm` |
+| 4 | Leer un PDF escaneado con OCR | Tesseract con el paquete de español |
+| 5 | Correr `presentacion-elegante` de punta a punta | Que todo lo anterior esté bien cableado |
+
+> ⚠️ **La prueba 2 es la filosa y hay que leerla bien.** `openpyxl` escribe la fórmula
+> pero **no la evalúa**, así que sin LibreOffice el archivo sale con las celdas de
+> resultado **vacías** y nadie se entera hasta que el cliente lo abre. Medido en el banco
+> limpio: leído sin recalcular da `A3=None`; tras pasar por LibreOffice da `A3=1540`. Una
+> prueba que solo verifique "se generó el archivo" **pasa igual con el defecto adentro**.
+
+El plugin trae sus propios scripts para esto, y conviene usarlos porque es exactamente lo
+que va a correr en producción:
+
+```bash
+SK=$(ls -d ~/.claude/plugins/cache/*/document-skills/*/skills | head -1)
+python3 "$SK/xlsx/scripts/recalc.py" archivo.xlsx        # recalcula y reporta errores
+python3 "$SK/pptx/scripts/office/soffice.py" --headless --convert-to pdf archivo.pptx
+python3 "$SK/pptx/scripts/thumbnail.py" archivo.pptx     # rejilla de miniaturas
+```
 
 ---
 
@@ -380,9 +520,10 @@ que vea la bandeja. Debe encontrarlo sin que le digas la ruta.
 
 ## 7. Verificación, en orden
 
-> **Cómo se reparte por fases:** los renglones 1, 2 y 8 cierran la **fase A** (el servicio
-> local y la bitácora); del 3 al 7 cierran la **fase B**, y necesitan el teléfono. Si solo se
-> contrató la fase A, la verificación termina en el 8 y eso es una entrega completa.
+> **Cómo se reparte por fases:** los renglones 1, 2, 8 y 9 cierran la **fase A** (el servicio
+> local, la bitácora y el runtime de documentos); del 3 al 7 cierran la **fase B**, y
+> necesitan el teléfono. Si solo se contrató la fase A, la verificación termina en el 9 y eso
+> es una entrega completa.
 
 
 Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ninguno.
@@ -397,6 +538,7 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 | 6 | Cierra | tocar el proyecto → "Terminar sesión" | desaparece de la app |
 | 7 | Retoma | tocar un proyecto apagado | lista sus sesiones previas |
 | 8 | La bitácora | ver el recuadro de abajo, que tiene truco | el `CLAUDE.md` de ese proyecto trae una entrada nueva |
+| 9 | El runtime de documentos | las cinco pruebas de A4f | los cinco archivos salen bien, **con el Excel trayendo resultados y no celdas vacías** |
 
 > ⚠️ **La prueba de la bitácora hay que pedirla bien o parece rota.** El umbral cuenta
 > **llamadas de herramienta, no archivos**: pedir "crea seis archivos" lo resuelve un
@@ -459,3 +601,9 @@ Decirlo antes de instalarla en casa de alguien más:
 | Cada proyecto nuevo se cuelga la primera vez | La confianza se aceptó dentro de un proyecto y no en la raíz `~/claude`, así que no se hereda. Ver 1b |
 | La bitácora nunca escribe y no avisa | `raiz_proyectos` apunta a una carpeta que no existe |
 | "Le pedí la bandeja y me habló de Gmail" | Falta el `~/.claude/CLAUDE.md` del paso 6b |
+| `Cannot find module 'docx'` o `'pptxgenjs'` | Falta `NODE_PATH`. Están instalados global, pero `require()` no los ve desde otra carpeta. Ver A4d |
+| `Could not load the "sharp" module` | Node 18 de los repos de Ubuntu. `sharp` pide 20.9 o mayor. Ver A4b |
+| `externally-managed-environment` al instalar con pip | Falta `--user --break-system-packages`. Ver A4c |
+| El Excel sale con las celdas de resultado vacías | Falta LibreOffice, o no se pasó por `recalc.py`. `openpyxl` escribe la fórmula pero no la evalúa. Ver A4f |
+| El OCR devuelve basura en un documento en español | Falta `tesseract-ocr-spa`; el paquete base solo trae inglés. Ver A4a |
+| `presentacion-elegante` no produce nada útil | Falta el plugin `document-skills`; la skill no tiene a qué delegar. Ver A4e |
