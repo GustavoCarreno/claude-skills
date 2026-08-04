@@ -122,6 +122,18 @@ Las 4 no-negociables que impone:
 
 > *"Hazme una presentación ejecutiva de 5 slides sobre el estado actual del parque, basada en los pendientes del CLAUDE.md y los comunicados de las últimas 2 semanas, dirigida al dueño. Salida en `reportes/status-2026-04.pptx`."*
 
+### `instalar-lanzador-rc-windows`
+
+Lo mismo que la de Linux, pero para una laptop con Windows 10 (22H2 o más) u 11. Verificada de punta a punta en una VM de Windows 11 limpia.
+
+Cambia todo lo que rodea al lanzador y no el lanzador mismo: `winget` en vez de `apt`, una tarea programada en vez de una unidad de systemd, y `pywinpty` como pieza extra, que es lo que hace que cerrar una sesión desde el teléfono funcione de verdad. Trae los gotchas propios de Windows, que son varios y silenciosos: el PATH que `winget` deja viejo en la consola en curso, la tarea con `/SC ONSTART` que se crea y **nunca corre** sin contraseña guardada, `schtasks /run` que no reinicia una tarea que ya está corriendo, el modo desatendido de Tailscale sin el cual la máquina desaparece de la red mientras nadie inicia sesión, y los acentos que llegan rotos si el archivo se guarda en cp1252.
+
+**Prerrequisitos:** los mismos que en Linux, más permisos de administrador y una empresa que no bloquee instalaciones. El paso 0 de la guía existe para descubrir eso **antes** de la cita, no durante.
+
+**Ejemplo de uso en Claude Code:**
+
+> *"Instala el lanzador rc en esta laptop con Windows."*
+
 ### `instalar-lanzador-rc-linux`
 
 Deja una máquina Linux lista para **lanzar, retomar y cerrar sesiones de Claude Code desde el teléfono**, con la bitácora automática que mantiene el `CLAUDE.md` de cada proyecto al día sin que nadie lo pida. Procedimiento verificado de punta a punta en una VM limpia de Ubuntu Server 24.04, no escrito de memoria: cada comando se corrió en ese orden.
