@@ -24,6 +24,7 @@ pedazos se unen con ffmpeg. No hay que hacerlo a mano.
 Log de llamadas en ~/.cache/kokoro-deepinfra.log
 """
 import argparse
+import http.client
 import json
 import os
 import re
@@ -353,8 +354,47 @@ def trocear(texto, objetivo=OBJETIVO_TROZO):
 # Llamada a la API
 # --------------------------------------------------------------------------
 
-def hablar_pedazo(texto, llave, voz, velocidad, intentos=3):
-    """Una llamada a la API. Devuelve los bytes del MP3."""
+def parece_mp3(datos):
+    """Firma barata: ID3v2 al inicio, o una cabecera de frame MPEG (0xFFEx).
+
+    No decodifica el audio, solo descarta que la API haya devuelto un cuerpo
+    de error (JSON, HTML, texto plano) disfrazado de HTTP 200. Encontrado en
+    la revision: sin esto, ese cuerpo se copiaba tal cual y se reportaba
+    "OK ->" con un MP3 que no lo es.
+    """
+    if len(datos) < 2:
+        return False
+    if datos[:3] == b"ID3":
+        return True
+    return datos[0] == 0xFF and (datos[1] & 0xE0) == 0xE0
+
+
+def duracion_segundos(ruta):
+    """Duracion en segundos con ffprobe. None si ffprobe no esta o falla.
+
+    Mismo patron defensivo que whisper_deepinfra.py: nunca truena, solo deja
+    de poder verificar.
+    """
+    if not shutil.which("ffprobe"):
+        return None
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "csv=p=0", str(ruta)],
+            capture_output=True, text=True, timeout=60,
+        )
+        return float(r.stdout.strip())
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+
+
+def hablar_pedazo(texto, llave, voz, velocidad, registrar_fallo, intentos=3):
+    """Una llamada a la API. Devuelve los bytes del MP3.
+
+    registrar_fallo(msg) se llama en vez de morir() directo: para cuando esta
+    funcion decide morir ya pudo haberse hecho (y pagado) una llamada, y quien
+    la invoca es responsable de dejar rastro en el log antes de salir.
+    """
     cuerpo = json.dumps({
         "model": MODELO,
         "input": texto,
@@ -380,21 +420,34 @@ def hablar_pedazo(texto, llave, voz, velocidad, intentos=3):
                 audio = r.read()
             if not audio:
                 ultimo_error = "la API devolvio una respuesta vacia"
+            elif not parece_mp3(audio):
+                ultimo_error = (f"la API devolvio {len(audio)} bytes que no "
+                                 "parecen mp3 (sin firma ID3 ni cabecera MPEG)")
             else:
                 return audio
         except urllib.error.HTTPError as e:
             detalle = e.read().decode("utf-8", "replace")[:400].replace("\n", " ")
             if e.code in (401, 403):
-                morir(f"HTTP {e.code}: la llave de DeepInfra no fue aceptada. "
-                      f"Vuelve a guardarla con --guardar-llave. Detalle: {detalle}")
+                registrar_fallo(
+                    f"HTTP {e.code}: la llave de DeepInfra no fue aceptada. "
+                    f"Vuelve a guardarla con --guardar-llave. Detalle: {detalle}")
             if e.code == 402:
-                morir("HTTP 402: la cuenta de DeepInfra no tiene saldo. "
-                      "Agrega credito en https://deepinfra.com/dash/billing")
+                registrar_fallo(
+                    "HTTP 402: la cuenta de DeepInfra no tiene saldo. "
+                    "Agrega credito en https://deepinfra.com/dash/billing")
             ultimo_error = f"HTTP {e.code}: {detalle}"
             if e.code not in (408, 409, 429, 500, 502, 503, 504):
-                morir(ultimo_error)
-        except urllib.error.URLError as e:
-            ultimo_error = f"error de red: {e.reason}"
+                registrar_fallo(ultimo_error)
+        except (urllib.error.URLError, TimeoutError, http.client.IncompleteRead,
+                http.client.RemoteDisconnected, ConnectionResetError) as e:
+            # Ninguna de las tres ultimas es URLError: el timeout de 900s salta
+            # como TimeoutError durante la lectura de la respuesta, y un corte
+            # de conexion a media respuesta llega como IncompleteRead o
+            # RemoteDisconnected (que a su vez hereda de ConnectionResetError,
+            # se listan las tres para que quede explicito). Sin este bloque
+            # ampliado se escapaban como traza cruda, ya pagada la llamada.
+            detalle = getattr(e, "reason", None)
+            ultimo_error = f"error de red: {detalle if detalle else e}"
 
         if intento < intentos:
             espera = 5 * intento
@@ -402,10 +455,10 @@ def hablar_pedazo(texto, llave, voz, velocidad, intentos=3):
                   f"({ultimo_error})", file=sys.stderr)
             time.sleep(espera)
 
-    morir(f"la API no respondio bien tras {intentos} intentos. {ultimo_error}")
+    registrar_fallo(f"la API no respondio bien tras {intentos} intentos. {ultimo_error}")
 
 
-def unir(pedazos_mp3, destino, carpeta_trabajo):
+def unir(pedazos_mp3, destino, carpeta_trabajo, registrar_fallo):
     """Une varios MP3 en uno solo con el demuxer de concat de ffmpeg."""
     lista = carpeta_trabajo / "lista.txt"
     # ffmpeg quiere rutas con las comillas simples escapadas; se escriben
@@ -420,7 +473,29 @@ def unir(pedazos_mp3, destino, carpeta_trabajo):
         capture_output=True, text=True, timeout=3600,
     )
     if r.returncode != 0 or not destino.exists():
-        morir(f"ffmpeg no pudo unir los pedazos: {r.stderr.strip()[:400]}")
+        registrar_fallo(f"ffmpeg no pudo unir los pedazos: {r.stderr.strip()[:400]}")
+
+    # Verificacion barata de que la union no perdio pedazos. Encontrado en la
+    # revision: un pedazo corrupto puede dejar a ffmpeg en returncode 0, con
+    # el destino existente, pero mas corto de lo que le toca. Si ffprobe no
+    # esta, o si no se pudo medir algun pedazo, no se verifica y sigue: mejor
+    # no verificar que tronar por falta de una herramienta opcional.
+    if shutil.which("ffprobe"):
+        duraciones = [duracion_segundos(p) for p in pedazos_mp3]
+        if all(d is not None for d in duraciones):
+            esperada = sum(duraciones)
+            final = duracion_segundos(destino)
+            # Medido: una union limpia con "-c copy" no pierde nada (probado
+            # con clips de silencio, duracion final == suma exacta). El
+            # margen es angosto a propósito: uno generoso (se probo 2s fijos)
+            # dejaba pasar sin aviso el caso de la revision (3s esperados,
+            # 1.04s reales).
+            margen = max(1.0, esperada * 0.03)
+            if final is not None and final < esperada - margen:
+                registrar_fallo(
+                    f"la union parece incompleta: se esperaban ~{esperada:.1f}s "
+                    f"de audio ({len(pedazos_mp3)} pedazos) y el resultado dura "
+                    f"solo {final:.1f}s. Reporta el caso, no uses este archivo.")
     return destino
 
 
@@ -517,6 +592,20 @@ def main():
         morir(f"voz desconocida: {args.voz}. En español hay tres: "
               f"{', '.join(VOCES_ESPANOL)}.")
 
+    # 0.25-4.0: el rango de la API de voz de OpenAI, que este endpoint imita
+    # (ENDPOINT termina en /openai/audio/speech). Sin esto, "-9" viajaba hasta
+    # la API tal cual, gastaba la llamada y regresaba un 400.
+    if not (0.25 <= args.velocidad <= 4.0):
+        morir(f"velocidad fuera de rango: {args.velocidad}. Va de 0.25 a 4.0.")
+
+    # Se valida aqui, antes de leer texto ni de llamar a la API: apuntar -o a
+    # un directorio existente tronaba con traza cruda hasta el final, ya
+    # gastada la llamada.
+    if args.salida:
+        ruta_pedida = Path(args.salida).expanduser().resolve()
+        if ruta_pedida.is_dir():
+            morir(f"la salida es un directorio, no un archivo: {ruta_pedida}")
+
     # Entrada: archivo si lo dieron, stdin si no.
     ruta_entrada = None
     if args.texto:
@@ -567,6 +656,17 @@ def main():
 
     ruta_salida.parent.mkdir(parents=True, exist_ok=True)
 
+    def registrar_fallo(msg, codigo=1):
+        """Como morir(), pero deja un renglon ERR en el log antes de salir.
+
+        Encontrado en la revision: una corrida que fallaba en el pedazo 3 de 7
+        no dejaba ningun rastro, o sea llamadas ya pagadas sin registro. A
+        partir de aqui (ya se pudo haber llamado a la API) se usa esto en vez
+        de morir() directo.
+        """
+        anotar_log(origen, args.voz, caracteres, costo, ruta_salida, ok=False)
+        morir(msg, codigo)
+
     with tempfile.TemporaryDirectory(prefix="kokoro-deepinfra-") as tmp:
         carpeta = Path(tmp)
         archivos = []
@@ -574,7 +674,8 @@ def main():
             if len(pedazos) > 1:
                 print(f"kokoro-deepinfra: pedazo {i}/{len(pedazos)}...",
                       file=sys.stderr)
-            audio = hablar_pedazo(pedazo, llave, args.voz, args.velocidad)
+            audio = hablar_pedazo(pedazo, llave, args.voz, args.velocidad,
+                                   registrar_fallo)
             destino = carpeta / f"pedazo_{i:03d}.mp3"
             destino.write_bytes(audio)
             archivos.append(destino)
@@ -582,11 +683,10 @@ def main():
         if len(archivos) == 1:
             shutil.copyfile(archivos[0], ruta_salida)
         else:
-            unir(archivos, ruta_salida, carpeta)
+            unir(archivos, ruta_salida, carpeta, registrar_fallo)
 
     if not ruta_salida.exists() or ruta_salida.stat().st_size == 0:
-        anotar_log(origen, args.voz, caracteres, costo, ruta_salida, ok=False)
-        morir("el MP3 salio vacio. Reporta el caso.")
+        registrar_fallo("el MP3 salio vacio. Reporta el caso.")
 
     anotar_log(origen, args.voz, caracteres, costo, ruta_salida, ok=True)
     mb = ruta_salida.stat().st_size / 1024 / 1024
