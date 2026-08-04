@@ -40,6 +40,9 @@ Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\comunicados-formales-resp
 Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\youtube-research" "$env:USERPROFILE\.claude\skills\"
 Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\presentacion-elegante" "$env:USERPROFILE\.claude\skills\"
 Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\paginita-publicar" "$env:USERPROFILE\.claude\skills\"
+Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\whisper-deepinfra" "$env:USERPROFILE\.claude\skills\"
+Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\instalar-lanzador-rc-windows" "$env:USERPROFILE\.claude\skills\"
+Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\instalar-lanzador-rc-linux" "$env:USERPROFILE\.claude\skills\"
 Remove-Item -Recurse -Force "$env:TEMP\claude-skills-tmp"
 ```
 
@@ -97,6 +100,26 @@ Investigación de videos de YouTube desde Claude Code: extraer **transcripción*
 > *"De este video https://youtu.be/XXXXX, dame solo la metadata — no necesito el transcript."*
 
 La skill incluye un helper Node (`clean-vtt.js`) que limpia los subtítulos VTT auto-generados de YouTube con el algoritmo canónico (última línea de cada cue + dedupe consecutivo). Funciona idéntico en Windows, Linux y macOS porque Node.js ya viene con Claude Code.
+
+### `whisper-deepinfra`
+
+Transcribir audio a texto (o traducirlo a inglés) con `whisper-large-v3-turbo` en DeepInfra. Notas de voz de WhatsApp, juntas grabadas, entrevistas. Cuesta **$0.00020 USD por minuto**: una hora de junta sale en poco más de un centavo de dólar.
+
+**Prerrequisito adicional:** una **cuenta propia de DeepInfra** — el consumo se cobra a tu cuenta, no a la de nadie más. La skill te la pide en el primer uso y te dice dónde sacarla (https://deepinfra.com → Dashboard → API Keys). La guarda en `~/.config/deepinfra/credentials` con permisos solo para tu usuario. No hay que tocar variables de entorno ni archivos de shell.
+
+**Audios largos:** el límite de DeepInfra es 25 MB por llamada, pero la skill lo maneja sola — recomprime con `ffmpeg` a 16 kHz mono y solo parte en tramos si aun así no cabe. Una sola llamada cubre hasta ~105 minutos de audio. Para eso hace falta `ffmpeg` instalado (`sudo apt install ffmpeg` / `winget install --id Gyan.FFmpeg -e`).
+
+**Ejemplos de uso en Claude Code:**
+
+> *"Transcribe el audio de la junta que subí a la bandeja y hazme la minuta."*
+
+> *"¿Qué dice esta nota de voz?"*
+
+> *"Pásame a texto esta entrevista y tradúcela al inglés."*
+
+El script es un solo archivo de Python de biblioteca estándar — **no requiere `pip install` de nada** y corre igual en Windows, Linux y macOS.
+
+**Lo que NO hace:** no separa hablantes (no dice quién dijo qué), y no genera voz — es solo la dirección audio → texto.
 
 ### `presentacion-elegante`
 
