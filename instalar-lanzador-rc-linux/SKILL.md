@@ -68,6 +68,29 @@ curl -fsSL https://claude.ai/install.sh | bash
 aceptando sus diálogos de primer arranque. Si no, la primera sesión lanzada desde el
 teléfono se queda esperando esos diálogos **sin que nadie lo vea**, porque no hay ventana.
 
+> ⚠️ **En una máquina sin pantalla (un servidor, una VM, una mini PC en un rack) eso no
+> alcanza**, porque el flujo abre un navegador y luego **pide de vuelta un código pegado**.
+> La receta que sí funciona es dejar el proceso esperando dentro de tmux, para poder
+> teclearle el código después:
+>
+> ```bash
+> tmux new-session -d -s login -x 500 -y 40 "claude auth login --claudeai"
+> sleep 10
+> tmux capture-pane -t login -p | grep -o 'https://claude.com/cai/oauth/authorize[^ ]*'
+> # la persona abre esa URL, copia el codigo, y se lo tecleas al proceso:
+> tmux send-keys -t login '<codigo>' Enter
+> claude auth status        # debe reportar la cuenta
+> ```
+>
+> **El `-x 500` no es capricho:** con el ancho normal `capture-pane` parte la URL en varias
+> líneas y el `grep` devuelve un pedazo inservible. Y **la URL va amarrada a ese intento**
+> (trae su `code_challenge` y su `state`), así que no sirve regenerarla por otro lado ni
+> reusar una vieja.
+
+> ⚠️ **No matar procesos con `pkill -f "claude auth login"`:** el patrón aparece en la propia
+> línea de comando que lo ejecuta, así que **se mata a sí mismo** (y con él la sesión SSH,
+> que devuelve 255 sin explicar nada). Matar por PID con `pgrep` primero.
+
 ## 2. La tailnet
 
 **Sin la red, todo lo demás se instala bien y no sirve para nada**, porque el teléfono
