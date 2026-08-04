@@ -15,6 +15,7 @@ orden. Para Windows existe el equivalente en `instalar-lanzador-rc-windows`.
 
 ## Qué queda funcionando
 
+
 | Capacidad | Cómo se ve para quien lo usa |
 |---|---|
 | Lanzar sesiones desde el teléfono | Toca un botón y la sesión aparece en su app de Claude |
@@ -26,12 +27,14 @@ orden. Para Windows existe el equivalente en `instalar-lanzador-rc-windows`.
 
 ## El reparto, y conviene decirlo antes de empezar
 
+
 **La máquina la hace el asistente; la cuenta, la consola de Tailscale y el teléfono
 los hace una persona.** No es una limitación técnica que se pueda rodear: crear la
 tailnet, aprobar el dispositivo y autenticar la app del teléfono exigen a alguien
 frente a un navegador. Planear la sesión de instalación con esa persona presente.
 
 ## 0. Descarte previo, cinco minutos antes de instalar nada
+
 
 | Revisar | Cómo | Si falla |
 |---|---|---|
@@ -42,7 +45,21 @@ frente a un navegador. Planear la sesión de instalación con esa persona presen
 | Cuenta de Anthropic con plan que incluya Claude Code | entrar a `claude.ai` | Sin plan no hay nada que instalar. Contratarlo antes de la cita |
 | La máquina va a quedar encendida | preguntar | Si se apaga, el teléfono no encuentra nada. Es una condición del montaje, no un defecto |
 
-## 1. Prerrequisitos
+---
+
+# FASE A · La base
+
+**Lo que deja instalado:** Claude Code funcionando, la carpeta de proyectos y la bitácora
+automática. **Corresponde al módulo 1 del programa.**
+
+Es entregable completa por sí sola: si el área de sistemas del cliente bloquea Tailscale,
+la fase B no se puede montar y **la fase A sigue siendo una entrega íntegra**, no media.
+
+---
+
+
+## A1. Prerrequisitos
+
 
 ```bash
 sudo apt-get update
@@ -64,7 +81,8 @@ curl -fsSL https://claude.ai/install.sh | bash
 > `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc`. Abrir una terminal nueva
 > después. Esto además reaparece en el paso 4, porque **systemd tampoco hereda ese PATH**.
 
-### 1b. El primer arranque de Claude Code, que es donde más gente se atora
+## A2. El primer arranque de Claude Code, que es donde más gente se atora
+
 
 > 🔴 **Este paso es el que decide si el lanzador sirve o no, y es invisible cuando falla.**
 > Claude Code recién instalado hace **cinco preguntas de primer arranque**. Una sesión
@@ -131,7 +149,65 @@ tmux send-keys -t primera Enter                      # confirmar
 > su `code_challenge` y su `state`): si el proceso muere, ese código ya no sirve y hay que
 > pedir otro.
 
-## 2. La tailnet
+## A3. La bitácora automática
+
+
+Es lo que hace que el `CLAUDE.md` de cada proyecto se mantenga solo. Un único archivo de
+Python, biblioteca estándar, **el mismo que corre en Windows**.
+
+```bash
+mkdir -p ~/.claude/hooks
+cp <origen>/bitacora/bitacora.py ~/.claude/hooks/bitacora.py
+chmod +x ~/.claude/hooks/bitacora.py
+```
+
+`~/.claude/bitacora.json`:
+
+```json
+{ "raiz_proyectos": "/home/<usuario>/claude", "umbral": 6, "max_recordatorios": 2 }
+```
+
+- **`raiz_proyectos`**: si apunta mal, el mecanismo **no dispara y no avisa**. Su modo de
+  fallar es el silencio.
+- **`umbral`**: herramientas de trabajo antes de considerar que hay algo que registrar.
+- **`instruccion`** (opcional): el texto que se le pide al asistente. **Para un cliente
+  conviene reescribirlo en su vocabulario**; el de fábrica habla de "Session Log" y
+  "pipeline", que no son palabras suyas.
+
+Los cuatro hooks, en `~/.claude/settings.json`, dentro de `"hooks"`:
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [{ "matcher": "Write|Edit|NotebookEdit|Bash",
+      "hooks": [{ "type": "command", "command": "python3 /home/<usuario>/.claude/hooks/bitacora.py marcar" }] }],
+    "Stop": [{ "hooks": [{ "type": "command", "command": "python3 /home/<usuario>/.claude/hooks/bitacora.py verificar" }] }],
+    "SessionEnd": [{ "hooks": [{ "type": "command", "command": "python3 /home/<usuario>/.claude/hooks/bitacora.py cerrar" }] }],
+    "SessionStart": [{ "hooks": [{ "type": "command", "command": "python3 /home/<usuario>/.claude/hooks/bitacora.py pendiente" }] }]
+  }
+}
+```
+
+> ⚠️ **Si `~/.claude/settings.json` ya existe, hay que fusionar, no sobrescribir.** En una
+> máquina recién instalada no existe todavía, pero en una que ya usaba Claude Code sí, y
+> pisarlo se lleva su configuración por delante.
+
+---
+
+# FASE B · La red y el teléfono
+
+**Lo que deja instalado:** la tailnet del cliente, el lanzador publicado y la bandeja.
+**Corresponde al módulo 3 del programa.**
+
+**No empezar esta fase sin la A terminada y verificada.** Y si el paso 0 detectó que la
+empresa bloquea Tailscale o las instalaciones, esta fase no procede: eso se supo antes de
+la primera sesión justamente para no descubrirlo aquí.
+
+---
+
+
+## B1. La tailnet
+
 
 **Sin la red, todo lo demás se instala bien y no sirve para nada**, porque el teléfono
 no encuentra la máquina.
@@ -175,7 +251,8 @@ no en la máquina, y sin ellos la instalación termina sin errores y no funciona
 | **Certificados HTTPS** | consola → DNS | El paso 5 falla con un mensaje explícito si están apagados |
 | **Aprobación para publicar** | la imprime el propio comando | Si el paso 5 imprime una URL de aprobación, abrirla y aceptar |
 
-## 3. El lanzador
+## B2. El lanzador
+
 
 ```bash
 # el código va al home, no a una ruta de sistema
@@ -201,7 +278,8 @@ cd ~/rc-launcher && .venv/bin/python -m pytest -q
 Debe pasar la suite completa. En la VM limpia pasaron 327 de 327 en medio segundo, sin
 tocar una línea, que es la prueba de que el código no depende de la máquina donde nació.
 
-## 4. Arranque automático
+## B3. Arranque automático
+
 
 Dos unidades de systemd **a nivel de sistema** con `User=`, no unidades de usuario.
 Sustituir `<usuario>` en las cuatro apariciones:
@@ -259,7 +337,8 @@ sudo systemctl enable --now rc-launcher.service rc-watcher.timer
 > todas las sesiones adentro. Para medirla:
 > `ps -o rss -p $(systemctl show -p MainPID --value rc-launcher.service)`.
 
-## 5. Publicarlo en la tailnet
+## B4. Publicarlo en la tailnet
+
 
 ```bash
 sudo tailscale serve --bg http://127.0.0.1:8765
@@ -269,49 +348,8 @@ tailscale serve status
 Queda en `https://<nombre>.<tailnet>.ts.net/`, **alcanzable solo desde la tailnet**. Esa
 es la URL que se le da a la persona.
 
-## 6. La bitácora automática
+## B5. Decirle a las sesiones qué es la bandeja
 
-Es lo que hace que el `CLAUDE.md` de cada proyecto se mantenga solo. Un único archivo de
-Python, biblioteca estándar, **el mismo que corre en Windows**.
-
-```bash
-mkdir -p ~/.claude/hooks
-cp <origen>/bitacora/bitacora.py ~/.claude/hooks/bitacora.py
-chmod +x ~/.claude/hooks/bitacora.py
-```
-
-`~/.claude/bitacora.json`:
-
-```json
-{ "raiz_proyectos": "/home/<usuario>/claude", "umbral": 6, "max_recordatorios": 2 }
-```
-
-- **`raiz_proyectos`**: si apunta mal, el mecanismo **no dispara y no avisa**. Su modo de
-  fallar es el silencio.
-- **`umbral`**: herramientas de trabajo antes de considerar que hay algo que registrar.
-- **`instruccion`** (opcional): el texto que se le pide al asistente. **Para un cliente
-  conviene reescribirlo en su vocabulario**; el de fábrica habla de "Session Log" y
-  "pipeline", que no son palabras suyas.
-
-Los cuatro hooks, en `~/.claude/settings.json`, dentro de `"hooks"`:
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [{ "matcher": "Write|Edit|NotebookEdit|Bash",
-      "hooks": [{ "type": "command", "command": "python3 /home/<usuario>/.claude/hooks/bitacora.py marcar" }] }],
-    "Stop": [{ "hooks": [{ "type": "command", "command": "python3 /home/<usuario>/.claude/hooks/bitacora.py verificar" }] }],
-    "SessionEnd": [{ "hooks": [{ "type": "command", "command": "python3 /home/<usuario>/.claude/hooks/bitacora.py cerrar" }] }],
-    "SessionStart": [{ "hooks": [{ "type": "command", "command": "python3 /home/<usuario>/.claude/hooks/bitacora.py pendiente" }] }]
-  }
-}
-```
-
-> ⚠️ **Si `~/.claude/settings.json` ya existe, hay que fusionar, no sobrescribir.** En una
-> máquina recién instalada no existe todavía, pero en una que ya usaba Claude Code sí, y
-> pisarlo se lleva su configuración por delante.
-
-## 6b. Decirle a las sesiones qué es la bandeja
 
 **Paso corto y fácil de olvidar, y sin él la mitad del valor del lanzador no se usa.** El
 lanzador deja lo que se sube desde el teléfono en `bandeja/`, dentro del proyecto. Pero
@@ -321,7 +359,9 @@ bandeja" contesta preguntando si te refieres al correo, porque para ella no sign
 Se cierra con `~/.claude/CLAUDE.md`, que aplica a todos los proyectos de esa máquina:
 
 ```markdown
+
 ## La bandeja: archivos que subo desde el teléfono
+
 
 Cada proyecto puede tener una carpeta `bandeja/` en su raíz. Ahí es donde el lanzador rc
 deja lo que subo desde el celular: fotos, audios de junta, PDFs, capturas.
@@ -339,6 +379,11 @@ Verificación: subir un archivo desde el teléfono, abrir la sesión de ese proy
 que vea la bandeja. Debe encontrarlo sin que le digas la ruta.
 
 ## 7. Verificación, en orden
+
+> **Cómo se reparte por fases:** los renglones 1, 2 y 8 cierran la **fase A** (el servicio
+> local y la bitácora); del 3 al 7 cierran la **fase B**, y necesitan el teléfono. Si solo se
+> contrató la fase A, la verificación termina en el 8 y eso es una entrega completa.
+
 
 Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ninguno.
 
@@ -384,6 +429,7 @@ la sesión que escribió esa bitácora.
 
 ## 8. Lo que NO resuelve esta instalación
 
+
 Decirlo antes de instalarla en casa de alguien más:
 
 - **Quien alcance el lanzador puede lanzar sesiones con acceso completo al disco de esa
@@ -401,6 +447,7 @@ Decirlo antes de instalarla en casa de alguien más:
   sesión queda inmatable desde el teléfono. Se cierra con `tmux kill-session` a mano.
 
 ## Errores comunes
+
 
 | Síntoma | Causa real |
 |---|---|

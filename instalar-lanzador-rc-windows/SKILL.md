@@ -23,6 +23,7 @@ está verificado más recientemente.
 
 ## Qué queda funcionando
 
+
 | Capacidad | Cómo se ve para quien lo usa |
 |---|---|
 | Lanzar sesiones desde el teléfono | Toca un botón y la sesión aparece en su app de Claude |
@@ -34,6 +35,7 @@ está verificado más recientemente.
 
 ## Antes de empezar
 
+
 - **La laptop tiene que quedar encendida y con la sesión de Windows iniciada.** No es un
   detalle: si se reinicia de noche y nadie entra, el lanzador deja de existir para el
   teléfono. Ver el paso 4 para lo que sí se puede mitigar y lo que no.
@@ -44,6 +46,7 @@ está verificado más recientemente.
   montaje, y hay pasos que solo se pueden hacer ahí.
 
 ## 0. Descarte previo, cinco minutos antes de instalar nada
+
 
 Sirve para saber si la laptop siquiera es candidata. **Hacerlo antes de sentarse con el
 cliente.** Descubrir en el paso 1 que su empresa bloquea las instalaciones es una hora
@@ -61,7 +64,21 @@ perdida y una mala primera impresión.
 > truena, el problema es de gestión, no técnico, y conviene plantearlo así desde el principio
 > en vez de intentar rodearlo.
 
-## 1. Prerrequisitos
+---
+
+# FASE A · La base
+
+**Lo que deja instalado:** Claude Code funcionando, la carpeta de proyectos y la bitácora
+automática. **Corresponde al módulo 1 del programa.**
+
+Es entregable completa por sí sola: si el área de sistemas del cliente bloquea Tailscale,
+la fase B no se puede montar y **la fase A sigue siendo una entrega íntegra**, no media.
+
+---
+
+
+## A1. Prerrequisitos
+
 
 | Pieza | Cómo | Verificar |
 |---|---|---|
@@ -81,7 +98,8 @@ perdida y una mala primera impresión.
 > si falla la compilación, actualizar `pip` primero. Sin él, la sesión se cierra a medias y
 > sigue apareciendo conectada en la app.
 
-## 1b. El primer arranque de Claude Code, que es donde más gente se atora
+## A2. El primer arranque de Claude Code, que es donde más gente se atora
+
 
 > 🔴 **Este paso decide si el lanzador sirve o no, y es invisible cuando falla.** Claude Code
 > recién instalado hace **cinco preguntas de primer arranque**. Una sesión lanzada desde el
@@ -110,7 +128,64 @@ claude          # contestar las cinco, luego /exit
 > Verificado en Linux, en las dos direcciones: con solo un proyecto confiado, uno nuevo se
 > detuvo; con la raíz confiada, uno recién creado arrancó directo al prompt.
 
-## 2. La tailnet, desde cero
+## A3. La bitácora automática
+
+
+Un único archivo de Python, biblioteca estándar, **el mismo que corre en Linux**.
+
+```powershell
+$hooks = "$env:USERPROFILE\.claude\hooks"
+New-Item -ItemType Directory -Force -Path $hooks
+Copy-Item <origen>\bitacora\bitacora.py $hooks\bitacora.py
+```
+
+Configuración en `%USERPROFILE%\.claude\bitacora.json`:
+
+```json
+{ "raiz_proyectos": "C:/Users/<usuario>/claude", "umbral": 6, "max_recordatorios": 2 }
+```
+
+- **`raiz_proyectos`** con barras diagonales. Si apunta mal, el mecanismo **no dispara y no
+  avisa**: su modo de fallar es el silencio.
+- **`umbral`**: llamadas de herramienta antes de considerar que hay algo que registrar.
+- **`instruccion`** (opcional): el texto que se le pide al asistente. **Para un cliente
+  conviene reescribirlo en su vocabulario**; el de fábrica habla de "Session Log" y
+  "pipeline", que no son palabras suyas.
+
+Los cuatro hooks van en `%USERPROFILE%\.claude\settings.json`, dentro de `"hooks"`,
+sustituyendo `<python>` y `<usuario>`:
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [{ "matcher": "Write|Edit|NotebookEdit|Bash",
+      "hooks": [{ "type": "command", "command": "\"<python>\" \"C:\\Users\\<usuario>\\.claude\\hooks\\bitacora.py\" marcar" }] }],
+    "Stop": [{ "hooks": [{ "type": "command", "command": "\"<python>\" \"C:\\Users\\<usuario>\\.claude\\hooks\\bitacora.py\" verificar" }] }],
+    "SessionEnd": [{ "hooks": [{ "type": "command", "command": "\"<python>\" \"C:\\Users\\<usuario>\\.claude\\hooks\\bitacora.py\" cerrar" }] }],
+    "SessionStart": [{ "hooks": [{ "type": "command", "command": "\"<python>\" \"C:\\Users\\<usuario>\\.claude\\hooks\\bitacora.py\" pendiente" }] }]
+  }
+}
+```
+
+> ⚠️ **Si `settings.json` ya existe, fusionar, no sobrescribir.** El primer arranque del paso
+> 1b ya escribió cosas ahí.
+
+---
+
+# FASE B · La red y el teléfono
+
+**Lo que deja instalado:** la tailnet del cliente, el lanzador publicado y la bandeja.
+**Corresponde al módulo 3 del programa.**
+
+**No empezar esta fase sin la A terminada y verificada.** Y si el paso 0 detectó que la
+empresa bloquea Tailscale o las instalaciones, esta fase no procede: eso se supo antes de
+la primera sesión justamente para no descubrirlo aquí.
+
+---
+
+
+## B1. La tailnet, desde cero
+
 
 Es la parte que se suele dar por hecha y no lo está. **Sin la red, todo lo demás se instala
 bien y no sirve para nada**, porque el teléfono no encuentra la laptop.
@@ -170,7 +245,8 @@ Sin esto, **mientras nadie inicie sesión en Windows la máquina entera desapare
 tailnet** y el teléfono no encuentra nada. Medido: 12 minutos en la pantalla de contraseña,
 con el nodo marcado `offline` todo ese tiempo.
 
-## 3. El lanzador
+## B2. El lanzador
+
 
 > ✅ **Ya es el mismo código que en Linux.** Hasta el 3 de agosto de 2026 Windows corría una
 > variante aparte que había que armar a mano; con la unificación quedó **una sola base con
@@ -191,7 +267,8 @@ python app.py              # debe quedarse escuchando; Ctrl+C para salir
 La raíz **tiene que ser** `%USERPROFILE%\claude`: `sessions.py` la calcula así y no es
 configurable sin tocar código.
 
-## 4. Arranque automático
+## B3. Arranque automático
+
 
 Un `.cmd` envoltorio y una tarea programada al iniciar sesión:
 
@@ -213,7 +290,8 @@ schtasks /Run /TN "rc-launcher"
 > ⚠️ **`schtasks /run` NO reinicia una tarea que ya corre.** Contesta "is currently running"
 > y no hace nada. La secuencia correcta es `schtasks /end` y luego `schtasks /run`.
 
-## 5. Publicarlo en la tailnet
+## B4. Publicarlo en la tailnet
+
 
 ```powershell
 & "C:\Program Files\Tailscale\tailscale.exe" serve --bg http://127.0.0.1:8765
@@ -223,48 +301,8 @@ schtasks /Run /TN "rc-launcher"
 Queda en `https://<nombre-del-equipo>.<tailnet>.ts.net/`, **alcanzable solo desde la
 tailnet**. Esa es la URL que se le da al usuario.
 
-## 6. La bitácora automática
+## B5. Decirle a las sesiones qué es la bandeja
 
-Un único archivo de Python, biblioteca estándar, **el mismo que corre en Linux**.
-
-```powershell
-$hooks = "$env:USERPROFILE\.claude\hooks"
-New-Item -ItemType Directory -Force -Path $hooks
-Copy-Item <origen>\bitacora\bitacora.py $hooks\bitacora.py
-```
-
-Configuración en `%USERPROFILE%\.claude\bitacora.json`:
-
-```json
-{ "raiz_proyectos": "C:/Users/<usuario>/claude", "umbral": 6, "max_recordatorios": 2 }
-```
-
-- **`raiz_proyectos`** con barras diagonales. Si apunta mal, el mecanismo **no dispara y no
-  avisa**: su modo de fallar es el silencio.
-- **`umbral`**: llamadas de herramienta antes de considerar que hay algo que registrar.
-- **`instruccion`** (opcional): el texto que se le pide al asistente. **Para un cliente
-  conviene reescribirlo en su vocabulario**; el de fábrica habla de "Session Log" y
-  "pipeline", que no son palabras suyas.
-
-Los cuatro hooks van en `%USERPROFILE%\.claude\settings.json`, dentro de `"hooks"`,
-sustituyendo `<python>` y `<usuario>`:
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [{ "matcher": "Write|Edit|NotebookEdit|Bash",
-      "hooks": [{ "type": "command", "command": "\"<python>\" \"C:\\Users\\<usuario>\\.claude\\hooks\\bitacora.py\" marcar" }] }],
-    "Stop": [{ "hooks": [{ "type": "command", "command": "\"<python>\" \"C:\\Users\\<usuario>\\.claude\\hooks\\bitacora.py\" verificar" }] }],
-    "SessionEnd": [{ "hooks": [{ "type": "command", "command": "\"<python>\" \"C:\\Users\\<usuario>\\.claude\\hooks\\bitacora.py\" cerrar" }] }],
-    "SessionStart": [{ "hooks": [{ "type": "command", "command": "\"<python>\" \"C:\\Users\\<usuario>\\.claude\\hooks\\bitacora.py\" pendiente" }] }]
-  }
-}
-```
-
-> ⚠️ **Si `settings.json` ya existe, fusionar, no sobrescribir.** El primer arranque del paso
-> 1b ya escribió cosas ahí.
-
-## 6b. Decirle a las sesiones qué es la bandeja
 
 **Paso corto y fácil de olvidar, y sin él la mitad del valor del lanzador no se usa.** El
 lanzador deja lo que se sube desde el teléfono en `bandeja/`, dentro del proyecto. Pero
@@ -274,7 +312,9 @@ bandeja" contesta preguntando si te refieres al correo.
 Crear `%USERPROFILE%\.claude\CLAUDE.md` con:
 
 ```markdown
+
 ## La bandeja: archivos que subo desde el teléfono
+
 
 Cada proyecto puede tener una carpeta `bandeja/` en su raíz. Ahí es donde el lanzador rc deja
 lo que subo desde el celular: fotos, audios de junta, PDFs, capturas.
@@ -292,6 +332,11 @@ propia**, salvo que lo pida.
 > UTF-8; en cp1252 los acentos llegan rotos. Con PowerShell: `Set-Content -Encoding utf8`.
 
 ## 7. Verificación, en orden
+
+> **Cómo se reparte por fases:** los renglones 1, 2 y 7 cierran la **fase A** (el servicio
+> local y la bitácora); del 3 al 6 cierran la **fase B**, y necesitan el teléfono. Si solo se
+> contrató la fase A, la verificación termina ahí y eso es una entrega completa.
+
 
 | # | Qué | Cómo | Esperado |
 |---|---|---|---|
@@ -334,6 +379,7 @@ transcripción se borran solos a los tres días; `cierres.log` no.
 
 ## 8. Lo que NO resuelve esta instalación
 
+
 Decirlo antes de instalarla en casa de un cliente:
 
 - **La puerta es la identidad de Tailscale**, y solo eso. El lanzador sí valida quién entra
@@ -357,6 +403,7 @@ Decirlo antes de instalarla en casa de un cliente:
   sesión queda inmatable desde el teléfono. Hay que cerrarla desde la máquina.
 
 ## Errores comunes
+
 
 | Síntoma | Causa real |
 |---|---|

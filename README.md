@@ -130,6 +130,9 @@ Cambia todo lo que rodea al lanzador y no el lanzador mismo: `winget` en vez de 
 
 **Prerrequisitos:** los mismos que en Linux, más permisos de administrador y una empresa que no bloquee instalaciones. El paso 0 de la guía existe para descubrir eso **antes** de la cita, no durante.
 
+
+**Viene partida en dos fases**, para que se pueda entregar por partes: la **fase A** deja Claude Code y la bitácora automática funcionando, y **es una entrega completa por sí sola**; la **fase B** agrega la red privada, el lanzador publicado y la bandeja. El descarte previo del paso 0 no se parte: corre entero antes de tocar nada, porque descubrir tarde que la empresa bloquea instalaciones es el peor momento para enterarse.
+
 **Ejemplo de uso en Claude Code:**
 
 > *"Instala el lanzador rc en esta laptop con Windows."*
@@ -141,6 +144,9 @@ Deja una máquina Linux lista para **lanzar, retomar y cerrar sesiones de Claude
 Cubre los ocho pasos completos: descarte previo de la máquina, prerrequisitos (incluido que en Linux **no hace falta Node.js**), levantar la tailnet desde cero con sus tres interruptores de consola, el lanzador con su venv, las unidades de systemd con los dos gotchas que lo rompen en silencio (`KillMode=process` y el `PATH` que systemd no hereda), publicarlo con `tailscale serve`, los hooks de la bitácora, y la verificación en orden.
 
 **Prerrequisitos:** una máquina con systemd que vaya a quedar encendida, `sudo`, una cuenta de Anthropic con plan que incluya Claude Code, y **una persona con su teléfono a la mano**: crear la tailnet y autenticar las apps no se puede automatizar.
+
+
+**Viene partida en dos fases**, para que se pueda entregar por partes: la **fase A** deja Claude Code y la bitácora automática funcionando, y **es una entrega completa por sí sola**; la **fase B** agrega la red privada, el lanzador publicado y la bandeja. El descarte previo del paso 0 no se parte: corre entero antes de tocar nada, porque descubrir tarde que la empresa bloquea instalaciones es el peor momento para enterarse.
 
 **Ejemplo de uso en Claude Code:**
 
