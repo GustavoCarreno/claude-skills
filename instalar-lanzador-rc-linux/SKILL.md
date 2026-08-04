@@ -351,7 +351,19 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 | 5 | Lanza | tocar un proyecto → "Nueva sesión" | en 5 s el botón queda encendido y la sesión aparece en la app de Claude |
 | 6 | Cierra | tocar el proyecto → "Terminar sesión" | desaparece de la app |
 | 7 | Retoma | tocar un proyecto apagado | lista sus sesiones previas |
-| 8 | La bitácora | trabajar en una sesión (6+ archivos escritos), cerrarla desde el lanzador | el `CLAUDE.md` de ese proyecto trae una entrada nueva |
+| 8 | La bitácora | ver el recuadro de abajo, que tiene truco | el `CLAUDE.md` de ese proyecto trae una entrada nueva |
+
+> ⚠️ **La prueba de la bitácora hay que pedirla bien o parece rota.** El umbral cuenta
+> **llamadas de herramienta, no archivos**: pedir "crea seis archivos" lo resuelve un
+> asistente con **un solo comando de Bash**, o sea una sola llamada, y el mecanismo se calla
+> con razón. Pedirlo así: *"usa la herramienta Write seis veces seguidas, una por archivo,
+> sin Bash ni heredocs"*. Y **leer los conteos de uno en uno**
+> (`for f in ~/.cache/claude-bitacora/*.conteo; do echo "$f = $(cat $f)"; done`): un `cat`
+> con comodín concatena los de varias sesiones y un "1" y un "3" se leen como "13".
+>
+> Cuando sí dispara, el conteo **vuelve a cero** al terminar. No es que se haya perdido: es
+> la guarda que evita el bucle de reescribir la bitácora para callar una alarma que la
+> propia escritura vuelve a encender. Lo que hay que mirar es el tamaño del `CLAUDE.md`.
 
 > ⚠️ **El 403 del renglón 3 es la respuesta correcta, no una falla.** La raíz exige la
 > identidad que inyecta Tailscale (`Tailscale-User-Login`), que por `curl` desde la propia
