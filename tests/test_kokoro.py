@@ -18,6 +18,10 @@ def test_quita_la_casilla_palomeada():
     assert limpiar_markdown("- [x] Firmar el acuerdo") == "Firmar el acuerdo"
 
 
+def test_quita_la_casilla_aunque_le_falte_el_espacio():
+    assert limpiar_markdown("- [ ]tarea sin espacio") == "tarea sin espacio"
+
+
 def test_quita_las_marcas_de_enfasis_y_conserva_el_texto():
     assert limpiar_markdown("Es **urgente** y *nuevo* y `exacto`") == "Es urgente y nuevo y exacto"
 

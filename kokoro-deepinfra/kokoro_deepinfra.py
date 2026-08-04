@@ -33,7 +33,7 @@ _RE_BLOQUE_CODIGO = re.compile(r"^[ \t]*```.*?^[ \t]*```", re.M | re.S)
 _RE_IMAGEN = re.compile(r"!\[[^\]]*\]\([^)]*\)")
 _RE_LIGA = re.compile(r"\[([^\]]+)\]\([^)]*\)")
 _RE_ENCABEZADO = re.compile(r"^\s{0,3}#{1,6}\s+")
-_RE_CASILLA = re.compile(r"^\s*[-*+]\s+\[[ xX]\]\s+")
+_RE_CASILLA = re.compile(r"^\s*[-*+]\s+\[[ xX]\]\s*")
 _RE_VINETA = re.compile(r"^\s*[-*+]\s+")
 _RE_NUMERACION = re.compile(r"^\s*\d+[.)]\s+")
 _RE_CITA = re.compile(r"^\s{0,3}>\s?")
@@ -41,6 +41,9 @@ _RE_CITA = re.compile(r"^\s{0,3}>\s?")
 # numeros: asi `pendientes_viejos` se lee tal cual y no queda partido.
 _RE_ENFASIS = re.compile(r"\*{1,3}|`{1,3}|(?<![A-Za-z0-9])_{1,2}|_{1,2}(?![A-Za-z0-9])")
 
+# Esta cadena rompe a proposito la convencion sin acentos del resto del
+# archivo: no es codigo ni comentario, es texto que el modelo de voz va a
+# pronunciar, y sin tilde diria "codigo" mal acentuado. No "corregirla".
 NOTA_CODIGO = "(Aquí va un bloque de código, que no se lee.)"
 
 
