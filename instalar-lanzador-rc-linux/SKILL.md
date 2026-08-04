@@ -14,9 +14,11 @@ cloud image, sin nada preinstalado). Cada comando de aquí se corrió de verdad,
 orden. Para Windows existe el equivalente en `instalar-lanzador-rc-windows`.
 
 > 📌 **A4 se verificó recreando la VM desde cero y corriendo la sección tal como quedó
-> escrita**, no reconstruyéndola de una exploración previa. Lo único pendiente ahí es la
-> **prueba 5** (correr `presentacion-elegante` completa), que necesita una sesión
-> autenticada; las cuatro pruebas de archivo sí se corrieron y pasaron.
+> escrita**, no reconstruyéndola de una exploración previa. **Las cinco pruebas de aceptación
+> pasaron**, incluida la quinta: una sesión real pidió una presentación ejecutiva de cuatro
+> láminas, la generó, **corrió el ciclo de revisión visual y corrigió tres defectos de
+> maquetación que ella misma detectó** en las imágenes renderizadas. Es la evidencia de que el
+> runtime no solo está instalado sino bien cableado.
 
 ## Qué queda funcionando
 

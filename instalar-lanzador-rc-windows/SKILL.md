@@ -26,8 +26,9 @@ está verificado más recientemente.
 > `yt-dlp` ya estaban instalados en esa VM**, así que su instalación no se ejercitó desde
 > cero. Todo lo demás de A4 (LibreOffice, Pandoc, Tesseract con su español, Poppler, los
 > paquetes de Python y npm, el `NODE_PATH`, el plugin y las cuatro pruebas de archivo) se
-> instaló y se probó ahí. **La prueba 5, correr `presentacion-elegante` completa, está
-> pendiente en los dos sistemas** porque necesita una sesión autenticada.
+> instaló y se probó ahí. **La prueba 5, correr `presentacion-elegante` completa, pasó en
+> Linux pero está pendiente en Windows**, y ahí importa más que en Linux: es donde los
+> scripts auxiliares del plugin fallan y hay que tomar el camino de A4f.
 
 ## Qué queda funcionando
 
