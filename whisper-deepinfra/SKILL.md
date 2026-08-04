@@ -84,6 +84,13 @@ Para audios grandes hace falta **ffmpeg**. Si no está, el script lo dice con el
 exacto para instalarlo. Es parte del runtime que deja listo la sección A4 de las skills
 `instalar-lanzador-rc-linux` y `instalar-lanzador-rc-windows`.
 
+## Si hay que volver a leer el archivo de salida
+
+En Windows el `.txt` se escribe **con BOM**, a propósito: sin él, PowerShell 5.1 y
+Excel lo leen con la página de códigos local y la transcripción se ve llena de basura.
+Al leerlo de vuelta desde código, usar `encoding="utf-8-sig"`, que funciona con BOM y
+sin él. Con `utf-8` a secas aparece un `﻿` pegado al principio del texto.
+
 ## Al terminar, reportar
 
 El texto o la ruta del archivo, el idioma detectado y **el costo real**. El script ya lo
