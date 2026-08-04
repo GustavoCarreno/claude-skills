@@ -68,3 +68,49 @@ def test_colapsa_los_renglones_en_blanco_repetidos():
 def test_el_texto_sin_markdown_pasa_intacto():
     llano = "Tienes tres pendientes urgentes para hoy."
     assert limpiar_markdown(llano) == llano
+
+
+from kokoro_deepinfra import trocear, LIMITE_LLAMADA, OBJETIVO_TROZO
+
+
+def test_un_texto_corto_es_un_solo_pedazo():
+    assert trocear("Hola, qué tal.") == ["Hola, qué tal."]
+
+
+def test_ningun_pedazo_pasa_del_limite_de_la_api():
+    texto = ("Esta es una oracion de prueba con su punto final. " * 600)
+    for pedazo in trocear(texto):
+        assert len(pedazo) <= LIMITE_LLAMADA
+
+
+def test_corta_en_fin_de_parrafo_cuando_lo_hay():
+    izq = "a" * 8000
+    der = "b" * 3000
+    pedazos = trocear(izq + "\n\n" + der, objetivo=9000)
+    assert pedazos[0] == izq
+    assert pedazos[1] == der
+
+
+def test_corta_en_fin_de_oracion_cuando_no_hay_parrafo():
+    izq = "a" * 8000 + "."
+    der = "b" * 3000
+    pedazos = trocear(izq + " " + der, objetivo=9000)
+    assert pedazos[0].endswith(".")
+    assert pedazos[1] == der
+
+
+def test_no_pierde_texto_al_trocear():
+    texto = ("Oracion numero uno. Oracion numero dos. " * 500)
+    unido = " ".join(trocear(texto))
+    assert unido.split() == texto.split()
+
+
+def test_un_texto_sin_ninguna_frontera_se_corta_a_lo_bruto():
+    texto = "a" * 25000
+    pedazos = trocear(texto, objetivo=9000)
+    assert len(pedazos) == 3
+    assert "".join(pedazos) == texto
+
+
+def test_el_objetivo_deja_margen_bajo_el_limite_duro():
+    assert OBJETIVO_TROZO < LIMITE_LLAMADA

@@ -92,3 +92,55 @@ def limpiar_markdown(texto):
     salida = "\n".join(renglones)
     salida = re.sub(r"\n{3,}", "\n\n", salida)
     return salida.strip()
+
+
+# --------------------------------------------------------------------------
+# Troceo
+# --------------------------------------------------------------------------
+
+# Limite duro de la API, medido el 4 ago 2026: manda 400 con
+# "String should have at most 10000 characters".
+LIMITE_LLAMADA = 10000
+# Se apunta abajo del limite para no quedar al filo por un corte que caiga
+# tarde en la ventana.
+OBJETIVO_TROZO = 9000
+
+# En orden de preferencia. Cortar en fin de parrafo suena mejor que en fin de
+# oracion, y ambos mucho mejor que a caracter fijo.
+FRONTERAS = ("\n\n", ". ", ".\n", "? ", "?\n", "! ", "!\n", "… ", "\n", " ")
+
+
+def _mejor_corte(texto, objetivo):
+    """Posicion donde cortar, buscando hacia atras desde el objetivo.
+
+    Se exige que el corte caiga despues de la mitad de la ventana: si no,
+    un texto con una sola frontera al principio produciria pedazos ridiculos
+    y multiplicaria las llamadas.
+    """
+    ventana = texto[:objetivo]
+    for frontera in FRONTERAS:
+        pos = ventana.rfind(frontera)
+        if pos > objetivo // 2:
+            return pos + len(frontera)
+    return objetivo
+
+
+def trocear(texto, objetivo=OBJETIVO_TROZO):
+    """Parte el texto en pedazos que quepan en una llamada.
+
+    A diferencia de whisper-deepinfra, que corta el audio a tiempo fijo y
+    pierde una palabra en cada frontera, aqui el corte cae en puntuacion y no
+    se pierde nada.
+    """
+    if len(texto) <= objetivo:
+        return [texto]
+
+    pedazos = []
+    resto = texto
+    while len(resto) > objetivo:
+        corte = _mejor_corte(resto, objetivo)
+        pedazos.append(resto[:corte].strip())
+        resto = resto[corte:].lstrip()
+    if resto:
+        pedazos.append(resto)
+    return pedazos
