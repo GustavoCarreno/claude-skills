@@ -78,6 +78,29 @@ Queda en {RUTA_CREDENCIALES}, con permisos solo para tu usuario, y la reusan
 las demas skills de DeepInfra."""
 
 
+def preparar_salida():
+    """Fuerza UTF-8 en stdout y stderr.
+
+    En Windows la salida redirigida sale en cp1252, que no sabe codificar buena
+    parte de Unicode: imprimir la transcripcion reventaba con UnicodeEncodeError
+    DESPUES de haber pagado la llamada a la API, o sea perdiendo el texto.
+    """
+    for flujo in (sys.stdout, sys.stderr):
+        try:
+            flujo.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError, OSError):
+            pass
+
+
+def codificacion_de_salida():
+    """UTF-8 con BOM en Windows, sin BOM en el resto.
+
+    Sin BOM, un .txt en Windows lo malinterpretan PowerShell 5.1 y Excel, que
+    asumen la pagina de codigos local y dejan la transcripcion llena de basura.
+    """
+    return "utf-8-sig" if os.name == "nt" else "utf-8"
+
+
 def morir(msg, codigo=1):
     print(f"whisper-deepinfra: {msg}", file=sys.stderr)
     sys.exit(codigo)
@@ -388,6 +411,7 @@ def mostrar_estado():
 # --------------------------------------------------------------------------
 
 def main():
+    preparar_salida()
     ap = argparse.ArgumentParser(
         description="Transcribe audio con whisper-large-v3-turbo en DeepInfra.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -495,7 +519,7 @@ def main():
                costo_final, ruta_salida, ok=True)
 
     if ruta_salida:
-        ruta_salida.write_text(texto_final + "\n", encoding="utf-8")
+        ruta_salida.write_text(texto_final + "\n", encoding=codificacion_de_salida())
         print(f"OK -> {ruta_salida}  ({len(texto_final):,} caracteres, "
               f"idioma={idioma_detectado}, ~${costo_final:.5f} USD)")
     else:
