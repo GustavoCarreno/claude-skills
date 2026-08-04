@@ -16,7 +16,23 @@ Esta skill requiere tener instalado el plugin `document-skills` de Anthropic (qu
 /plugin install document-skills@anthropic-agent-skills
 ```
 
+También se puede sin la consola interactiva, que es lo práctico al instalar una máquina:
+
+```bash
+claude plugin marketplace add anthropics/skills
+claude plugin install document-skills@anthropic-agent-skills
+```
+
 Sin ese plugin, esta skill no tiene a qué delegar las mecánicas y no producirá resultados útiles.
+
+> ⚠️ **El plugin NO trae el runtime que sus scripts invocan**, y ese runtime solo viene
+> preinstalado en el entorno de Anthropic. En una máquina nueva hacen falta **LibreOffice**
+> (`soffice`) y **Poppler** (`pdftoppm`) para el ciclo de revisión visual, más los paquetes
+> npm `pptxgenjs` y `sharp`. Con Node instalado global, `require()` no los resuelve desde una
+> carpeta cualquiera: hace falta la variable `NODE_PATH` apuntando a `npm root -g`.
+>
+> El procedimiento completo, por sistema operativo y con sus pruebas de aceptación, está en
+> la sección **A4** de las skills `instalar-lanzador-rc-linux` e `instalar-lanzador-rc-windows`.
 
 ## Cómo usar esta skill
 
@@ -66,7 +82,10 @@ Espera confirmación o veto del usuario antes de continuar. Si veta algo, re-eli
 
 Obligatorio antes de declarar "listo":
 
-1. **Export a imágenes:**
+1. **Export a imágenes.** El comando depende del sistema, y **usar el equivocado no degrada
+   el resultado: lo impide**, porque sin imágenes no hay QA visual y el paso 2 no puede correr.
+
+   **Linux / macOS:**
    ```bash
    python scripts/office/soffice.py --headless --convert-to pdf output.pptx
    rm -f slide-*.jpg
@@ -74,7 +93,25 @@ Obligatorio antes de declarar "listo":
    ls -1 "$PWD"/slide-*.jpg
    ```
 
-2. **Dispatch subagent** con el prompt de visual QA que trae la skill oficial pptx (sección "Visual QA" de su SKILL.md). Pasa los paths absolutos exactos que imprimió `ls -1`.
+   **Windows PowerShell:**
+   ```powershell
+   soffice --headless --convert-to pdf output.pptx
+   Remove-Item slide-*.jpg -ErrorAction SilentlyContinue
+   pdftoppm -jpeg -r 150 output.pdf slide
+   Get-ChildItem slide-*.jpg | Select-Object -ExpandProperty FullName
+   ```
+
+   > ⚠️ **En Windows NO uses `scripts/office/soffice.py`**, aunque el `SKILL.md` de la skill
+   > oficial `pptx` lo diga. Ese script es un shim para el entorno aislado de Anthropic:
+   > detecta sockets de dominio Unix bloqueados y compila un `.so` para rodearlos. En Windows
+   > truena con `module 'socket' has no attribute 'AF_UNIX'`, **y ahí no hace falta para nada**,
+   > porque `soffice` directo funciona y además espera a terminar. Lo mismo aplica a
+   > `xlsx/scripts/recalc.py`, que pasa por el mismo shim.
+   >
+   > **Si `soffice` o `pdftoppm` "no se reconocen" en Windows**, no están en el PATH.
+   > LibreOffice se instala en `C:\Program Files\LibreOffice\program` y no se registra solo.
+
+2. **Dispatch subagent** con el prompt de visual QA que trae la skill oficial pptx (sección "Visual QA" de su SKILL.md). Pasa los paths absolutos exactos que imprimió el último comando del paso 1.
 
 3. **Mínimo 1 ciclo completo** fix, re-render y verify, aunque la primera pasada parezca limpia. Nunca saltarse el ciclo.
 
