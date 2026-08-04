@@ -25,10 +25,11 @@ está verificado más recientemente.
 > presentes: los seis IDs de `winget` están **verificados uno por uno**, pero **Node y
 > `yt-dlp` ya estaban instalados en esa VM**, así que su instalación no se ejercitó desde
 > cero. Todo lo demás de A4 (LibreOffice, Pandoc, Tesseract con su español, Poppler, los
-> paquetes de Python y npm, el `NODE_PATH`, el plugin y las cuatro pruebas de archivo) se
-> instaló y se probó ahí. **La prueba 5, correr `presentacion-elegante` completa, pasó en
-> Linux pero está pendiente en Windows**, y ahí importa más que en Linux: es donde los
-> scripts auxiliares del plugin fallan y hay que tomar el camino de A4f.
+> paquetes de Python y npm, el `NODE_PATH`, el plugin y las cinco pruebas de aceptación) se
+> instaló y se probó ahí. **La prueba 5 pasó**: una sesión real generó una presentación
+> ejecutiva de cuatro láminas y corrió **tres pasadas de revisión visual** (16 defectos, luego
+> 4, luego cero, con medición de píxeles). Es la evidencia de que el camino de A4f funciona
+> de verdad y no solo en el papel.
 
 ## Qué queda funcionando
 
