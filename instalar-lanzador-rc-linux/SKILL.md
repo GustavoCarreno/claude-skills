@@ -32,6 +32,7 @@ orden. Para Windows existe el equivalente en `instalar-lanzador-rc-windows`.
 | Subir archivos desde el teléfono | Caen en `bandeja/` dentro del proyecto |
 | **La bitácora se escribe sola** | Al cerrar, el `CLAUDE.md` del proyecto queda actualizado sin pedirlo |
 | **Documentos de oficina de verdad** | Pide un Word, un Excel con fórmulas o una presentación y salen archivos que abren en Office |
+| **Su correo, su calendario y su Drive** | Pregunta qué le escribieron o pide que le agenden algo, y se resuelve sin salir de la conversación |
 
 ## El reparto, y conviene decirlo antes de empezar
 
@@ -58,8 +59,8 @@ frente a un navegador. Planear la sesión de instalación con esa persona presen
 # FASE A · La base
 
 **Lo que deja instalado:** Claude Code funcionando, la carpeta de proyectos, la bitácora
-automática y el runtime que necesitan las skills de documentos.
-**Corresponde al módulo 1 del programa.**
+automática, el runtime que necesitan las skills de documentos, y el acceso a su correo,
+calendario y Drive. **Corresponde al módulo 1 del programa.**
 
 Es entregable completa por sí sola: si el área de sistemas del cliente bloquea Tailscale,
 la fase B no se puede montar y **la fase A sigue siendo una entrega íntegra**, no media.
@@ -336,6 +337,100 @@ python3 "$SK/pptx/scripts/thumbnail.py" archivo.pptx     # rejilla de miniaturas
 
 ---
 
+## A5. Su correo, su calendario y su Drive
+
+
+**Lo que deja funcionando:** que pueda decir "¿qué me escribió el broker esta semana?" o
+"agéndame con él el martes" y la sesión lo resuelva sin que él salga de la conversación.
+
+Se hace con los **conectores de claude.ai**, no instalando nada en la máquina. La cuenta que
+ya se autenticó en A2 es la misma que los trae, así que **no hay proyecto de nube que crear,
+ni credenciales que administrar, ni permisos que pedirle a nadie.**
+
+> 📌 **Por qué esta vía y no un CLI de Google.** La alternativa era instalar un CLI con su
+> propio proyecto de Google Cloud por cliente. Se descartó a propósito: **exige que el cliente
+> tenga acceso a Google Cloud, y la mayoría no lo tiene**, así que convertía una capacidad
+> vendible en un trámite con su área de sistemas. Además esta vía **sirve igual si están en
+> Microsoft 365**, que el CLI de Google no cubriría.
+
+### A5a. Conectarlos
+
+**Este paso lo hace el cliente, en su navegador, y no se puede hacer desde la terminal.**
+
+1. Entrar a **`claude.ai/customize/connectors`** con la misma cuenta de A2.
+2. Conectar los que apliquen: **Gmail**, **Google Calendar**, **Google Drive**, o
+   **Microsoft 365** si su correo es de Microsoft.
+3. Completar el consentimiento que pida cada uno.
+
+> ⚠️ **No intentar conectarlos desde `/mcp`, no se puede, y el error confunde.** Gmail,
+> Google Calendar y Microsoft 365 **no soportan el OAuth local de Claude Code**, porque el
+> proveedor de identidad solo acepta la dirección de retorno que registró claude.ai. Si se
+> intenta, la propia herramienta manda a Configuración → Conectores. **No es una falla de la
+> instalación.**
+
+> ⚠️ **En planes Team y Enterprise, solo un administrador puede agregar conectores.** Si el
+> cliente está en uno de esos y no es administrador, este paso lo tiene que hacer su área de
+> sistemas. **Vale preguntarlo en el paso 0**, no descubrirlo con él sentado enfrente.
+
+### A5b. Verificar
+
+Desde la terminal, sin abrir una sesión:
+
+```bash
+claude mcp list
+```
+
+Deben aparecer con nombre de claude.ai, por ejemplo `claude.ai Gmail`, `claude.ai Google
+Calendar` y `claude.ai Google Drive`, todos en `Connected`. Dentro de una sesión, `/mcp` los
+lista marcados como provenientes de claude.ai.
+
+> 🔴 **Si no aparecen, casi siempre es el método de autenticación, no el conector.** Los
+> conectores **solo se cargan cuando la sesión está autenticada con la suscripción de
+> claude.ai**. No se cargan si está activa alguna de estas: `ANTHROPIC_API_KEY`,
+> `ANTHROPIC_AUTH_TOKEN`, un `apiKeyHelper`, un proveedor de terceros como Bedrock o Vertex, o
+> un `CLAUDE_CODE_OAUTH_TOKEN` generado con `claude setup-token`.
+>
+> **Diagnóstico:** correr **`/status`** dentro de una sesión para ver cuál está activa. Si es
+> una de esas, quitar la variable de entorno o el ajuste, y correr `/login` para elegir la
+> cuenta de claude.ai.
+>
+> **Ojo con esto al montar el arranque automático de la fase B:** si el servicio que lanza las
+> sesiones exporta una llave de API, el cliente pierde sus conectores **solo en las sesiones
+> lanzadas desde el teléfono**, que es donde menos lo va a entender. Dejar el servicio sin
+> esas variables.
+
+### A5c. Qué decirle al cliente, antes de que lo descubra él
+
+**Esto no es opcional, y conviene decirlo en la sesión de entrega**, porque son límites que se
+descubren tarde y en mal momento:
+
+- **Los borradores no llevan archivo adjunto.** La herramienta lo declara como limitación
+  vigente. Si necesita mandar un adjunto, el borrador se prepara y **él le adjunta el archivo
+  a mano antes de enviar**.
+- **Verificar cómo queda una respuesta antes de confiarle un hilo importante.** Conviene
+  probarlo con un correo propio la primera vez: que llegue dentro de la conversación y no como
+  correo suelto.
+- **Nada se envía solo.** El flujo natural es dejar el borrador y que él lo revise y lo mande.
+  Es una limitación que juega a favor, y vale enmarcarla así.
+- **Su organización puede bloquear herramientas.** En planes de empresa, un administrador
+  puede marcar una herramienta como bloqueada o de aprobación obligatoria, y Claude Code lo
+  respeta. Si algo "no funciona" solo para él, revisar `/mcp`.
+
+### A5d. Cómo apagarlos
+
+Si el cliente quiere que una máquina no vea sus conectores, en `settings.json`:
+
+```json
+{ "disableClaudeAiConnectors": true }
+```
+
+Basta un `true` en cualquier nivel de configuración para que ganen; un `false` de proyecto no
+revierte un `true` de usuario. Para bloquear solo uno, va por nombre en `deniedMcpServers`
+(por ejemplo `"claude.ai Gmail"`). Y para apagarlos en una sola corrida:
+`ENABLE_CLAUDEAI_MCP_SERVERS=false claude`.
+
+---
+
 # FASE B · La red y el teléfono
 
 **Lo que deja instalado:** la tailnet del cliente, el lanzador publicado y la bandeja.
@@ -541,6 +636,7 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 | 7 | Retoma | tocar un proyecto apagado | lista sus sesiones previas |
 | 8 | La bitácora | ver el recuadro de abajo, que tiene truco | el `CLAUDE.md` de ese proyecto trae una entrada nueva |
 | 9 | El runtime de documentos | las cinco pruebas de A4f | los cinco archivos salen bien, **con el Excel trayendo resultados y no celdas vacías** |
+| 10 | Los conectores | `claude mcp list` | `claude.ai Gmail`, `Google Calendar` y `Google Drive` en `Connected` |
 
 > ⚠️ **La prueba de la bitácora hay que pedirla bien o parece rota.** El umbral cuenta
 > **llamadas de herramienta, no archivos**: pedir "crea seis archivos" lo resuelve un
@@ -603,6 +699,9 @@ Decirlo antes de instalarla en casa de alguien más:
 | Cada proyecto nuevo se cuelga la primera vez | La confianza se aceptó dentro de un proyecto y no en la raíz `~/claude`, así que no se hereda. Ver 1b |
 | La bitácora nunca escribe y no avisa | `raiz_proyectos` apunta a una carpeta que no existe |
 | "Le pedí la bandeja y me habló de Gmail" | Falta el `~/.claude/CLAUDE.md` del paso 6b |
+| Los conectores no aparecen en `/mcp` | La sesión no está autenticada con la suscripción. Correr `/status`. Ver A5b |
+| No deja conectar Gmail desde `/mcp` | Es lo esperado: va en claude.ai, no en la terminal. Ver A5a |
+| El borrador salió sin el archivo adjunto | Limitación vigente del conector; se adjunta a mano antes de enviar. Ver A5c |
 | `Cannot find module 'docx'` o `'pptxgenjs'` | Falta `NODE_PATH`. Están instalados global, pero `require()` no los ve desde otra carpeta. Ver A4d |
 | `Could not load the "sharp" module` | Node 18 de los repos de Ubuntu. `sharp` pide 20.9 o mayor. Ver A4b |
 | `externally-managed-environment` al instalar con pip | Falta `--user --break-system-packages`. Ver A4c |
