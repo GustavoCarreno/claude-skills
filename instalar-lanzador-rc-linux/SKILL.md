@@ -64,32 +64,72 @@ curl -fsSL https://claude.ai/install.sh | bash
 > `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc`. Abrir una terminal nueva
 > después. Esto además reaparece en el paso 4, porque **systemd tampoco hereda ese PATH**.
 
-**Autenticar Claude Code una vez a mano**, corriendo `claude` en una terminal normal y
-aceptando sus diálogos de primer arranque. Si no, la primera sesión lanzada desde el
-teléfono se queda esperando esos diálogos **sin que nadie lo vea**, porque no hay ventana.
+### 1b. El primer arranque de Claude Code, que es donde más gente se atora
 
-> ⚠️ **En una máquina sin pantalla (un servidor, una VM, una mini PC en un rack) eso no
-> alcanza**, porque el flujo abre un navegador y luego **pide de vuelta un código pegado**.
-> La receta que sí funciona es dejar el proceso esperando dentro de tmux, para poder
-> teclearle el código después:
->
-> ```bash
-> tmux new-session -d -s login -x 500 -y 40 "claude auth login --claudeai"
-> sleep 10
-> tmux capture-pane -t login -p | grep -o 'https://claude.com/cai/oauth/authorize[^ ]*'
-> # la persona abre esa URL, copia el codigo, y se lo tecleas al proceso:
-> tmux send-keys -t login '<codigo>' Enter
-> claude auth status        # debe reportar la cuenta
-> ```
->
-> **El `-x 500` no es capricho:** con el ancho normal `capture-pane` parte la URL en varias
-> líneas y el `grep` devuelve un pedazo inservible. Y **la URL va amarrada a ese intento**
-> (trae su `code_challenge` y su `state`), así que no sirve regenerarla por otro lado ni
-> reusar una vieja.
+> 🔴 **Este paso es el que decide si el lanzador sirve o no, y es invisible cuando falla.**
+> Claude Code recién instalado hace **cinco preguntas de primer arranque**. Una sesión
+> lanzada desde el teléfono se queda detenida en la primera de ellas **sin señal de nada**:
+> el botón se enciende, la sesión existe, y del otro lado no hay más que un cursor. Medido
+> en la instalación limpia, una por una.
+
+**La receta corta: correr `claude` una vez a mano parado en la raíz de proyectos** y
+contestar las cinco. No en un proyecto, **en la raíz**, por lo del renglón 3 de la tabla.
+
+```bash
+cd ~/claude && claude          # contestar las cinco, luego /exit
+```
+
+| # | Pregunta | Qué escribe |
+|---|---|---|
+| 1 | Tema de color | `theme` en `~/.claude/settings.json` |
+| 2 | Método de inicio de sesión | la cuenta en `~/.claude.json` |
+| 3 | **¿Confías en esta carpeta?** | `projects.<ruta>.hasTrustDialogAccepted` |
+| 4 | Aceptar el modo de permisos omitidos | `skipDangerousModePermissionPrompt` |
+| 5 | Renderizador de pantalla completa | `fullscreenUpsellSeenCount` |
+
+> ⚠️ **La confianza de la carpeta se hereda del padre, y por eso hay que contestarla parado
+> en `~/claude`.** Si se contesta dentro de un proyecto, **cada proyecto nuevo que se cree
+> desde el teléfono se vuelve a atorar** en esa misma pregunta, invisible otra vez.
+> Verificado en las dos direcciones: con solo un proyecto confiado, uno nuevo se detuvo; con
+> la raíz confiada, uno recién creado arrancó directo al prompt.
+
+**En una máquina sin pantalla** (un servidor, una VM, una mini PC en un rack) hay que
+manejar ese primer arranque desde otra terminal, porque el paso de inicio de sesión **abre
+un navegador y luego pide de vuelta un código pegado**:
+
+```bash
+tmux new-session -d -s primera -x 200 -y 40 "cd ~/claude && exec claude"
+sleep 10
+tmux capture-pane -t primera -p | tail -20          # ver en qué pregunta va
+tmux send-keys -t primera Down                       # mover el cursor
+tmux send-keys -t primera Enter                      # confirmar
+```
+
+> ⚠️ **Mover y confirmar van en dos comandos, con una pausa.** Mandar `Down Enter` juntos se
+> come la flecha y confirma la opción que estaba, que en la pregunta 4 es **"No, exit"** y
+> mata la sesión.
+
+> ⚠️ **Crear el pane ancho (`-x 200` o más).** Con el ancho normal `capture-pane` parte las
+> URL largas en varias líneas y lo que se copia no sirve.
+
+> ⚠️ **`claude auth login --claudeai` NO sustituye a este paso.** Autentica de verdad
+> (`claude auth status` reporta la cuenta), pero **no marca el onboarding como hecho**, así
+> que el primer arranque vuelve a preguntar el método de inicio de sesión desde cero. Si ya
+> se autenticó por ahí, se puede saltar esa pregunta poniendo `hasCompletedOnboarding: true`
+> y `lastOnboardingVersion` en `~/.claude.json` **sin tocar el resto del archivo**, que trae
+> la credencial.
 
 > ⚠️ **No matar procesos con `pkill -f "claude auth login"`:** el patrón aparece en la propia
-> línea de comando que lo ejecuta, así que **se mata a sí mismo** (y con él la sesión SSH,
-> que devuelve 255 sin explicar nada). Matar por PID con `pgrep` primero.
+> línea de comando que lo ejecuta, así que **se mata a sí mismo**, y con él la sesión SSH,
+> que devuelve 255 sin explicar nada. Matar por PID con `pgrep` primero.
+
+> 💡 **Si el proceso de inicio de sesión tiene que sobrevivir a la terminal**, es más
+> confiable una tubería con nombre que tmux, porque no depende de que siga vivo un servidor
+> de terminal: `mkfifo /tmp/authpipe`, arrancarlo con `setsid ... < /tmp/authpipe`, sostener
+> el fifo con `setsid bash -c "sleep 3600 > /tmp/authpipe"`, y meter el código con
+> `printf '%s\n' "<codigo>" > /tmp/authpipe`. **El código va amarrado a ese intento** (trae
+> su `code_challenge` y su `state`): si el proceso muere, ese código ya no sirve y hay que
+> pedir otro.
 
 ## 2. La tailnet
 
@@ -356,6 +396,7 @@ Decirlo antes de instalarla en casa de alguien más:
 | Reiniciar el servicio mata todas las sesiones | Falta `KillMode=process` |
 | La raíz da 403 y parece roto | Es correcto sin identidad de Tailscale; medir con `/salud` |
 | El teléfono no abre la página | Tailscale del teléfono apagado, o MagicDNS apagado en la consola |
-| La primera sesión se queda colgada | Claude Code nunca se autenticó a mano; no hay ventana donde aceptar sus diálogos |
+| La primera sesión se queda colgada | Claude Code no pasó por su primer arranque; está detenido en una de las cinco preguntas, sin ventana donde verlas. Ver 1b |
+| Cada proyecto nuevo se cuelga la primera vez | La confianza se aceptó dentro de un proyecto y no en la raíz `~/claude`, así que no se hereda. Ver 1b |
 | La bitácora nunca escribe y no avisa | `raiz_proyectos` apunta a una carpeta que no existe |
 | "Le pedí la bandeja y me habló de Gmail" | Falta el `~/.claude/CLAUDE.md` del paso 6b |
