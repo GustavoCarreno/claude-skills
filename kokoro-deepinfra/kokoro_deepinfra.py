@@ -478,24 +478,46 @@ def unir(pedazos_mp3, destino, carpeta_trabajo, registrar_fallo):
     # Verificacion barata de que la union no perdio pedazos. Encontrado en la
     # revision: un pedazo corrupto puede dejar a ffmpeg en returncode 0, con
     # el destino existente, pero mas corto de lo que le toca. Si ffprobe no
-    # esta, o si no se pudo medir algun pedazo, no se verifica y sigue: mejor
-    # no verificar que tronar por falta de una herramienta opcional.
+    # esta, no se verifica y sigue: mejor no verificar que tronar por falta
+    # de una herramienta opcional.
+    #
+    # OJO (segunda vuelta de revision): "ffprobe esta pero no pudo medir un
+    # pedazo" NO es lo mismo que "ffprobe no esta". Lo primero es la señal
+    # mas fuerte de que ese pedazo esta corrupto (un mp3 truncado por debajo
+    # de ~500 bytes ni siquiera deja que ffprobe le saque su propia
+    # duracion), y apagar la verificacion completa en ese caso dejaba pasar
+    # en silencio justo la corrupcion mas severa. Se separan las dos
+    # situaciones: la ausencia de la herramienta se checa una sola vez, y a
+    # partir de ahi cualquier duracion no medible (de un pedazo o del
+    # resultado) es un fallo, no un "no se pudo verificar".
     if shutil.which("ffprobe"):
-        duraciones = [duracion_segundos(p) for p in pedazos_mp3]
-        if all(d is not None for d in duraciones):
-            esperada = sum(duraciones)
-            final = duracion_segundos(destino)
-            # Medido: una union limpia con "-c copy" no pierde nada (probado
-            # con clips de silencio, duracion final == suma exacta). El
-            # margen es angosto a propósito: uno generoso (se probo 2s fijos)
-            # dejaba pasar sin aviso el caso de la revision (3s esperados,
-            # 1.04s reales).
-            margen = max(1.0, esperada * 0.03)
-            if final is not None and final < esperada - margen:
+        duraciones = []
+        for p in pedazos_mp3:
+            d = duracion_segundos(p)
+            if d is None:
                 registrar_fallo(
-                    f"la union parece incompleta: se esperaban ~{esperada:.1f}s "
-                    f"de audio ({len(pedazos_mp3)} pedazos) y el resultado dura "
-                    f"solo {final:.1f}s. Reporta el caso, no uses este archivo.")
+                    f"ffprobe no pudo medir la duracion de {p.name}, que es "
+                    "la señal mas fuerte de que ese pedazo quedo corrupto. "
+                    "Reporta el caso, no uses este archivo.")
+            duraciones.append(d)
+
+        esperada = sum(duraciones)
+        final = duracion_segundos(destino)
+        if final is None:
+            registrar_fallo(
+                f"ffmpeg genero {destino.name} pero ffprobe no pudo medir su "
+                "duracion. Reporta el caso, no uses este archivo.")
+
+        # Medido: una union limpia con "-c copy" no pierde nada (probado con
+        # clips de silencio, duracion final == suma exacta). El margen es
+        # angosto a propósito: uno generoso (se probo 2s fijos) dejaba pasar
+        # sin aviso el caso de la revision (3s esperados, 1.04s reales).
+        margen = max(1.0, esperada * 0.03)
+        if final < esperada - margen:
+            registrar_fallo(
+                f"la union parece incompleta: se esperaban ~{esperada:.1f}s "
+                f"de audio ({len(pedazos_mp3)} pedazos) y el resultado dura "
+                f"solo {final:.1f}s. Reporta el caso, no uses este archivo.")
     return destino
 
 
