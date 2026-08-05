@@ -828,10 +828,10 @@ Decirlo antes de instalarla en casa de alguien más:
 | Reiniciar el servicio mata todas las sesiones | Falta `KillMode=process` |
 | La raíz da 403 y parece roto | Es correcto sin identidad de Tailscale; medir con `/salud` |
 | El teléfono no abre la página | Tailscale del teléfono apagado, o MagicDNS apagado en la consola |
-| La primera sesión se queda colgada | Claude Code no pasó por su primer arranque; está detenido en una de las cinco preguntas, sin ventana donde verlas. Ver 1b |
-| Cada proyecto nuevo se cuelga la primera vez | La confianza se aceptó dentro de un proyecto y no en la raíz `~/claude`, así que no se hereda. Ver 1b |
+| La primera sesión se queda colgada | Claude Code no pasó por su primer arranque; está detenido en una de las cinco preguntas, sin ventana donde verlas. Ver A2 |
+| Cada proyecto nuevo se cuelga la primera vez | La confianza se aceptó dentro de un proyecto y no en la raíz `~/claude`, así que no se hereda. Ver A2 |
 | La bitácora nunca escribe y no avisa | `raiz_proyectos` apunta a una carpeta que no existe |
-| "Le pedí la bandeja y me habló de Gmail" | Falta el `~/.claude/CLAUDE.md` del paso 6b |
+| "Le pedí la bandeja y me habló de Gmail" | Falta la sección "La bandeja" de B5 en `~/.claude/CLAUDE.md` |
 | "Le pedí sus pendientes y no sabe qué son" | Falta la sección de A7 en `~/.claude/CLAUDE.md` |
 | Los conectores no aparecen en `/mcp` | La sesión no está autenticada con la suscripción. Correr `/status`. Ver A5b |
 | No deja conectar Gmail desde `/mcp` | Es lo esperado: va en claude.ai, no en la terminal. Ver A5a |

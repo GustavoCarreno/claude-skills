@@ -820,14 +820,14 @@ Decirlo antes de instalarla en casa de un cliente:
 |---|---|
 | "No me funcionó el paso 1" | `winget` dejó el PATH viejo en esa consola; abrir una nueva |
 | `python` abre la Microsoft Store | Alias de ejecución de Python activos en Configuración |
-| La primera sesión se queda colgada | Claude Code no pasó por su primer arranque; está detenido en una de las cinco preguntas, sin ventana donde verlas. Ver 1b |
-| Cada proyecto nuevo se cuelga la primera vez | La confianza se aceptó dentro de un proyecto y no en la raíz. Ver 1b |
+| La primera sesión se queda colgada | Claude Code no pasó por su primer arranque; está detenido en una de las cinco preguntas, sin ventana donde verlas. Ver A2 |
+| Cada proyecto nuevo se cuelga la primera vez | La confianza se aceptó dentro de un proyecto y no en la raíz. Ver A2 |
 | La sesión no cierra desde el teléfono | Falta `pywinpty` |
 | La tarea programada "nunca ha ejecutado" (`267011`) | Se creó con `/SC ONSTART` sin contraseña guardada; usar `ONLOGON` |
 | Reiniciar la tarea no hace nada | `schtasks /run` sobre una tarea corriendo no reinicia; primero `/end` |
 | El nodo desaparece de la tailnet en la pantalla de contraseña | Falta `tailscale set --unattended=true` |
 | La raíz da 403 y parece roto | Es correcto sin identidad de Tailscale; medir con `/salud` |
-| Acentos rotos en el `CLAUDE.md` global | Se guardó en cp1252; usar `Set-Content -Encoding utf8` |
+| Acentos rotos en el `CLAUDE.md` global | Se guardó en cp1252. Abrir con VS Code o Notepad++ y guardar como UTF-8, o desde PowerShell: `$f="$env:USERPROFILE\.claude\CLAUDE.md"; $c=[System.IO.File]::ReadAllText($f,[System.Text.Encoding]::GetEncoding('cp1252')); [System.IO.File]::WriteAllText($f, $c, [System.Text.Encoding]::UTF8)` |
 | La bitácora nunca escribe y no avisa | `raiz_proyectos` apunta a una carpeta que no existe |
 | "Le pedí sus pendientes y no sabe qué son" | Falta la sección de A7 en `%USERPROFILE%\.claude\CLAUDE.md` |
 | Los conectores no aparecen en `/mcp` | La sesión no está autenticada con la suscripción. Correr `/status`. Ver A5b |
