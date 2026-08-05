@@ -114,3 +114,14 @@ def test_un_texto_sin_ninguna_frontera_se_corta_a_lo_bruto():
 
 def test_el_objetivo_deja_margen_bajo_el_limite_duro():
     assert OBJETIVO_TROZO < LIMITE_LLAMADA
+
+
+def test_diez_mil_caracteres_exactos_es_una_sola_llamada():
+    texto = "a" * LIMITE_LLAMADA
+    assert trocear(texto) == [texto]
+
+
+def test_diez_mil_uno_caracteres_ya_se_parte():
+    texto = "a" * (LIMITE_LLAMADA + 1)
+    pedazos = trocear(texto)
+    assert len(pedazos) > 1

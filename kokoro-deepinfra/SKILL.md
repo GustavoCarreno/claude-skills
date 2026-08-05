@@ -90,12 +90,17 @@ Por eso sigue haciendo falta la sección de abajo, que es trabajo del asistente,
 ## Textos largos: el script los parte solo, y sin perder palabras
 
 El límite de la API es 10,000 caracteres por llamada, **contados en caracteres, no en bytes**:
-el español acentuado no cuesta el doble. Una llamada cubre unos 9.7 minutos de audio. Si el
-texto no cabe, el script lo parte en frontera de párrafo o de oración (nunca a carácter fijo) y
-une los pedazos con `ffmpeg`, verificando con `ffprobe` que la duración final coincida con la
-suma de los pedazos — para atrapar el caso de que `ffmpeg` reporte éxito habiendo tirado alguno.
-A diferencia de `whisper-deepinfra`, que corta el audio a tiempo fijo y pierde una palabra en
-cada frontera, aquí el corte cae en puntuación y no se pierde nada.
+el español acentuado no cuesta el doble. Un texto de 10,000 caracteres o menos va en **una sola
+llamada**, sin necesitar `ffmpeg` — ese umbral es el límite duro de la API, no el tamaño de cada
+pedazo cuando sí hay que partir. Una llamada cubre unos 10.9 minutos de audio. Si el texto no
+cabe, el script lo parte en frontera de párrafo o de oración, apuntando cada pedazo a 9,000
+caracteres (no a los 10,000 del límite, para darle holgura a la búsqueda de esa frontera), y une
+los pedazos con `ffmpeg`, verificando con `ffprobe` que la duración final coincida con la suma
+de los pedazos — para atrapar el caso de que `ffmpeg` reporte éxito habiendo tirado alguno. A
+diferencia de `whisper-deepinfra`, que corta el audio a tiempo fijo y siempre pierde una palabra
+en cada frontera, aquí el corte cae en puntuación y en el caso normal no se pierde nada — solo
+si un tramo de miles de caracteres no trae ninguna frontera cercana (un bloque sin puntos ni
+espacios, poco realista en prosa) el corte cae a carácter fijo, como último recurso.
 
 **`ffmpeg` solo hace falta para textos de más de 10,000 caracteres.** Como lo normal son
 respuestas cortas (los pendientes del día, un resumen, unos párrafos), lo normal es no
@@ -176,7 +181,7 @@ awk -F'\t' -v d="$(date +%Y-%m-%d)" '$1 ~ d {gsub(/[$]/,"",$4); s+=$4} END {prin
 
 | Lo que sale | Qué pasó |
 |---|---|
-| `llave: NO CONFIGURADA` | Nunca se guardó (ni aquí ni en `whisper-deepinfra`). Pedirla y guardarla con `--guardar-llave` |
+| `No hay llave de DeepInfra configurada.` | Nunca se guardó (ni aquí ni en `whisper-deepinfra`). El mensaje trae los pasos para conseguirla y guardarla. (`--estado` la resume distinto, como `llave: NO CONFIGURADA`) |
 | `HTTP 401` o `403` | La llave se revocó o se pegó incompleta. Volver a guardarla |
 | `HTTP 402` | La cuenta de DeepInfra no tiene saldo. Va a https://deepinfra.com/dash/billing |
 | `voz desconocida: ...` | Nombre de voz mal escrito. En español solo hay tres: `ef_dora`, `em_alex`, `em_santa` |

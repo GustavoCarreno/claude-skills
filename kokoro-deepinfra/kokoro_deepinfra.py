@@ -41,8 +41,9 @@ ENDPOINT = "https://api.deepinfra.com/v1/openai/audio/speech"
 MODELO = "hexgrad/Kokoro-82M"
 PRECIO_POR_MILLON = 0.62  # USD por millon de caracteres
 
-# Medido el 4 ago 2026: 487 caracteres dieron 31.8 s de audio.
-CARACTERES_POR_SEGUNDO = 17.2
+# Medido el 4 ago 2026, voz em_alex (el default) leyendo prosa real: 487
+# caracteres dieron 31.8 s de audio, o sea 487 / 31.8 = 15.3 caracteres/s.
+CARACTERES_POR_SEGUNDO = 15.3
 
 RUTA_LOG = Path.home() / ".cache" / "kokoro-deepinfra.log"
 RUTA_CREDENCIALES = Path.home() / ".config" / "deepinfra" / "credentials"
@@ -332,16 +333,25 @@ def _mejor_corte(texto, objetivo):
 def trocear(texto, objetivo=OBJETIVO_TROZO):
     """Parte el texto en pedazos que quepan en una llamada.
 
+    Partir o no se decide contra el limite duro de la API (LIMITE_LLAMADA,
+    10,000 caracteres), no contra `objetivo`: un texto de 9,500 caracteres
+    cabe en una sola llamada y no debe arrastrar el prerrequisito de ffmpeg
+    solo por pasar de OBJETIVO_TROZO. Una vez que SI hay que partir, cada
+    corte SI apunta a `objetivo` (9,000 por defecto), que le da holgura a
+    _mejor_corte() para buscar una frontera de oracion en vez de cortar
+    justo al filo del limite duro.
+
     A diferencia de whisper-deepinfra, que corta el audio a tiempo fijo y
-    pierde una palabra en cada frontera, aqui el corte cae en puntuacion y no
-    se pierde nada.
+    pierde una palabra en cada frontera, aqui el corte cae en puntuacion (o,
+    a falta de ninguna frontera cercana, a caracter fijo en `objetivo`, ver
+    _mejor_corte) y en el caso normal no se pierde nada.
     """
-    if len(texto) <= objetivo:
+    if len(texto) <= LIMITE_LLAMADA:
         return [texto]
 
     pedazos = []
     resto = texto
-    while len(resto) > objetivo:
+    while len(resto) > LIMITE_LLAMADA:
         corte = _mejor_corte(resto, objetivo)
         pedazos.append(resto[:corte].strip())
         resto = resto[corte:].lstrip()
