@@ -1,3 +1,10 @@
 CLAUDE.md
 __pycache__/
 *.pyc
+
+# Los pendientes del proyecto se versionan por convencion (el historial dice
+# cuando se palomeo cada cosa), pero ESTE repo es publico. Aqui se ignoran:
+# hoy son tareas del propio repo, pero el dia que caiga algo de un cliente se
+# subiria a GitHub sin que nadie lo note. En los repos privados sigue
+# versionandose como manda la convencion.
+pendientes.md
