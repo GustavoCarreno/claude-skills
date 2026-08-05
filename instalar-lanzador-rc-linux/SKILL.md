@@ -105,6 +105,17 @@ curl -fsSL https://claude.ai/install.sh | bash
 > el botón se enciende, la sesión existe, y del otro lado no hay más que un cursor. Medido
 > en la instalación limpia, una por una.
 
+> 🔴 **Este paso completo lo tiene que correr una persona con la sesión al frente — no se
+> puede delegar a un agente ni a un asistente que actúe en tu nombre.** Es el mismo patrón
+> que explica el tropiezo de la pregunta 4, más abajo: de aquí en adelante la guía asume que
+> quien instala tiene consola y permisos plenos sobre la máquina. Las dos formas de resolver
+> la autenticación en una máquina sin pantalla que se describen más abajo (editar
+> `~/.claude.json` a mano para marcar el onboarding como hecho, o automatizar la respuesta a
+> las cinco preguntas con tmux) exigen exactamente los permisos que esas preguntas existen
+> para proteger — un agente al que se le delegue esta tarea no los tiene, y no es un error de
+> la instalación: es el diseño funcionando. Para todo lo demás de esta guía sí se puede pedir
+> ayuda; para esto, no.
+
 **La receta corta: correr `claude` una vez a mano parado en la raíz de proyectos** y
 contestar las cinco. No en un proyecto, **en la raíz**, por lo del renglón 3 de la tabla.
 
@@ -119,6 +130,14 @@ cd ~/claude && claude          # contestar las cinco, luego /exit
 | 3 | **¿Confías en esta carpeta?** | `projects.<ruta>.hasTrustDialogAccepted` |
 | 4 | Aceptar el modo de permisos omitidos | `skipDangerousModePermissionPrompt` |
 | 5 | Renderizador de pantalla completa | `fullscreenUpsellSeenCount` |
+
+> 🔴 **La pregunta 4 es una aceptación de responsabilidad, y solo la puede dar el dueño de
+> la máquina, en persona.** Acepta el modo sin confirmaciones: en él, Claude Code puede
+> crear, editar y borrar archivos, y correr comandos, sin pedir aprobación antes de cada
+> uno. No es un trámite del instalador ni algo que se conteste "por default": es una
+> decisión informada sobre lo que puede pasar en su propio equipo. Si quien tiene el teclado
+> enfrente en este momento no es el dueño de la máquina, se detiene aquí hasta que lo sea —
+> ni el instalador ni un agente delegado la aceptan en su lugar.
 
 > ⚠️ **La confianza de la carpeta se hereda del padre, y por eso hay que contestarla parado
 > en `~/claude`.** Si se contesta dentro de un proyecto, **cada proyecto nuevo que se cree
@@ -746,6 +765,16 @@ tocar una línea, que es la prueba de que el código no depende de la máquina d
 > 📌 **Si el proyecto ya tiene `pendientes.md` (A7), el lanzador ya lo pinta y lo palomea
 > con el dedo, sin configuración adicional.** No hay ningún paso extra que hacer aquí.
 
+> ⚠️ **La primera sesión de un proyecto creado con "+ Nuevo proyecto" puede repetir la
+> pregunta de confianza de A2, aunque la raíz ya esté confiada.** Es el mismo síntoma, y
+> otra vez invisible desde el teléfono: el botón se enciende, la sesión existe, y del otro
+> lado solo hay un cursor esperando esa respuesta. Se contesta igual, desde la app del
+> teléfono, dentro de esa misma sesión: sí, y ya arranca. **Mejor todavía, adelantarlo: la
+> primera vez que se estrena un proyecto nuevo, abrir su primera sesión desde la
+> computadora** (`cd ~/claude/<proyecto> && claude`, contestar, `/exit`) antes de tocarlo
+> desde el teléfono. Las sesiones siguientes de ese proyecto, y las que se lancen desde el
+> teléfono, ya arrancan directo.
+
 ## B3. Arranque automático
 
 
@@ -943,7 +972,9 @@ Decirlo antes de instalarla en casa de alguien más:
 | La raíz da 403 y parece roto | Es correcto sin identidad de Tailscale; medir con `/salud` |
 | El teléfono no abre la página | Tailscale del teléfono apagado, o MagicDNS apagado en la consola |
 | La primera sesión se queda colgada | Claude Code no pasó por su primer arranque; está detenido en una de las cinco preguntas, sin ventana donde verlas. Ver A2 |
-| Cada proyecto nuevo se cuelga la primera vez | La confianza se aceptó dentro de un proyecto y no en la raíz `~/claude`, así que no se hereda. Ver A2 |
+| Un proyecto nuevo se cuelga la primera vez, incluso con la raíz confiada | Si pasa con TODOS los proyectos nuevos: la confianza se aceptó dentro de un proyecto y no en la raíz `~/claude`, no se hereda (ver A2). Si es solo el primero de un proyecto creado desde "+ Nuevo proyecto": es normal, contestar desde el teléfono o adelantarlo abriendo la primera sesión desde la computadora (ver B2) |
+| Se le pidió a un agente que hiciera el primer arranque y se quedó a medias | A2 no se puede delegar; exige a una persona con la sesión al frente, sobre todo para la pregunta 4. Ver A2 |
+| Aparece "acepta toda la responsabilidad" y nadie sabe si contestar | Es la pregunta 4 de A2 (modo sin confirmaciones); solo la acepta el dueño de la máquina, en persona. Ver A2 |
 | La bitácora nunca escribe y no avisa | `raiz_proyectos` apunta a una carpeta que no existe |
 | "Le pedí la bandeja y me habló de Gmail" | Falta la sección "La bandeja" de B5 en `~/.claude/CLAUDE.md` |
 | "Le pedí sus pendientes y no sabe qué son" | Falta la sección de A7 en `~/.claude/CLAUDE.md` |
