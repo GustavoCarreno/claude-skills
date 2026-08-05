@@ -511,23 +511,77 @@ grep -q '^## Agenda y avance' "$claude_md" || cat >> "$claude_md" << 'EOF'
 Cada proyecto puede tener un `pendientes.md` en su raíz. El calendario reserva el bloque;
 `pendientes.md` dice si el trabajo ya se hizo.
 
-**El contrato del formato:**
+**El formato:**
+
+```markdown
+# Pendientes
+
+## Me toca a mí
+
+- [ ] Título de la tarea
+      · dónde · cuánto · cabeza
+      Nota con el contexto, y a qué bloque de calendario corresponde.
+
+## Esperando a alguien
+
+- [ ] Nombre · desde cuándo
+      Qué se espera que entregue.
+
+## Hechas
+
+- [x] Tarea ya hecha  ✓ AAAA-MM-DD HH:MM
+
+## Descartados
+
+- [-] Tarea que se decidió no hacer  ✗ AAAA-MM-DD
+      El motivo.
+```
+
+**El contrato:**
 
 - Una tarea es un renglón que casa con `^\s*-\s\[([ xX])\]\s+(.+)$`. Todo lo demás es
   decoración: encabezados, prosa, viñetas sin casilla.
-- Las notas son los renglones siguientes con más sangría. Ahí va el contexto y **a qué
-  bloque de calendario corresponde** esa tarea, para que los dos sistemas se referencien.
+- Las notas son los renglones siguientes con más sangría.
 - **Sin identificadores** en el renglón (nada de `id: 4f2a`): el archivo se tiene que poder
   leer y editar a mano.
-- Quien palomea agrega ` ✓ AAAA-MM-DD HH:MM` al final del texto, con hora local. Al
-  despalomear se quita.
-- **En Windows el archivo llega con fin de línea CRLF y hay que conservarlo** al
-  reescribir.
-- **Yo solo palomeo lo que hice yo mismo y verifiqué.** Todo lo que dependa de que tú lo
-  hagas, lo palomeas tú. Si yo palomeo trabajo ajeno, la señal deja de servir, que es justo
-  lo que se quiso arreglar.
-- **Tareas gruesas: una por entregable, no una por bloque de calendario.** Así, si un bloque
-  se mueve, la tarea sigue igual y no hay dos cosas que sincronizar.
+- Quien palomea agrega ` ✓ AAAA-MM-DD HH:MM` al final, con hora local. Al despalomear se
+  quita.
+- **En Windows el archivo llega con fin de línea CRLF y hay que conservarlo** al reescribir.
+- **Yo solo palomeo lo que hice yo mismo y verifiqué.** Lo que dependa de que tú lo hagas,
+  lo palomeas tú.
+- **Tareas gruesas: una por entregable, no una por bloque de calendario.**
+
+**`## Me toca a mí` es lo que puedes avanzar hoy; `## Esperando a alguien` es lo que depende
+de que otra persona conteste, firme, pague o entregue**, con nombre y desde cuándo.
+
+> ⚠️ **La trampa donde esto se rompe solo:** *"dar seguimiento a Fulano"* **sí te toca a ti**;
+> lo que va en `Esperando` es la entrega de Fulano, no el empujón. Solo pasa a ser espera
+> cuando ya se le empujó varias veces sin respuesta.
+
+**Los tres indicadores** de `Me toca a mí`, en su propio renglón después del título, con
+`· ` al inicio y entre ellos. Vocabulario cerrado, sin inventar palabras nuevas:
+
+| Criterio | Valores |
+|---|---|
+| **Dónde** | `computadora` · `teléfono` · `en persona` |
+| **Cuánto** | `minutos` (menos de 15) · `una hora` (hasta un par) · `sesión larga` (media jornada o más) |
+| **Cabeza** | `concentración` · `trámite` |
+
+Ante la duda, **escoger el valor mayor**: es peor prometer minutos y que se vaya la tarde.
+La **prioridad se queda fuera a propósito**, ya la expresa el orden del archivo, que tú
+controlas a mano.
+
+**Descartar** es el tercer estado, para lo que se decidió no hacer: se marca `[-]` y se
+mueve al final bajo `## Descartados`, con ` ✗ AAAA-MM-DD` y el motivo en la nota. `[-]` no
+casa con la expresión de arriba, así que deja de contar y de pintarse solo.
+
+> 🔴 **REGLA QUE NO SE PUEDE ROMPER: al reescribir un `pendientes.md`, NUNCA borrar los
+> renglones `[x]` ni `[-]`.** Son un registro que creaste con el dedo; una reescritura que se
+> los lleva por delante lo destruye en silencio, y si el archivo nunca se confirmó en git, no
+> hay forma de recuperarlo.
+>
+> **Y de ahí sale la otra: confirmar el archivo en git de verdad**, no dar por hecho que
+> alguien lo hará. "Queda versionado" solo es cierto si alguien lo confirma.
 
 Al arrancar una sesión en un proyecto, reviso su `pendientes.md` para saber qué ya se hizo,
 en vez de preguntar o suponer.
