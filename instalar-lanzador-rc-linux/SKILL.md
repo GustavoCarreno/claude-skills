@@ -431,6 +431,39 @@ revierte un `true` de usuario. Para bloquear solo uno, va por nombre en `deniedM
 
 ---
 
+## A6. Configurar el gitignore global
+
+**Paso obligatorio, aunque sea invisible.** La carpeta `salida/` (donde el asistente deja
+audio de voz sintética para descargar) y la `bandeja/` (archivos subidos desde el teléfono)
+viven dentro de los proyectos pero no son código del proyecto. Sin gitignore, un `git add -A`
+subiría estos archivos (que pueden ser material sensible: audios de junta, fotos de documentos,
+contratos) a los repos privados de GitHub sin que nadie lo note.
+
+```bash
+mkdir -p ~/.config/git
+cat >> ~/.config/git/ignore << 'EOF'
+# Archivos que el lanzador sube desde el teléfono y archivos que el asistente
+# genera para que se bajen. Viven dentro del proyecto pero no son código, y
+# pueden ser material sensible de cliente. Sin esto, un "git add -A" de
+# cualquier sesión los subiría a los repos privados sin que nadie lo note.
+bandeja/
+salida/
+EOF
+git config --global core.excludesFile ~/.config/git/ignore
+```
+
+Verificación (sin necesidad de un repositorio git):
+
+```bash
+git config --global core.excludesFile
+# Debe responder con: /home/<usuario>/.config/git/ignore
+
+grep -q "salida/" ~/.config/git/ignore && echo "✓ salida/ está en el gitignore" || echo "✗ ERROR: salida/ no encontrado"
+grep -q "bandeja/" ~/.config/git/ignore && echo "✓ bandeja/ está en el gitignore" || echo "✗ ERROR: bandeja/ no encontrado"
+```
+
+---
+
 # FASE B · La red y el teléfono
 
 **Lo que deja instalado:** la tailnet del cliente, el lanzador publicado y la bandeja.
@@ -585,40 +618,7 @@ tailscale serve status
 Queda en `https://<nombre>.<tailnet>.ts.net/`, **alcanzable solo desde la tailnet**. Esa
 es la URL que se le da a la persona.
 
-## B5. Configurar git y la bandeja
-
-### B5a. Configurar el gitignore global
-
-**Paso obligatorio, aunque sea invisible.** Si no existe, `git add -A` en cualquier proyecto
-subiría la bandeja completa (archivos sensibles del cliente: audios de junta, fotos de
-documentos) y la carpeta `salida/` (audio de voz sintética, binarios grandes) a los repos
-privados de GitHub sin que nadie lo note.
-
-```bash
-mkdir -p ~/.config/git
-cat >> ~/.config/git/ignore << 'EOF'
-# Archivos que el lanzador sube desde el teléfono y archivos que el asistente
-# genera para que se bajen. Viven dentro del proyecto pero no son código, y
-# pueden ser material sensible de cliente. Sin esto, un "git add -A" de
-# cualquier sesión los subiría a los repos privados sin que nadie lo note.
-bandeja/
-salida/
-EOF
-git config --global core.excludesFile ~/.config/git/ignore
-```
-
-Verificar que funciona:
-
-```bash
-touch ~/claude/prueba_gitignore/salida/prueba.txt
-git -C ~/claude/prueba_gitignore check-ignore -v salida/prueba.txt
-rm ~/claude/prueba_gitignore/salida/prueba.txt
-```
-
-El `check-ignore` debe responder con la línea de ignore global. El `git status --short`
-no debe mencionar `salida/`.
-
-### B5b. Decirle a las sesiones qué es la bandeja
+## B5. Decirle a las sesiones qué es la bandeja
 
 
 **Paso corto y fácil de olvidar, y sin él la mitad del valor del lanzador no se usa.** El
@@ -650,9 +650,9 @@ que vea la bandeja. Debe encontrarlo sin que le digas la ruta.
 
 ## 7. Verificación, en orden
 
-> **Cómo se reparte por fases:** los renglones 1, 2, 8 y 9 cierran la **fase A** (el servicio
-> local, la bitácora y el runtime de documentos); del 3 al 7 cierran la **fase B**, y
-> necesitan el teléfono. Si solo se contrató la fase A, la verificación termina en el 9 y eso
+> **Cómo se reparte por fases:** los renglones 1, 2, 9 y 10 cierran la **fase A** (el gitignore, el servicio
+> local, la bitácora y el runtime de documentos); del 3 al 8 cierran la **fase B**, y
+> necesitan el teléfono. Si solo se contrató la fase A, la verificación termina en el 10 y eso
 > es una entrega completa.
 
 
@@ -660,16 +660,17 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 
 | # | Qué | Cómo | Esperado |
 |---|---|---|---|
-| 1 | El servicio vive | `systemctl is-active rc-launcher rc-watcher.timer` | `active` las dos |
-| 2 | La app responde | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8765/salud` | `200` |
-| 3 | La puerta cierra | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8765/` | **`403`** |
-| 4 | Se ve desde el teléfono | abrir la URL de la tailnet | aparecen los proyectos |
-| 5 | Lanza | tocar un proyecto → "Nueva sesión" | en 5 s el botón queda encendido y la sesión aparece en la app de Claude |
-| 6 | Cierra | tocar el proyecto → "Terminar sesión" | desaparece de la app |
-| 7 | Retoma | tocar un proyecto apagado | lista sus sesiones previas |
-| 8 | La bitácora | ver el recuadro de abajo, que tiene truco | el `CLAUDE.md` de ese proyecto trae una entrada nueva |
-| 9 | El runtime de documentos | las cinco pruebas de A4f | los cinco archivos salen bien, **con el Excel trayendo resultados y no celdas vacías** |
-| 10 | Los conectores | `claude mcp list` | `claude.ai Gmail`, `Google Calendar` y `Google Drive` en `Connected` |
+| 1 | Gitignore global | `git config --global core.excludesFile` + `grep "salida/" ~/.config/git/ignore` | ruta + sin error |
+| 2 | El servicio vive | `systemctl is-active rc-launcher rc-watcher.timer` | `active` las dos |
+| 3 | La app responde | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8765/salud` | `200` |
+| 4 | La puerta cierra | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8765/` | **`403`** |
+| 5 | Se ve desde el teléfono | abrir la URL de la tailnet | aparecen los proyectos |
+| 6 | Lanza | tocar un proyecto → "Nueva sesión" | en 5 s el botón queda encendido y la sesión aparece en la app de Claude |
+| 7 | Cierra | tocar el proyecto → "Terminar sesión" | desaparece de la app |
+| 8 | Retoma | tocar un proyecto apagado | lista sus sesiones previas |
+| 9 | La bitácora | ver el recuadro de abajo, que tiene truco | el `CLAUDE.md` de ese proyecto trae una entrada nueva |
+| 10 | El runtime de documentos | las cinco pruebas de A4f | los cinco archivos salen bien, **con el Excel trayendo resultados y no celdas vacías** |
+| 11 | Los conectores | `claude mcp list` | `claude.ai Gmail`, `Google Calendar` y `Google Drive` en `Connected` |
 
 > ⚠️ **La prueba de la bitácora hay que pedirla bien o parece rota.** El umbral cuenta
 > **llamadas de herramienta, no archivos**: pedir "crea seis archivos" lo resuelve un

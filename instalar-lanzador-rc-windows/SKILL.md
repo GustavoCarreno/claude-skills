@@ -436,6 +436,41 @@ revierte un `true` de usuario. Para bloquear solo uno, va por nombre en `deniedM
 
 ---
 
+## A6. Configurar el gitignore global
+
+**Paso obligatorio, aunque sea invisible.** La carpeta `salida/` (donde el asistente deja
+audio de voz sintética para descargar) y la `bandeja/` (archivos subidos desde el teléfono)
+viven dentro de los proyectos pero no son código del proyecto. Sin gitignore, un `git add -A`
+subiría estos archivos (que pueden ser material sensible: audios de junta, fotos de documentos,
+contratos) a los repos privados de GitHub sin que nadie lo note.
+
+```powershell
+$ignore = "$env:USERPROFILE\.config\git\ignore"
+New-Item -ItemType Directory -Force -Path (Split-Path $ignore) | Out-Null
+@"
+# Archivos que el lanzador sube desde el teléfono y archivos que el asistente
+# genera para que se bajen. Viven dentro del proyecto pero no son código, y
+# pueden ser material sensible de cliente. Sin esto, un "git add -A" de
+# cualquier sesión los subiría a los repos privados sin que nadie lo note.
+bandeja/
+salida/
+"@ | Add-Content -Path $ignore -Encoding utf8
+git config --global core.excludesFile $ignore
+```
+
+Verificación (sin necesidad de un repositorio git):
+
+```powershell
+git config --global core.excludesFile
+# Debe responder con: C:\Users\<usuario>\.config\git\ignore
+
+$ignore = "$env:USERPROFILE\.config\git\ignore"
+if (Select-String -Path $ignore -Pattern "salida/" -Quiet) { "✓ salida/ está en el gitignore" } else { "✗ ERROR: salida/ no encontrado" }
+if (Select-String -Path $ignore -Pattern "bandeja/" -Quiet) { "✓ bandeja/ está en el gitignore" } else { "✗ ERROR: bandeja/ no encontrado" }
+```
+
+---
+
 # FASE B · La red y el teléfono
 
 **Lo que deja instalado:** la tailnet del cliente, el lanzador publicado y la bandeja.
@@ -565,41 +600,7 @@ schtasks /Run /TN "rc-launcher"
 Queda en `https://<nombre-del-equipo>.<tailnet>.ts.net/`, **alcanzable solo desde la
 tailnet**. Esa es la URL que se le da al usuario.
 
-## B5. Configurar git y la bandeja
-
-### B5a. Configurar el gitignore global
-
-**Paso obligatorio, aunque sea invisible.** Si no existe, `git add -A` en cualquier proyecto
-subiría la bandeja completa (archivos sensibles del cliente: audios de junta, fotos de
-documentos) y la carpeta `salida/` (audio de voz sintética, binarios grandes) a los repos
-privados de GitHub sin que nadie lo note.
-
-```powershell
-$ignore = "$env:USERPROFILE\.config\git\ignore"
-New-Item -ItemType Directory -Force -Path (Split-Path $ignore) | Out-Null
-@"
-# Archivos que el lanzador sube desde el teléfono y archivos que el asistente
-# genera para que se bajen. Pueden ser material sensible de cliente.
-bandeja/
-salida/
-"@ | Add-Content -Path $ignore -Encoding utf8
-git config --global core.excludesFile $ignore
-```
-
-Verificar que funciona desde PowerShell:
-
-```powershell
-$test = "$env:USERPROFILE\claude\prueba_gitignore\salida\prueba.txt"
-New-Item -Force -Path (Split-Path $test) | Out-Null
-"" | Out-File -Path $test
-git -C "$env:USERPROFILE\claude\prueba_gitignore" check-ignore -v salida/prueba.txt
-Remove-Item $test
-```
-
-El `check-ignore` debe responder con la línea de ignore global. El `git status --short`
-no debe mencionar `salida/`.
-
-### B5b. Decirle a las sesiones qué es la bandeja
+## B5. Decirle a las sesiones qué es la bandeja
 
 
 **Paso corto y fácil de olvidar, y sin él la mitad del valor del lanzador no se usa.** El
@@ -631,23 +632,24 @@ propia**, salvo que lo pida.
 
 ## 7. Verificación, en orden
 
-> **Cómo se reparte por fases:** los renglones 1, 2, 7 y 8 cierran la **fase A** (el servicio
-> local, la bitácora y el runtime de documentos); del 3 al 6 cierran la **fase B**, y
-> necesitan el teléfono. Si solo se contrató la fase A, la verificación termina en el 8 y eso
+> **Cómo se reparte por fases:** los renglones 1, 2, 8, 9 y 10 cierran la **fase A** (gitignore, el servicio
+> local, la bitácora y el runtime de documentos); del 3 al 7 cierran la **fase B**, y
+> necesitan el teléfono. Si solo se contrató la fase A, la verificación termina en el 10 y eso
 > es una entrega completa.
 
 
 | # | Qué | Cómo | Esperado |
 |---|---|---|---|
-| 1 | La app responde | `Invoke-WebRequest http://127.0.0.1:8765/salud` | 200 |
-| 2 | La puerta cierra | `Invoke-WebRequest http://127.0.0.1:8765/` | **403** |
-| 3 | Se ve desde el teléfono | abrir la URL de la tailnet | aparecen los proyectos |
-| 4 | Lanza | tocar un proyecto → "Nueva sesión" | en 5 s el botón queda encendido y la sesión aparece en la app de Claude |
-| 5 | Cierra | tocar el proyecto → "Terminar sesión" | desaparece de la app |
-| 6 | Retoma | tocar un proyecto apagado | lista sus sesiones previas |
-| 7 | La bitácora | ver el recuadro de abajo, que tiene truco | el `CLAUDE.md` de ese proyecto trae una entrada nueva |
-| 8 | El runtime de documentos | las cinco pruebas de A4g | los cinco archivos salen bien, **con el Excel trayendo resultados y no celdas vacías** |
-| 9 | Los conectores | `claude mcp list` | `claude.ai Gmail`, `Google Calendar` y `Google Drive` en `Connected` |
+| 1 | Gitignore global | `git config --global core.excludesFile` + `Select-String ... "salida/"` | ruta + sin error |
+| 2 | La app responde | `Invoke-WebRequest http://127.0.0.1:8765/salud` | 200 |
+| 3 | La puerta cierra | `Invoke-WebRequest http://127.0.0.1:8765/` | **403** |
+| 4 | Se ve desde el teléfono | abrir la URL de la tailnet | aparecen los proyectos |
+| 5 | Lanza | tocar un proyecto → "Nueva sesión" | en 5 s el botón queda encendido y la sesión aparece en la app de Claude |
+| 6 | Cierra | tocar el proyecto → "Terminar sesión" | desaparece de la app |
+| 7 | Retoma | tocar un proyecto apagado | lista sus sesiones previas |
+| 8 | La bitácora | ver el recuadro de abajo, que tiene truco | el `CLAUDE.md` de ese proyecto trae una entrada nueva |
+| 9 | El runtime de documentos | las cinco pruebas de A4g | los cinco archivos salen bien, **con el Excel trayendo resultados y no celdas vacías** |
+| 10 | Los conectores | `claude mcp list` | `claude.ai Gmail`, `Google Calendar` y `Google Drive` en `Connected` |
 
 > ⚠️ **El 403 del renglón 2 es la respuesta correcta, no una falla.** La raíz exige la
 > identidad que inyecta Tailscale, que en local no existe. **Medir salud con `/salud`, nunca
