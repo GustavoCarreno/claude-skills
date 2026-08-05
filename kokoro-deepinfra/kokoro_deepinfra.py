@@ -370,22 +370,35 @@ def trocear(texto, objetivo=OBJETIVO_TROZO):
 #
 # Kokoro (via DeepInfra) escribe, en el PRIMER cuadro MPEG de cada mp3 que
 # entrega, una cabecera Xing/Info (el formato estandar que LAME usa para
-# declarar cuadros totales y bytes totales) con lo que llevaba generado al
-# arrancar, y nunca la actualiza. Medido el 4 ago 2026 con un audio real de
-# Kokoro: la cabecera declaraba 175 cuadros (4.20s, 31,272 bytes) para un
-# archivo de 2,129 cuadros reales (51.1s, 408,768 bytes). Un reproductor que
-# le cree a la cabecera (la mayoria: es la razon de ser del formato, evitarle
-# al reproductor tener que decodificar el archivo entero para saber cuanto
-# dura) trunca la reproduccion en el segundo 4. `ffmpeg`/`ffprobe` no caen en
-# esto porque decodifican cuadro por cuadro sin importarles la cabecera, por
-# eso el defecto paso inadvertido durante el desarrollo.
+# declarar cuadros totales, bytes totales y una tabla de posiciones) con lo
+# que llevaba generado al arrancar, y nunca la actualiza. Medido el 4 ago
+# 2026 con un audio real de Kokoro: la cabecera declaraba 175 cuadros
+# (4.20s, 31,272 bytes) para un archivo de 2,384 cuadros reales (57.2s,
+# 408,768 bytes). Un reproductor que le cree a la cabecera (la mayoria: es
+# la razon de ser del formato, evitarle al reproductor tener que decodificar
+# el archivo entero para saber cuanto dura) trunca la reproduccion en el
+# segundo 4. `ffmpeg`/`ffprobe` no caen en esto porque decodifican cuadro
+# por cuadro sin importarles la cabecera, por eso el defecto paso
+# inadvertido durante el desarrollo, y por eso tampoco sirven para verificar
+# el arreglo: hay que leer la cabecera a mano, como la lee un reproductor.
 #
-# El arreglo: quitar el cuadro completo que trae la cabecera, no corregirla.
-# El flujo es de tasa constante (CBR), asi que sin cabecera Xing cualquier
-# reproductor calcula la duracion dividiendo tamanio de archivo entre tasa de
-# bits, y le sale bien. Quitar el cuadro es ademas mas simple que reescribir
-# sus campos, y el cuadro en si no es audio real: es un cuadro de relleno que
-# LAME siembra solo para cargar esta metadata.
+# INTENTO ANTERIOR (insuficiente, ver docs/.../arreglo-encabezado-xing.md):
+# quitar el cuadro completo, razonando que sin cabecera Xing un reproductor
+# calcula la duracion dividiendo tamanio de archivo entre tasa de bits. Ese
+# razonamiento solo vale con tasa CONSTANTE, y el flujo de Kokoro es de tasa
+# VARIABLE: midiendo el mismo archivo real, los cuadros van de 8 a 160 kbps.
+# Sin la cabecera, un reproductor asume la tasa del PRIMER cuadro (8 kbps
+# aqui) para todo el archivo, y announce una duracion inflada (los 6:50
+# reportados por el usuario para 57s reales son exactamente eso: 57.2s reales
+# * ~160/8 ~= tamanio/8kbps).
+#
+# El arreglo correcto: REESCRIBIR la cabecera con los valores verdaderos, no
+# quitarla. Un flujo de tasa variable NECESITA esa cabecera; es justo para
+# eso que existe. Se recorre el archivo cuadro por cuadro (la misma cuenta
+# que hace un decodificador real) para saber cuantos cuadros y bytes hay de
+# verdad, se escriben esos numeros en los campos de la cabecera, y se
+# reconstruye la tabla de posiciones (TOC) para que arrastrar la barra de
+# reproduccion siga cayendo en el lugar correcto.
 
 # [MPEG1 Layer I, II, III], indice 0 = "free", no usable para calcular tamanio.
 _BITRATES_V1_L1 = (0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448)
@@ -496,15 +509,64 @@ def _localizar_primer_frame(datos, desde):
     return None, None
 
 
-def quitar_xing(datos):
-    """Quita el cuadro Xing/Info inicial de un mp3, si lo trae.
+# Banderas del campo `flags` de la cabecera Xing/Info (formato LAME
+# estandar): que campos opcionales trae, en este orden fijo.
+_XING_FRAMES = 0x0001
+_XING_BYTES = 0x0002
+_XING_TOC = 0x0004
+_XING_CALIDAD = 0x0008
 
-    Conservador a proposito: localiza el primer cuadro MPEG (tras cualquier
-    ID3v2 inicial) y solo lo quita si en el offset exacto que le corresponde
-    segun su version/canal trae de verdad la firma "Xing" o "Info". Ante
-    cualquier duda (cabecera irreconocible, tamanio que se sale del archivo,
-    firma ausente) devuelve `datos` intactos: es preferible dejar pasar una
-    cabecera mentirosa que corromper un archivo bueno.
+
+def _recorrer_cuadros(datos, desde):
+    """Camina cuadro por cuadro desde `desde` hasta donde deje de poder.
+
+    Es la misma cuenta que hace un decodificador real: cada cuadro se valida
+    por su propia cabecera de 4 bytes (la tasa de bits puede cambiar de un
+    cuadro a otro, es justo lo que hace variable al flujo), y su tamanio
+    dice donde empieza el siguiente. Se detiene, SIN error, en el primer
+    punto que no parsea como cuadro MPEG valido o que se saldria del
+    archivo: eso es el final del audio real (o basura/metadata de cola, que
+    tampoco hay que contar como audio).
+
+    Devuelve (offsets, total_bytes): `offsets[i]` es la posicion, relativa a
+    `desde`, donde empieza el cuadro i-esimo (0-indexado, el cuadro 0 es el
+    que trae la propia cabecera Xing si la hay), y `total_bytes` es cuanto
+    ocupan todos los cuadros caminados juntos.
+    """
+    offsets = []
+    cursor = desde
+    n = len(datos)
+    while cursor + 4 <= n:
+        info = _analizar_cabecera_frame(datos[cursor:cursor + 4])
+        if info is None:
+            break
+        tamanio = info["tamanio"]
+        if tamanio <= 0 or cursor + tamanio > n:
+            break
+        offsets.append(cursor - desde)
+        cursor += tamanio
+    return offsets, cursor - desde
+
+
+def reescribir_xing(datos):
+    """Reescribe (NO quita) el cuadro Xing/Info inicial de un mp3, si lo trae.
+
+    Corrige los campos que declaran cuadros totales, bytes totales y la
+    tabla de posiciones (TOC) con los valores reales, obtenidos recorriendo
+    el archivo cuadro por cuadro. Ver la nota extensa arriba: un flujo de
+    tasa variable como el de Kokoro NECESITA esta cabecera, asi que quitarla
+    cambia una mentira por otra.
+
+    Conservador a proposito, con el mismo criterio que tenia la version
+    anterior de esta funcion cuando quitaba el cuadro: localiza el primer
+    cuadro MPEG (tras cualquier ID3v2 inicial), y solo toca algo si en el
+    offset exacto que le corresponde segun su version/canal trae de verdad
+    la firma "Xing" o "Info" Y declara el campo de cuadros (el que de verdad
+    mueve la aguja de la duracion declarada). Ante cualquier cosa que no
+    calce exactamente con lo esperado (cabecera irreconocible, tamanio que
+    se sale del archivo, campos que no caben en el cuadro, mas de 4 GB de
+    audio) devuelve `datos` intactos: es preferible entregar un archivo con
+    la duracion mal declarada que uno corrupto.
     """
     if len(datos) < 4:
         return datos
@@ -518,7 +580,7 @@ def quitar_xing(datos):
     if offset_tag is None:
         return datos
     inicio_tag = pos + 4 + offset_tag
-    if inicio_tag + 4 > len(datos):
+    if inicio_tag + 8 > len(datos):
         return datos
     if datos[inicio_tag:inicio_tag + 4] not in (b"Xing", b"Info"):
         return datos
@@ -527,7 +589,56 @@ def quitar_xing(datos):
     if info["tamanio"] <= 0 or fin_frame > len(datos):
         return datos
 
-    return datos[:pos] + datos[fin_frame:]
+    flags = int.from_bytes(datos[inicio_tag + 4:inicio_tag + 8], "big")
+    cursor_campo = inicio_tag + 8
+    frames_offset = bytes_offset = toc_offset = None
+    if flags & _XING_FRAMES:
+        frames_offset = cursor_campo
+        cursor_campo += 4
+    if flags & _XING_BYTES:
+        bytes_offset = cursor_campo
+        cursor_campo += 4
+    if flags & _XING_TOC:
+        toc_offset = cursor_campo
+        cursor_campo += 100
+    if flags & _XING_CALIDAD:
+        cursor_campo += 4  # indicador de calidad: no se toca, no hay como recalcularlo
+
+    # Los campos que las banderas dicen que trae tienen que caber dentro del
+    # propio cuadro (y del archivo). Si no caben, esto no es la cabecera que
+    # se espera y es mas seguro no tocarla.
+    if cursor_campo > fin_frame or cursor_campo > len(datos):
+        return datos
+
+    # Sin el campo de cuadros no hay nada que corregir: es el que un
+    # reproductor usa para calcular la duracion (cuadros * muestras por
+    # cuadro / frecuencia de muestreo). Tocar bytes o TOC sin el no arregla
+    # el sintoma que motivo este arreglo.
+    if frames_offset is None:
+        return datos
+
+    offsets, total_bytes = _recorrer_cuadros(datos, pos)
+    total_cuadros = len(offsets)
+    # El propio cuadro Xing ya se cuenta como el primero de `offsets` (el
+    # recorrido empieza justo en `pos`). Si ni siquiera ese se pudo contar,
+    # o si el recorrido midio menos que el tamanio ya validado de ese mismo
+    # cuadro, algo no calza con lo de arriba: mejor no tocar nada.
+    if total_cuadros < 1 or total_bytes < info["tamanio"] or total_bytes > 0xFFFFFFFF:
+        return datos
+
+    salida = bytearray(datos)
+    salida[frames_offset:frames_offset + 4] = total_cuadros.to_bytes(4, "big")
+    if bytes_offset is not None:
+        salida[bytes_offset:bytes_offset + 4] = total_bytes.to_bytes(4, "big")
+    if toc_offset is not None:
+        tabla = bytearray(100)
+        for i in range(100):
+            idx = min(int(i * total_cuadros / 100), total_cuadros - 1)
+            valor = (offsets[idx] * 256 // total_bytes) if total_bytes > 0 else 0
+            tabla[i] = min(255, max(0, valor))
+        salida[toc_offset:toc_offset + 100] = tabla
+
+    return bytes(salida)
 
 
 def parece_mp3(datos):
@@ -639,11 +750,11 @@ def hablar_pedazo(texto, llave, voz, velocidad, registrar_fallo, intentos=3):
                                  "parecen mp3 (sin firma ID3 ni cabecera MPEG)")
             else:
                 # Se aplica aqui, a CADA pedazo que llega de la API (no solo
-                # al archivo final): asi el camino de un solo pedazo y el de
-                # varios (que luego se unen con ffmpeg) quedan cubiertos, y
-                # la union parte de pedazos que ya no traen la cabecera que
-                # miente sobre su propia duracion. Ver quitar_xing().
-                return quitar_xing(audio)
+                # al archivo final: ver el segundo llamado en main(), tras
+                # unir()). Este primer llamado deja cada pedazo, por su
+                # cuenta, con una cabecera que ya describe su propia
+                # duracion correctamente. Ver reescribir_xing().
+                return reescribir_xing(audio)
         except urllib.error.HTTPError as e:
             detalle = e.read().decode("utf-8", "replace")[:400].replace("\n", " ")
             if e.code in (401, 403):
@@ -959,6 +1070,19 @@ def main():
 
     if not ruta_salida.exists() or ruta_salida.stat().st_size == 0:
         registrar_fallo("el MP3 salio vacio. Reporta el caso.")
+
+    # Segundo llamado a reescribir_xing(), ahora sobre el archivo FINAL que
+    # queda en disco, no solo sobre cada pedazo (el llamado de arriba, en
+    # hablar_pedazo). Importa cuando hubo varios pedazos: `unir()` los pega
+    # con "-c copy", asi que el resultado hereda tal cual la cabecera del
+    # primer pedazo, que solo describe la duracion de ESE pedazo. Sin este
+    # segundo llamado, el archivo unido volveria a mentir. En el caso de un
+    # solo pedazo es un no-op (ya quedo correcto arriba), pero es mas simple
+    # aplicarlo siempre que distinguir los dos caminos.
+    datos_finales = ruta_salida.read_bytes()
+    datos_arreglados = reescribir_xing(datos_finales)
+    if datos_arreglados != datos_finales:
+        ruta_salida.write_bytes(datos_arreglados)
 
     anotar_log(origen, args.voz, caracteres, costo, ruta_salida, ok=True)
     mb = ruta_salida.stat().st_size / 1024 / 1024
