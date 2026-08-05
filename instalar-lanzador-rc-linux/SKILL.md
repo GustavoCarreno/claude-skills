@@ -33,6 +33,7 @@ orden. Para Windows existe el equivalente en `instalar-lanzador-rc-windows`.
 | **La bitácora se escribe sola** | Al cerrar, el `CLAUDE.md` del proyecto queda actualizado sin pedirlo |
 | **Documentos de oficina de verdad** | Pide un Word, un Excel con fórmulas o una presentación y salen archivos que abren en Office |
 | **Su correo, su calendario y su Drive** | Pregunta qué le escribieron o pide que le agenden algo, y se resuelve sin salir de la conversación |
+| **Sus pendientes por proyecto** | Ve qué falta y palomea lo hecho, desde la computadora o desde el teléfono |
 
 ## El reparto, y conviene decirlo antes de empezar
 
@@ -482,6 +483,56 @@ grep -q "bandeja/" "$ignore" && echo "✓ bandeja/ está en el gitignore" || ech
 
 ---
 
+## A7. Sus pendientes por proyecto, el si-ya-se-hizo
+
+**En dos renglones: el calendario aparta el rato, y `pendientes.md` en la raíz de cada
+proyecto dice si ya se hizo.** La mitad del calendario ya quedó montada en A5 (los
+conectores de Google Calendar / Microsoft 365); esta sección solo la referencia, no la
+repite.
+
+**Por qué va en la fase A y no en la B: funciona sin lanzador.** El archivo y el asistente
+bastan, y el teléfono solo agrega el dedo. Un cliente al que su área de sistemas le bloquee
+Tailscale se queda solo con la fase A y **conserva la disciplina completa**.
+
+Se cierra igual que la bandeja de B5, más abajo: sembrando la convención en
+`~/.claude/CLAUDE.md`, que aplica a todos los proyectos de esa máquina:
+
+```markdown
+
+## Agenda y avance: el calendario dice CUÁNDO, `pendientes.md` dice SI YA SE HIZO
+
+Cada proyecto puede tener un `pendientes.md` en su raíz. El calendario reserva el bloque;
+`pendientes.md` dice si el trabajo ya se hizo.
+
+**El contrato del formato:**
+
+- Una tarea es un renglón que casa con `^\s*-\s\[([ xX])\]\s+(.+)$`. Todo lo demás es
+  decoración: encabezados, prosa, viñetas sin casilla.
+- Las notas son los renglones siguientes con más sangría. Ahí va el contexto y **a qué
+  bloque de calendario corresponde** esa tarea, para que los dos sistemas se referencien.
+- **Sin identificadores** en el renglón (nada de `id: 4f2a`): el archivo se tiene que poder
+  leer y editar a mano.
+- Quien palomea agrega ` ✓ AAAA-MM-DD HH:MM` al final del texto, con hora local. Al
+  despalomear se quita.
+- **Yo solo palomeo lo que hice yo mismo y verifiqué.** Todo lo que dependa de que tú lo
+  hagas, lo palomeas tú. Si yo palomeo trabajo ajeno, la señal deja de servir, que es justo
+  lo que se quiso arreglar.
+- **Tareas gruesas: una por entregable, no una por bloque de calendario.** Así, si un bloque
+  se mueve, la tarea sigue igual y no hay dos cosas que sincronizar.
+
+Al arrancar una sesión en un proyecto, reviso su `pendientes.md` para saber qué ya se hizo,
+en vez de preguntar o suponer.
+```
+
+Verificación: crear un `pendientes.md` de prueba con una tarea, abrir una sesión nueva en
+ese proyecto y pedirle que revise sus pendientes. Debe encontrar la tarea sin que se la
+describas. Rápido y sin abrir sesión: `grep -q "pendientes.md" ~/.claude/CLAUDE.md`.
+
+Con eso basta para que el asistente cree, redacte, edite y palomee pendientes con sus
+herramientas de siempre, sin esperar al lanzador.
+
+---
+
 # FASE B · La red y el teléfono
 
 **Lo que deja instalado:** la tailnet del cliente, el lanzador publicado y la bandeja.
@@ -565,6 +616,9 @@ cd ~/rc-launcher && .venv/bin/python -m pytest -q
 
 Debe pasar la suite completa. En la VM limpia pasaron 327 de 327 en medio segundo, sin
 tocar una línea, que es la prueba de que el código no depende de la máquina donde nació.
+
+> 📌 **Si el proyecto ya tiene `pendientes.md` (A7), el lanzador ya lo pinta y lo palomea
+> con el dedo, sin configuración adicional.** No hay ningún paso extra que hacer aquí.
 
 ## B3. Arranque automático
 
@@ -668,10 +722,10 @@ que vea la bandeja. Debe encontrarlo sin que le digas la ruta.
 
 ## 7. Verificación, en orden
 
-> **Cómo se reparte por fases:** los renglones 1, 2, 9, 10 y 11 cierran la **fase A** (el
-> gitignore, el servicio local, la bitácora, el runtime de documentos y los conectores); del 3
-> al 8 cierran la **fase B**, y necesitan el teléfono. Si solo se contrató la fase A, la
-> verificación termina en el 11 y eso es una entrega completa.
+> **Cómo se reparte por fases:** los renglones 1, 2, 3, 10, 11 y 12 cierran la **fase A** (el
+> gitignore, la convención de pendientes, el servicio local, la bitácora, el runtime de
+> documentos y los conectores); del 4 al 9 cierran la **fase B**, y necesitan el teléfono. Si
+> solo se contrató la fase A, la verificación termina en el 12 y eso es una entrega completa.
 
 
 Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ninguno.
@@ -679,16 +733,17 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 | # | Qué | Cómo | Esperado |
 |---|---|---|---|
 | 1 | Gitignore global | `git config --global core.excludesFile` + `grep "salida/" ~/.config/git/ignore` | ruta + sin error |
-| 2 | El servicio vive | `systemctl is-active rc-launcher rc-watcher.timer` | `active` las dos |
-| 3 | La app responde | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8765/salud` | `200` |
-| 4 | La puerta cierra | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8765/` | **`403`** |
-| 5 | Se ve desde el teléfono | abrir la URL de la tailnet | aparecen los proyectos |
-| 6 | Lanza | tocar un proyecto → "Nueva sesión" | en 5 s el botón queda encendido y la sesión aparece en la app de Claude |
-| 7 | Cierra | tocar el proyecto → "Terminar sesión" | desaparece de la app |
-| 8 | Retoma | tocar un proyecto apagado | lista sus sesiones previas |
-| 9 | La bitácora | ver el recuadro de abajo, que tiene truco | el `CLAUDE.md` de ese proyecto trae una entrada nueva |
-| 10 | El runtime de documentos | las cinco pruebas de A4f | los cinco archivos salen bien, **con el Excel trayendo resultados y no celdas vacías** |
-| 11 | Los conectores | `claude mcp list` | `claude.ai Gmail`, `Google Calendar` y `Google Drive` en `Connected` |
+| 2 | Convención de pendientes | `grep -q "pendientes.md" ~/.claude/CLAUDE.md` | encuentra la sección |
+| 3 | El servicio vive | `systemctl is-active rc-launcher rc-watcher.timer` | `active` las dos |
+| 4 | La app responde | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8765/salud` | `200` |
+| 5 | La puerta cierra | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8765/` | **`403`** |
+| 6 | Se ve desde el teléfono | abrir la URL de la tailnet | aparecen los proyectos |
+| 7 | Lanza | tocar un proyecto → "Nueva sesión" | en 5 s el botón queda encendido y la sesión aparece en la app de Claude |
+| 8 | Cierra | tocar el proyecto → "Terminar sesión" | desaparece de la app |
+| 9 | Retoma | tocar un proyecto apagado | lista sus sesiones previas |
+| 10 | La bitácora | ver el recuadro de abajo, que tiene truco | el `CLAUDE.md` de ese proyecto trae una entrada nueva |
+| 11 | El runtime de documentos | las cinco pruebas de A4f | los cinco archivos salen bien, **con el Excel trayendo resultados y no celdas vacías** |
+| 12 | Los conectores | `claude mcp list` | `claude.ai Gmail`, `Google Calendar` y `Google Drive` en `Connected` |
 
 > ⚠️ **La prueba de la bitácora hay que pedirla bien o parece rota.** El umbral cuenta
 > **llamadas de herramienta, no archivos**: pedir "crea seis archivos" lo resuelve un
@@ -702,7 +757,7 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 > la guarda que evita el bucle de reescribir la bitácora para callar una alarma que la
 > propia escritura vuelve a encender. Lo que hay que mirar es el tamaño del `CLAUDE.md`.
 
-> ⚠️ **El 403 del renglón 3 es la respuesta correcta, no una falla.** La raíz exige la
+> ⚠️ **El 403 del renglón 5 es la respuesta correcta, no una falla.** La raíz exige la
 > identidad que inyecta Tailscale (`Tailscale-User-Login`), que por `curl` desde la propia
 > máquina no existe. **Usar `/salud` para medir salud, nunca la raíz.**
 
@@ -751,6 +806,7 @@ Decirlo antes de instalarla en casa de alguien más:
 | Cada proyecto nuevo se cuelga la primera vez | La confianza se aceptó dentro de un proyecto y no en la raíz `~/claude`, así que no se hereda. Ver 1b |
 | La bitácora nunca escribe y no avisa | `raiz_proyectos` apunta a una carpeta que no existe |
 | "Le pedí la bandeja y me habló de Gmail" | Falta el `~/.claude/CLAUDE.md` del paso 6b |
+| "Le pedí sus pendientes y no sabe qué son" | Falta la sección de A7 en `~/.claude/CLAUDE.md` |
 | Los conectores no aparecen en `/mcp` | La sesión no está autenticada con la suscripción. Correr `/status`. Ver A5b |
 | No deja conectar Gmail desde `/mcp` | Es lo esperado: va en claude.ai, no en la terminal. Ver A5a |
 | El borrador salió sin el archivo adjunto | Limitación vigente del conector; se adjunta a mano antes de enviar. Ver A5c |

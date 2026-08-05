@@ -44,6 +44,7 @@ está verificado más recientemente.
 | **La bitácora se escribe sola** | Al cerrar, el `CLAUDE.md` del proyecto queda actualizado sin pedirlo |
 | **Documentos de oficina de verdad** | Pide un Word, un Excel con fórmulas o una presentación y salen archivos que abren en Office |
 | **Su correo, su calendario y su Drive** | Pregunta qué le escribieron o pide que le agenden algo, y se resuelve sin salir de la conversación |
+| **Sus pendientes por proyecto** | Ve qué falta y palomea lo hecho, desde la computadora o desde el teléfono |
 
 ## Antes de empezar
 
@@ -487,6 +488,60 @@ if (Select-String -Path $ignore -Pattern "bandeja/" -Quiet) { "✓ bandeja/ est�
 
 ---
 
+## A7. Sus pendientes por proyecto, el si-ya-se-hizo
+
+**En dos renglones: el calendario aparta el rato, y `pendientes.md` en la raíz de cada
+proyecto dice si ya se hizo.** La mitad del calendario ya quedó montada en A5 (los
+conectores de Google Calendar / Microsoft 365); esta sección solo la referencia, no la
+repite.
+
+**Por qué va en la fase A y no en la B: funciona sin lanzador.** El archivo y el asistente
+bastan, y el teléfono solo agrega el dedo. Un cliente al que su área de sistemas le bloquee
+Tailscale se queda solo con la fase A y **conserva la disciplina completa**.
+
+Se cierra igual que la bandeja de B5, más abajo: sembrando la convención en
+`%USERPROFILE%\.claude\CLAUDE.md`, que aplica a todos los proyectos de esa máquina:
+
+```markdown
+
+## Agenda y avance: el calendario dice CUÁNDO, `pendientes.md` dice SI YA SE HIZO
+
+Cada proyecto puede tener un `pendientes.md` en su raíz. El calendario reserva el bloque;
+`pendientes.md` dice si el trabajo ya se hizo.
+
+**El contrato del formato:**
+
+- Una tarea es un renglón que casa con `^\s*-\s\[([ xX])\]\s+(.+)$`. Todo lo demás es
+  decoración: encabezados, prosa, viñetas sin casilla.
+- Las notas son los renglones siguientes con más sangría. Ahí va el contexto y **a qué
+  bloque de calendario corresponde** esa tarea, para que los dos sistemas se referencien.
+- **Sin identificadores** en el renglón (nada de `id: 4f2a`): el archivo se tiene que poder
+  leer y editar a mano.
+- Quien palomea agrega ` ✓ AAAA-MM-DD HH:MM` al final del texto, con hora local. Al
+  despalomear se quita.
+- **Yo solo palomeo lo que hice yo mismo y verifiqué.** Todo lo que dependa de que tú lo
+  hagas, lo palomeas tú. Si yo palomeo trabajo ajeno, la señal deja de servir, que es justo
+  lo que se quiso arreglar.
+- **Tareas gruesas: una por entregable, no una por bloque de calendario.** Así, si un bloque
+  se mueve, la tarea sigue igual y no hay dos cosas que sincronizar.
+
+Al arrancar una sesión en un proyecto, reviso su `pendientes.md` para saber qué ya se hizo,
+en vez de preguntar o suponer.
+```
+
+> ⚠️ **Guardarlo en UTF-8, el mismo aviso de B5.** Claude Code lo lee como UTF-8; en cp1252
+> los acentos llegan rotos. Con PowerShell: `Add-Content -Encoding utf8`.
+
+Verificación: crear un `pendientes.md` de prueba con una tarea, abrir una sesión nueva en
+ese proyecto y pedirle que revise sus pendientes. Debe encontrar la tarea sin que se la
+describas. Rápido y sin abrir sesión:
+`Select-String -Path "$env:USERPROFILE\.claude\CLAUDE.md" -Pattern "pendientes.md" -Quiet`.
+
+Con eso basta para que el asistente cree, redacte, edite y palomee pendientes con sus
+herramientas de siempre, sin esperar al lanzador.
+
+---
+
 # FASE B · La red y el teléfono
 
 **Lo que deja instalado:** la tailnet del cliente, el lanzador publicado y la bandeja.
@@ -582,6 +637,9 @@ python app.py              # debe quedarse escuchando; Ctrl+C para salir
 La raíz **tiene que ser** `%USERPROFILE%\claude`: `sessions.py` la calcula así y no es
 configurable sin tocar código.
 
+> 📌 **Si el proyecto ya tiene `pendientes.md` (A7), el lanzador ya lo pinta y lo palomea
+> con el dedo, sin configuración adicional.** No hay ningún paso extra que hacer aquí.
+
 ## B3. Arranque automático
 
 
@@ -648,26 +706,27 @@ propia**, salvo que lo pida.
 
 ## 7. Verificación, en orden
 
-> **Cómo se reparte por fases:** los renglones 1, 2, 8, 9 y 10 cierran la **fase A** (gitignore, el servicio
-> local, la bitácora y el runtime de documentos); del 3 al 7 cierran la **fase B**, y
-> necesitan el teléfono. Si solo se contrató la fase A, la verificación termina en el 10 y eso
-> es una entrega completa.
+> **Cómo se reparte por fases:** los renglones 1, 2, 3, 9, 10 y 11 cierran la **fase A**
+> (gitignore, la convención de pendientes, el servicio local, la bitácora y el runtime de
+> documentos); del 4 al 8 cierran la **fase B**, y necesitan el teléfono. Si solo se contrató
+> la fase A, la verificación termina en el 11 y eso es una entrega completa.
 
 
 | # | Qué | Cómo | Esperado |
 |---|---|---|---|
 | 1 | Gitignore global | `git config --global core.excludesFile` + `Select-String ... "salida/"` | ruta + sin error |
-| 2 | La app responde | `Invoke-WebRequest http://127.0.0.1:8765/salud` | 200 |
-| 3 | La puerta cierra | `Invoke-WebRequest http://127.0.0.1:8765/` | **403** |
-| 4 | Se ve desde el teléfono | abrir la URL de la tailnet | aparecen los proyectos |
-| 5 | Lanza | tocar un proyecto → "Nueva sesión" | en 5 s el botón queda encendido y la sesión aparece en la app de Claude |
-| 6 | Cierra | tocar el proyecto → "Terminar sesión" | desaparece de la app |
-| 7 | Retoma | tocar un proyecto apagado | lista sus sesiones previas |
-| 8 | La bitácora | ver el recuadro de abajo, que tiene truco | el `CLAUDE.md` de ese proyecto trae una entrada nueva |
-| 9 | El runtime de documentos | las cinco pruebas de A4g | los cinco archivos salen bien, **con el Excel trayendo resultados y no celdas vacías** |
-| 10 | Los conectores | `claude mcp list` | `claude.ai Gmail`, `Google Calendar` y `Google Drive` en `Connected` |
+| 2 | Convención de pendientes | `Select-String -Path $env:USERPROFILE\.claude\CLAUDE.md -Pattern "pendientes.md"` | encuentra la sección |
+| 3 | La app responde | `Invoke-WebRequest http://127.0.0.1:8765/salud` | 200 |
+| 4 | La puerta cierra | `Invoke-WebRequest http://127.0.0.1:8765/` | **403** |
+| 5 | Se ve desde el teléfono | abrir la URL de la tailnet | aparecen los proyectos |
+| 6 | Lanza | tocar un proyecto → "Nueva sesión" | en 5 s el botón queda encendido y la sesión aparece en la app de Claude |
+| 7 | Cierra | tocar el proyecto → "Terminar sesión" | desaparece de la app |
+| 8 | Retoma | tocar un proyecto apagado | lista sus sesiones previas |
+| 9 | La bitácora | ver el recuadro de abajo, que tiene truco | el `CLAUDE.md` de ese proyecto trae una entrada nueva |
+| 10 | El runtime de documentos | las cinco pruebas de A4g | los cinco archivos salen bien, **con el Excel trayendo resultados y no celdas vacías** |
+| 11 | Los conectores | `claude mcp list` | `claude.ai Gmail`, `Google Calendar` y `Google Drive` en `Connected` |
 
-> ⚠️ **El 403 del renglón 2 es la respuesta correcta, no una falla.** La raíz exige la
+> ⚠️ **El 403 del renglón 4 es la respuesta correcta, no una falla.** La raíz exige la
 > identidad que inyecta Tailscale, que en local no existe. **Medir salud con `/salud`, nunca
 > con la raíz.**
 
@@ -737,6 +796,7 @@ Decirlo antes de instalarla en casa de un cliente:
 | La raíz da 403 y parece roto | Es correcto sin identidad de Tailscale; medir con `/salud` |
 | Acentos rotos en el `CLAUDE.md` global | Se guardó en cp1252; usar `Set-Content -Encoding utf8` |
 | La bitácora nunca escribe y no avisa | `raiz_proyectos` apunta a una carpeta que no existe |
+| "Le pedí sus pendientes y no sabe qué son" | Falta la sección de A7 en `%USERPROFILE%\.claude\CLAUDE.md` |
 | Los conectores no aparecen en `/mcp` | La sesión no está autenticada con la suscripción. Correr `/status`. Ver A5b |
 | No deja conectar Gmail desde `/mcp` | Es lo esperado: va en claude.ai, no en la terminal. Ver A5a |
 | El borrador salió sin el archivo adjunto | Limitación vigente del conector; se adjunta a mano antes de enviar. Ver A5c |
