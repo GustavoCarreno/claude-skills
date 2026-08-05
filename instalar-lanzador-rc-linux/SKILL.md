@@ -585,7 +585,40 @@ tailscale serve status
 Queda en `https://<nombre>.<tailnet>.ts.net/`, **alcanzable solo desde la tailnet**. Esa
 es la URL que se le da a la persona.
 
-## B5. Decirle a las sesiones qué es la bandeja
+## B5. Configurar git y la bandeja
+
+### B5a. Configurar el gitignore global
+
+**Paso obligatorio, aunque sea invisible.** Si no existe, `git add -A` en cualquier proyecto
+subiría la bandeja completa (archivos sensibles del cliente: audios de junta, fotos de
+documentos) y la carpeta `salida/` (audio de voz sintética, binarios grandes) a los repos
+privados de GitHub sin que nadie lo note.
+
+```bash
+mkdir -p ~/.config/git
+cat >> ~/.config/git/ignore << 'EOF'
+# Archivos que el lanzador sube desde el teléfono y archivos que el asistente
+# genera para que se bajen. Viven dentro del proyecto pero no son código, y
+# pueden ser material sensible de cliente. Sin esto, un "git add -A" de
+# cualquier sesión los subiría a los repos privados sin que nadie lo note.
+bandeja/
+salida/
+EOF
+git config --global core.excludesFile ~/.config/git/ignore
+```
+
+Verificar que funciona:
+
+```bash
+touch ~/claude/prueba_gitignore/salida/prueba.txt
+git -C ~/claude/prueba_gitignore check-ignore -v salida/prueba.txt
+rm ~/claude/prueba_gitignore/salida/prueba.txt
+```
+
+El `check-ignore` debe responder con la línea de ignore global. El `git status --short`
+no debe mencionar `salida/`.
+
+### B5b. Decirle a las sesiones qué es la bandeja
 
 
 **Paso corto y fácil de olvidar, y sin él la mitad del valor del lanzador no se usa.** El

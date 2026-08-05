@@ -565,7 +565,41 @@ schtasks /Run /TN "rc-launcher"
 Queda en `https://<nombre-del-equipo>.<tailnet>.ts.net/`, **alcanzable solo desde la
 tailnet**. Esa es la URL que se le da al usuario.
 
-## B5. Decirle a las sesiones qué es la bandeja
+## B5. Configurar git y la bandeja
+
+### B5a. Configurar el gitignore global
+
+**Paso obligatorio, aunque sea invisible.** Si no existe, `git add -A` en cualquier proyecto
+subiría la bandeja completa (archivos sensibles del cliente: audios de junta, fotos de
+documentos) y la carpeta `salida/` (audio de voz sintética, binarios grandes) a los repos
+privados de GitHub sin que nadie lo note.
+
+```powershell
+$ignore = "$env:USERPROFILE\.config\git\ignore"
+New-Item -ItemType Directory -Force -Path (Split-Path $ignore) | Out-Null
+@"
+# Archivos que el lanzador sube desde el teléfono y archivos que el asistente
+# genera para que se bajen. Pueden ser material sensible de cliente.
+bandeja/
+salida/
+"@ | Add-Content -Path $ignore -Encoding utf8
+git config --global core.excludesFile $ignore
+```
+
+Verificar que funciona desde PowerShell:
+
+```powershell
+$test = "$env:USERPROFILE\claude\prueba_gitignore\salida\prueba.txt"
+New-Item -Force -Path (Split-Path $test) | Out-Null
+"" | Out-File -Path $test
+git -C "$env:USERPROFILE\claude\prueba_gitignore" check-ignore -v salida/prueba.txt
+Remove-Item $test
+```
+
+El `check-ignore` debe responder con la línea de ignore global. El `git status --short`
+no debe mencionar `salida/`.
+
+### B5b. Decirle a las sesiones qué es la bandeja
 
 
 **Paso corto y fácil de olvidar, y sin él la mitad del valor del lanzador no se usa.** El
