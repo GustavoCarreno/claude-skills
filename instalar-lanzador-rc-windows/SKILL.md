@@ -444,10 +444,26 @@ viven dentro de los proyectos pero no son código del proyecto. Sin gitignore, u
 subiría estos archivos (que pueden ser material sensible: audios de junta, fotos de documentos,
 contratos) a los repos privados de GitHub sin que nadie lo note.
 
+**No pisar un gitignore global que ya exista.** Si la máquina ya tenía uno configurado (la
+convención más extendida es `~/.gitignore_global`), sus patrones — típicamente `.env`, `*.pem`,
+`*.key` — dejarían de aplicar de golpe si se reemplaza sin leerlo primero. El desenlace posible
+es un secreto commiteado, justo lo contrario de lo que este paso busca. Se lee el valor actual
+y, si ya hay uno, se anexa ahí; solo se configura el nuestro si no había ninguno. Y es
+idempotente: no agrega una línea que ya esté.
+
 ```powershell
-$ignore = "$env:USERPROFILE\.config\git\ignore"
+$ignore = git config --global core.excludesFile
+if (-not $ignore) {
+  # No había ninguno configurado: el nuestro se vuelve el gitignore global.
+  $ignore = "$env:USERPROFILE\.config\git\ignore"
+  git config --global core.excludesFile $ignore
+}
 New-Item -ItemType Directory -Force -Path (Split-Path $ignore) | Out-Null
+if (-not (Test-Path $ignore)) { New-Item -ItemType File -Path $ignore | Out-Null }
+
+if (-not (Select-String -Path $ignore -Pattern '^bandeja/$' -Quiet)) {
 @"
+
 # Archivos que el lanzador sube desde el teléfono y archivos que el asistente
 # genera para que se bajen. Viven dentro del proyecto pero no son código, y
 # pueden ser material sensible de cliente. Sin esto, un "git add -A" de
@@ -455,16 +471,16 @@ New-Item -ItemType Directory -Force -Path (Split-Path $ignore) | Out-Null
 bandeja/
 salida/
 "@ | Add-Content -Path $ignore -Encoding utf8
-git config --global core.excludesFile $ignore
+}
 ```
 
 Verificación (sin necesidad de un repositorio git):
 
 ```powershell
 git config --global core.excludesFile
-# Debe responder con: C:\Users\<usuario>\.config\git\ignore
+# Debe responder con una ruta (la suya, si ya tenía una; si no, C:\Users\<usuario>\.config\git\ignore)
 
-$ignore = "$env:USERPROFILE\.config\git\ignore"
+$ignore = git config --global core.excludesFile
 if (Select-String -Path $ignore -Pattern "salida/" -Quiet) { "✓ salida/ está en el gitignore" } else { "✗ ERROR: salida/ no encontrado" }
 if (Select-String -Path $ignore -Pattern "bandeja/" -Quiet) { "✓ bandeja/ está en el gitignore" } else { "✗ ERROR: bandeja/ no encontrado" }
 ```

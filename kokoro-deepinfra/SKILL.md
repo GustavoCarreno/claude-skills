@@ -153,6 +153,14 @@ que el script ya imprime.
 Si el entorno no permite mandar archivos, entonces sí reporta la ruta local del archivo.
 **No inventes una URL de descarga:** no existe ninguna ruta del lanzador que sirva audio.
 
+> ⚠️ **El MP3 cae dentro de la carpeta del proyecto, y por defecto se subiría con un
+> `git add -A`.** Quien instale esta skill sola, con el catálogo completo del one-liner pero
+> sin la skill del lanzador (`instalar-lanzador-rc-linux` / `-windows`), no tiene protección:
+> `salida/` solo queda fuera de `git status` si esa otra skill corrió su sección **A6**
+> (gitignore global). Antes de generar audio en un proyecto con repo git, confirmar que
+> `salida/` está en el gitignore global, o avisarle a quien esté instalando que le falta ese
+> paso.
+
 Cada llamada queda anotada en `~/.cache/kokoro-deepinfra.log`:
 
 ```
@@ -170,8 +178,8 @@ awk -F'\t' -v d="$(date +%Y-%m-%d)" '$1 ~ d {gsub(/[$]/,"",$4); s+=$4} END {prin
 - **Cuando llega un audio.** Si el usuario sube una grabación, quiere **texto**: eso es
   `whisper-deepinfra`. No le devuelvas audio.
 - **Como asistente de voz.** Esto no contesta hablando en el momento. Se pide, se genera,
-  y él toca la liga. Sirve para "prepárame esto y me lo oigo en el camino"; no sirve para
-  preguntar y recibir respuesta hablada mientras maneja. **No lo prometas.**
+  y el audio se le manda directo. Sirve para "prepárame esto y me lo oigo en el camino"; no
+  sirve para preguntar y recibir respuesta hablada mientras maneja. **No lo prometas.**
 - **Para música o efectos de sonido.** El modelo solo lee texto.
 - **Para un idioma sin voz decente.** Kokoro trae 54 voces pero **solo tres en español**
   (`ef_dora`, `em_alex`, `em_santa`, y la última es temática de Navidad). Si el texto está

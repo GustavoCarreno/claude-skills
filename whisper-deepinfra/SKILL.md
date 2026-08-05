@@ -1,6 +1,6 @@
 ---
 name: whisper-deepinfra
-description: Transcribir audio a texto, o traducirlo a inglés, con Whisper en DeepInfra. Activar cuando el usuario pida transcribir, pasar a texto, o sacar el texto de una grabación, nota de voz, junta, entrevista o audio de WhatsApp. También cuando suba un archivo de audio a la bandeja y pida saber qué dice, o pida el resumen o la minuta de una grabación (primero se transcribe y luego se resume). No activar para generar audio o voz sintética, que es lo contrario.
+description: Transcribir audio a texto, o traducirlo a inglés, con Whisper en DeepInfra. Activar cuando el usuario pida transcribir, pasar a texto, o sacar el texto de una grabación, nota de voz, junta, entrevista o audio de WhatsApp. También cuando suba un archivo de audio a la bandeja y pida saber qué dice, o pida el resumen o la minuta de una grabación (primero se transcribe y luego se resume). No activar para generar audio o voz sintética, que es lo contrario — para eso usa la skill kokoro-deepinfra.
 ---
 
 # Transcribir audio con Whisper en DeepInfra

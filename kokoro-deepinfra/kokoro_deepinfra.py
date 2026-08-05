@@ -470,6 +470,22 @@ def hablar_pedazo(texto, llave, voz, velocidad, registrar_fallo, intentos=3):
 
 def unir(pedazos_mp3, destino, carpeta_trabajo, registrar_fallo):
     """Une varios MP3 en uno solo con el demuxer de concat de ffmpeg."""
+
+    def fallar(msg):
+        # No dejar un MP3 corrupto esperando en el destino final: es un
+        # documento leido en voz alta al que le falta un pedazo, reproducible
+        # y sin nada que lo marque como malo. Encontrado en la revision: un
+        # lote de 4 pedazos con el ultimo truncado dejaba en salida/ un MP3
+        # de 9.1s (perfectamente reproducible) donde debian ir 12 completos.
+        # Todo el trabajo de detectar la corrupcion (abajo) se perdia en la
+        # ultima pulgada si el archivo se quedaba ahi.
+        try:
+            if destino.exists():
+                destino.unlink()
+        except OSError:
+            pass
+        registrar_fallo(msg)
+
     lista = carpeta_trabajo / "lista.txt"
     # ffmpeg quiere rutas con las comillas simples escapadas; se escriben
     # absolutas para no depender del directorio de trabajo.
@@ -483,7 +499,7 @@ def unir(pedazos_mp3, destino, carpeta_trabajo, registrar_fallo):
         capture_output=True, text=True, timeout=3600,
     )
     if r.returncode != 0 or not destino.exists():
-        registrar_fallo(f"ffmpeg no pudo unir los pedazos: {r.stderr.strip()[:400]}")
+        fallar(f"ffmpeg no pudo unir los pedazos: {r.stderr.strip()[:400]}")
 
     # Verificacion barata de que la union no perdio pedazos. Encontrado en la
     # revision: un pedazo corrupto puede dejar a ffmpeg en returncode 0, con
@@ -505,7 +521,7 @@ def unir(pedazos_mp3, destino, carpeta_trabajo, registrar_fallo):
         for p in pedazos_mp3:
             d = duracion_segundos(p)
             if d is None:
-                registrar_fallo(
+                fallar(
                     f"ffprobe no pudo medir la duracion de {p.name}, que es "
                     "la señal mas fuerte de que ese pedazo quedo corrupto. "
                     "Reporta el caso, no uses este archivo.")
@@ -514,7 +530,7 @@ def unir(pedazos_mp3, destino, carpeta_trabajo, registrar_fallo):
         esperada = sum(duraciones)
         final = duracion_segundos(destino)
         if final is None:
-            registrar_fallo(
+            fallar(
                 f"ffmpeg genero {destino.name} pero ffprobe no pudo medir su "
                 "duracion. Reporta el caso, no uses este archivo.")
 
@@ -524,7 +540,7 @@ def unir(pedazos_mp3, destino, carpeta_trabajo, registrar_fallo):
         # sin aviso el caso de la revision (3s esperados, 1.04s reales).
         margen = max(1.0, esperada * 0.03)
         if final < esperada - margen:
-            registrar_fallo(
+            fallar(
                 f"la union parece incompleta: se esperaban ~{esperada:.1f}s "
                 f"de audio ({len(pedazos_mp3)} pedazos) y el resultado dura "
                 f"solo {final:.1f}s. Reporta el caso, no uses este archivo.")
@@ -539,7 +555,7 @@ CARPETA_SALIDA = "salida"
 
 
 def ruta_de_salida_por_defecto(ruta_entrada):
-    """salida/<nombre>.mp3, o salida/voz-AAAAMMDD-HHMM.mp3 si vino por stdin.
+    """salida/<nombre>.mp3, o salida/voz-AAAAMMDD-HHMMSS.mp3 si vino por stdin.
 
     Relativa al directorio de trabajo, que en una sesion del lanzador es la
     raiz del proyecto. La marca de tiempo evita que dos peticiones seguidas
@@ -686,6 +702,11 @@ def main():
         exigir_ffmpeg(f"el texto trae {caracteres:,} caracteres y hay que "
                       f"partirlo en {len(pedazos)} pedazos")
 
+    # Se recuerda si la carpeta ya existia ANTES de este intento: si el
+    # fallo deja "salida/" vacia y fuimos nosotros quienes la creamos ahorita,
+    # no hay que dejarla huerfana. Si ya tenia cosas (de una corrida previa),
+    # no se toca.
+    carpeta_salida_previa = ruta_salida.parent.exists()
     ruta_salida.parent.mkdir(parents=True, exist_ok=True)
 
     def registrar_fallo(msg, codigo=1):
@@ -697,6 +718,16 @@ def main():
         de morir() directo.
         """
         anotar_log(origen, args.voz, caracteres, costo, ruta_salida, ok=False)
+        # Si la API fallo antes de escribir nada (o unir() ya limpio su
+        # propio destino a medias), no dejar una carpeta "salida/" vacia
+        # recien creada solo por este intento fallido.
+        if not carpeta_salida_previa:
+            try:
+                if (ruta_salida.parent.exists()
+                        and not any(ruta_salida.parent.iterdir())):
+                    ruta_salida.parent.rmdir()
+            except OSError:
+                pass
         morir(msg, codigo)
 
     with tempfile.TemporaryDirectory(prefix="kokoro-deepinfra-") as tmp:

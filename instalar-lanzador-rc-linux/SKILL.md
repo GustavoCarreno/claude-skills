@@ -439,9 +439,26 @@ viven dentro de los proyectos pero no son código del proyecto. Sin gitignore, u
 subiría estos archivos (que pueden ser material sensible: audios de junta, fotos de documentos,
 contratos) a los repos privados de GitHub sin que nadie lo note.
 
+**No pisar un gitignore global que ya exista.** Si la máquina ya tenía uno configurado (la
+convención más extendida es `~/.gitignore_global`), sus patrones — típicamente `.env`, `*.pem`,
+`*.key` — dejarían de aplicar de golpe si se reemplaza sin leerlo primero. El desenlace posible
+es un secreto commiteado, justo lo contrario de lo que este paso busca. Se lee el valor actual
+y, si ya hay uno, se anexa ahí; solo se configura el nuestro si no había ninguno. Y es
+idempotente: no agrega una línea que ya esté.
+
 ```bash
-mkdir -p ~/.config/git
-cat >> ~/.config/git/ignore << 'EOF'
+ignore="$(git config --global core.excludesFile)"
+if [ -z "$ignore" ]; then
+  # No había ninguno configurado: el nuestro se vuelve el gitignore global.
+  ignore=~/.config/git/ignore
+  git config --global core.excludesFile "$ignore"
+fi
+ignore="${ignore/#\~/$HOME}"
+mkdir -p "$(dirname "$ignore")"
+touch "$ignore"
+
+grep -qxF 'bandeja/' "$ignore" 2>/dev/null || cat >> "$ignore" << 'EOF'
+
 # Archivos que el lanzador sube desde el teléfono y archivos que el asistente
 # genera para que se bajen. Viven dentro del proyecto pero no son código, y
 # pueden ser material sensible de cliente. Sin esto, un "git add -A" de
@@ -449,17 +466,18 @@ cat >> ~/.config/git/ignore << 'EOF'
 bandeja/
 salida/
 EOF
-git config --global core.excludesFile ~/.config/git/ignore
 ```
 
 Verificación (sin necesidad de un repositorio git):
 
 ```bash
 git config --global core.excludesFile
-# Debe responder con: /home/<usuario>/.config/git/ignore
+# Debe responder con una ruta (la suya, si ya tenía una; si no, /home/<usuario>/.config/git/ignore)
 
-grep -q "salida/" ~/.config/git/ignore && echo "✓ salida/ está en el gitignore" || echo "✗ ERROR: salida/ no encontrado"
-grep -q "bandeja/" ~/.config/git/ignore && echo "✓ bandeja/ está en el gitignore" || echo "✗ ERROR: bandeja/ no encontrado"
+ignore="$(git config --global core.excludesFile)"
+ignore="${ignore/#\~/$HOME}"
+grep -q "salida/" "$ignore" && echo "✓ salida/ está en el gitignore" || echo "✗ ERROR: salida/ no encontrado"
+grep -q "bandeja/" "$ignore" && echo "✓ bandeja/ está en el gitignore" || echo "✗ ERROR: bandeja/ no encontrado"
 ```
 
 ---
@@ -650,10 +668,10 @@ que vea la bandeja. Debe encontrarlo sin que le digas la ruta.
 
 ## 7. Verificación, en orden
 
-> **Cómo se reparte por fases:** los renglones 1, 2, 9 y 10 cierran la **fase A** (el gitignore, el servicio
-> local, la bitácora y el runtime de documentos); del 3 al 8 cierran la **fase B**, y
-> necesitan el teléfono. Si solo se contrató la fase A, la verificación termina en el 10 y eso
-> es una entrega completa.
+> **Cómo se reparte por fases:** los renglones 1, 2, 9, 10 y 11 cierran la **fase A** (el
+> gitignore, el servicio local, la bitácora, el runtime de documentos y los conectores); del 3
+> al 8 cierran la **fase B**, y necesitan el teléfono. Si solo se contrató la fase A, la
+> verificación termina en el 11 y eso es una entrega completa.
 
 
 Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ninguno.
