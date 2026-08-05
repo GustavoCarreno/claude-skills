@@ -41,7 +41,7 @@ está verificado más recientemente.
 | Retomar una conversación anterior | El menú del proyecto lista sus sesiones previas |
 | Crear un proyecto nuevo | Botón "+ Nuevo proyecto", con nombre y contexto |
 | Subir archivos desde el teléfono | Caen en `bandeja/` dentro del proyecto |
-| **La bitácora se escribe sola** | Al cerrar, el `CLAUDE.md` del proyecto queda actualizado sin pedirlo |
+| **La bitácora se escribe sola** | Al cerrar, el `CLAUDE.md` del proyecto queda actualizado sin pedirlo, y su `pendientes.md` también (se crea solo si hubo trabajo abierto) |
 | **Documentos de oficina de verdad** | Pide un Word, un Excel con fórmulas o una presentación y salen archivos que abren en Office |
 | **Su correo, su calendario y su Drive** | Pregunta qué le escribieron o pide que le agenden algo, y se resuelve sin salir de la conversación |
 | **Sus pendientes por proyecto** | Ve qué falta y palomea lo hecho, desde la computadora o desde el teléfono |
@@ -164,7 +164,9 @@ claude          # contestar las cinco, luego /exit
 ## A3. La bitácora automática
 
 
-Un único archivo de Python, biblioteca estándar, **el mismo que corre en Linux**.
+Al cerrar la sesión también atiende el `pendientes.md` del proyecto (A7), y puede crearlo si
+de la sesión salió trabajo abierto. Un único archivo de Python, biblioteca estándar, **el
+mismo que corre en Linux**.
 
 ```powershell
 $hooks = "$env:USERPROFILE\.claude\hooks"
@@ -575,7 +577,9 @@ Cada proyecto puede tener un `pendientes.md` en su raíz. El calendario reserva 
 - **Palomeo lo que hice yo mismo y verifiqué, y también lo tuyo cuando en la sesión quedó
   constancia de que ya se hizo** (me lo dijiste con todas sus letras, o lo comprobé por mi
   cuenta). **Ante la duda no palomeo:** anoto en la nota lo que se supo y lo palomeas tú. Un
-  palomeo puesto por suposición vuelve inservible la señal entera.
+  palomeo puesto por suposición vuelve inservible la señal entera. Y si palomeo algo tuyo por
+  constancia, digo en la nota de dónde salió esa constancia, para que puedas distinguir tu
+  propio dedo de una deducción mía.
 - **Tareas gruesas: una por entregable, no una por bloque de calendario.**
 
 **`## Me toca a mí` es lo que puedes avanzar hoy; `## Esperando a alguien` es lo que depende
