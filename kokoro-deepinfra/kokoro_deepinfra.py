@@ -380,20 +380,58 @@ def parece_mp3(datos):
 
 
 def duracion_segundos(ruta):
-    """Duracion en segundos con ffprobe. None si ffprobe no esta o falla.
+    """Duracion REAL en segundos, sumando la duracion de cada paquete de audio.
 
-    Mismo patron defensivo que whisper_deepinfra.py: nunca truena, solo deja
-    de poder verificar.
+    A proposito NO usa `-show_entries format=duration` (ni `stream=duration`,
+    que para este caso da el mismo numero: los dos leen la cabecera que el
+    propio archivo declara, no lo que de verdad contiene). Medido el 4 ago
+    2026: un MP3 real de Kokoro de 483.6s decodificados (verificado con
+    `ffmpeg -i archivo -f null -`) declaraba 595.22s en su cabecera, 23% de
+    mas. Con esa lectura, la verificacion de mas abajo comparaba "la suma de
+    numeros inflados" contra "un numero correcto" y acusaba perdida de audio
+    SIEMPRE, incluso en uniones perfectas (el defecto critico que este
+    archivo arregla).
+
+    En vez de confiar en la cabecera, se le pide a ffprobe la duracion de
+    CADA paquete (`packet=duration_time`) y se suman: eso obliga a recorrer
+    el archivo entero leyendo cada frame real, la misma cuenta que hace un
+    decodificador de verdad. Verificado contra `ffmpeg -f null -` en un
+    archivo de 24 kHz mono (lo que produce Kokoro) sin cabecera Xing: los dos
+    metodos coinciden al centesimo de segundo (600.048s vs 600.04s en un
+    archivo de 10 minutos), y sale barata: ~0.2s para esos 10 minutos, del
+    orden de las ~900x tiempo real medidas para el camino de decodificar
+    completo.
+
+    Formato de salida `default=nokey=1:noprint_wrappers=1`, no csv: un
+    paquete con SIDE_DATA (visto en la practica, "Skip Samples" del primer
+    frame) le agrega una columna extra en csv y deja coma colgada al final
+    de esa linea, que revienta el float() de esa sola linea y hace que TODA
+    la suma se pierda por una excepcion silenciosa. El formato default no
+    tiene columnas, no le pasa.
+
+    None si ffprobe no esta instalado, o si no se pudo leer NINGUN paquete
+    (archivo vacio, cabecera irreconocible, etc., la señal mas fuerte de que
+    esta corrupto). Mismo patron defensivo que whisper_deepinfra.py: nunca
+    truena, solo deja de poder verificar cuando la herramienta falta.
     """
     if not shutil.which("ffprobe"):
         return None
     try:
         r = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-             "-of", "csv=p=0", str(ruta)],
+            ["ffprobe", "-v", "error", "-select_streams", "a:0",
+             "-show_entries", "packet=duration_time",
+             "-of", "default=nokey=1:noprint_wrappers=1", str(ruta)],
             capture_output=True, text=True, timeout=60,
         )
-        return float(r.stdout.strip())
+        total = 0.0
+        vistos = 0
+        for linea in r.stdout.splitlines():
+            linea = linea.strip()
+            if not linea or linea == "N/A":
+                continue
+            total += float(linea)
+            vistos += 1
+        return total if vistos > 0 else None
     except (OSError, ValueError, subprocess.SubprocessError):
         return None
 
