@@ -364,6 +364,172 @@ def trocear(texto, objetivo=OBJETIVO_TROZO):
 # Llamada a la API
 # --------------------------------------------------------------------------
 
+# --------------------------------------------------------------------------
+# Cabecera Xing/Info que miente sobre la duracion
+# --------------------------------------------------------------------------
+#
+# Kokoro (via DeepInfra) escribe, en el PRIMER cuadro MPEG de cada mp3 que
+# entrega, una cabecera Xing/Info (el formato estandar que LAME usa para
+# declarar cuadros totales y bytes totales) con lo que llevaba generado al
+# arrancar, y nunca la actualiza. Medido el 4 ago 2026 con un audio real de
+# Kokoro: la cabecera declaraba 175 cuadros (4.20s, 31,272 bytes) para un
+# archivo de 2,129 cuadros reales (51.1s, 408,768 bytes). Un reproductor que
+# le cree a la cabecera (la mayoria: es la razon de ser del formato, evitarle
+# al reproductor tener que decodificar el archivo entero para saber cuanto
+# dura) trunca la reproduccion en el segundo 4. `ffmpeg`/`ffprobe` no caen en
+# esto porque decodifican cuadro por cuadro sin importarles la cabecera, por
+# eso el defecto paso inadvertido durante el desarrollo.
+#
+# El arreglo: quitar el cuadro completo que trae la cabecera, no corregirla.
+# El flujo es de tasa constante (CBR), asi que sin cabecera Xing cualquier
+# reproductor calcula la duracion dividiendo tamanio de archivo entre tasa de
+# bits, y le sale bien. Quitar el cuadro es ademas mas simple que reescribir
+# sus campos, y el cuadro en si no es audio real: es un cuadro de relleno que
+# LAME siembra solo para cargar esta metadata.
+
+# [MPEG1 Layer I, II, III], indice 0 = "free", no usable para calcular tamanio.
+_BITRATES_V1_L1 = (0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448)
+_BITRATES_V1_L2 = (0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384)
+_BITRATES_V1_L3 = (0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320)
+# MPEG2/2.5, Layer I; Layer II y III comparten tabla.
+_BITRATES_V2_L1 = (0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256)
+_BITRATES_V2_L2L3 = (0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160)
+
+_SAMPLERATES = {
+    1: (44100, 48000, 32000),    # MPEG1
+    2: (22050, 24000, 16000),    # MPEG2 (LSF)
+    2.5: (11025, 12000, 8000),   # MPEG2.5
+}
+
+# Offset de la cabecera Xing/Info dentro del cuadro (contando desde el inicio
+# del cuadro, DESPUES de los 4 bytes de la cabecera MPEG), segun version y
+# canal. Tabla estandar (la misma que usa ffmpeg en mp3_parse_vbr_tags): el
+# tag se siembra donde iria la side-info de Layer III, que cambia de tamanio
+# entre MPEG1/MPEG2 y entre mono/estereo.
+_OFFSET_XING = {
+    (1, False): 32, (1, True): 17,   # MPEG1: estereo/joint/dual, mono
+    (2, False): 17, (2, True): 9,    # MPEG2 y MPEG2.5 (LSF): igual en los dos
+}
+
+
+def _saltar_id3v2(datos):
+    """Bytes que ocupa un ID3v2 al inicio de `datos`, o 0 si no hay ninguno.
+
+    El tamanio en la cabecera ID3v2 es "syncsafe" (4 bytes de 7 bits utiles
+    cada uno, el bit alto siempre en 0) para que un cuadro MPEG nunca pueda
+    contener por accidente la secuencia de sync 0xFF dentro del tamanio.
+    """
+    if len(datos) < 10 or datos[:3] != b"ID3":
+        return 0
+    tam_bytes = datos[6:10]
+    if any(b & 0x80 for b in tam_bytes):
+        return 0  # tamanio invalido, no es syncsafe: mejor no confiar
+    tam = (tam_bytes[0] << 21) | (tam_bytes[1] << 14) | (tam_bytes[2] << 7) | tam_bytes[3]
+    pie = 10 if (datos[5] & 0x10) else 0  # bit de "footer presente"
+    return 10 + tam + pie
+
+
+def _analizar_cabecera_frame(cab):
+    """Parsea 4 bytes de cabecera MPEG. None si no es una cabecera valida.
+
+    Devuelve version (1, 2 o 2.5), layer (1, 2 o 3), mono, y el tamanio en
+    bytes del cuadro completo (cabecera incluida). Cualquier campo
+    "reservado" o "free"/"bad" (que no permite calcular un tamanio confiable)
+    hace que devuelva None: preferible no reconocer un cuadro real a
+    calcularle un tamanio inventado.
+    """
+    if len(cab) < 4 or cab[0] != 0xFF or (cab[1] & 0xE0) != 0xE0:
+        return None
+
+    version_id = (cab[1] >> 3) & 0x03
+    layer_id = (cab[1] >> 1) & 0x03
+    if version_id == 1 or layer_id == 0:
+        return None  # ambos "01"/"00" son valores reservados
+
+    version = {0: 2.5, 2: 2, 3: 1}[version_id]
+    layer = {1: 3, 2: 2, 3: 1}[layer_id]
+
+    bitrate_idx = (cab[2] >> 4) & 0x0F
+    samplerate_idx = (cab[2] >> 2) & 0x03
+    if bitrate_idx in (0, 15) or samplerate_idx == 3:
+        return None  # free, bad o reservado
+
+    if version == 1:
+        tabla = {1: _BITRATES_V1_L1, 2: _BITRATES_V1_L2, 3: _BITRATES_V1_L3}[layer]
+    else:
+        tabla = {1: _BITRATES_V2_L1, 2: _BITRATES_V2_L2L3, 3: _BITRATES_V2_L2L3}[layer]
+    bitrate_kbps = tabla[bitrate_idx]
+    samplerate = _SAMPLERATES[version][samplerate_idx]
+    if bitrate_kbps == 0 or samplerate == 0:
+        return None
+
+    padding = (cab[2] >> 1) & 0x01
+    modo = (cab[3] >> 6) & 0x03
+    mono = modo == 3
+
+    if layer == 1:
+        tamanio = (12 * bitrate_kbps * 1000 // samplerate + padding) * 4
+    else:
+        multiplicador = 144 if version == 1 else 72
+        tamanio = multiplicador * bitrate_kbps * 1000 // samplerate + padding
+
+    return {"version": version, "layer": layer, "mono": mono, "tamanio": tamanio}
+
+
+# Ventana en la que se busca el primer cuadro tras el ID3 (si lo hay). Kokoro
+# no deja basura entre el ID3 y el primer cuadro, pero se deja margen por si
+# algun dia hay padding: mejor buscar un poco que rendirse al primer byte que
+# no calza y dejar pasar la cabecera mentirosa sin tocar.
+_VENTANA_BUSQUEDA_FRAME = 4096
+
+
+def _localizar_primer_frame(datos, desde):
+    """(posicion, info) del primer cuadro MPEG valido desde `desde`, o (None, None)."""
+    limite = min(len(datos) - 4, desde + _VENTANA_BUSQUEDA_FRAME)
+    i = desde
+    while i <= limite:
+        if datos[i] == 0xFF and (datos[i + 1] & 0xE0) == 0xE0:
+            info = _analizar_cabecera_frame(datos[i:i + 4])
+            if info is not None:
+                return i, info
+        i += 1
+    return None, None
+
+
+def quitar_xing(datos):
+    """Quita el cuadro Xing/Info inicial de un mp3, si lo trae.
+
+    Conservador a proposito: localiza el primer cuadro MPEG (tras cualquier
+    ID3v2 inicial) y solo lo quita si en el offset exacto que le corresponde
+    segun su version/canal trae de verdad la firma "Xing" o "Info". Ante
+    cualquier duda (cabecera irreconocible, tamanio que se sale del archivo,
+    firma ausente) devuelve `datos` intactos: es preferible dejar pasar una
+    cabecera mentirosa que corromper un archivo bueno.
+    """
+    if len(datos) < 4:
+        return datos
+
+    inicio_id3 = _saltar_id3v2(datos)
+    pos, info = _localizar_primer_frame(datos, inicio_id3)
+    if pos is None or info["layer"] != 3:
+        return datos
+
+    offset_tag = _OFFSET_XING.get((info["version"] if info["version"] != 2.5 else 2, info["mono"]))
+    if offset_tag is None:
+        return datos
+    inicio_tag = pos + 4 + offset_tag
+    if inicio_tag + 4 > len(datos):
+        return datos
+    if datos[inicio_tag:inicio_tag + 4] not in (b"Xing", b"Info"):
+        return datos
+
+    fin_frame = pos + info["tamanio"]
+    if info["tamanio"] <= 0 or fin_frame > len(datos):
+        return datos
+
+    return datos[:pos] + datos[fin_frame:]
+
+
 def parece_mp3(datos):
     """Firma barata: ID3v2 al inicio, o una cabecera de frame MPEG (0xFFEx).
 
@@ -472,7 +638,12 @@ def hablar_pedazo(texto, llave, voz, velocidad, registrar_fallo, intentos=3):
                 ultimo_error = (f"la API devolvio {len(audio)} bytes que no "
                                  "parecen mp3 (sin firma ID3 ni cabecera MPEG)")
             else:
-                return audio
+                # Se aplica aqui, a CADA pedazo que llega de la API (no solo
+                # al archivo final): asi el camino de un solo pedazo y el de
+                # varios (que luego se unen con ffmpeg) quedan cubiertos, y
+                # la union parte de pedazos que ya no traen la cabecera que
+                # miente sobre su propia duracion. Ver quitar_xing().
+                return quitar_xing(audio)
         except urllib.error.HTTPError as e:
             detalle = e.read().decode("utf-8", "replace")[:400].replace("\n", " ")
             if e.code in (401, 403):
