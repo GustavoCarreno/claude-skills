@@ -41,6 +41,7 @@ Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\youtube-research" "$env:U
 Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\presentacion-elegante" "$env:USERPROFILE\.claude\skills\"
 Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\paginita-publicar" "$env:USERPROFILE\.claude\skills\"
 Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\whisper-deepinfra" "$env:USERPROFILE\.claude\skills\"
+Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\kokoro-deepinfra" "$env:USERPROFILE\.claude\skills\"
 Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\instalar-lanzador-rc-windows" "$env:USERPROFILE\.claude\skills\"
 Copy-Item -Recurse -Force "$env:TEMP\claude-skills-tmp\instalar-lanzador-rc-linux" "$env:USERPROFILE\.claude\skills\"
 Remove-Item -Recurse -Force "$env:TEMP\claude-skills-tmp"
@@ -119,7 +120,40 @@ Transcribir audio a texto (o traducirlo a inglés) con `whisper-large-v3-turbo` 
 
 El script es un solo archivo de Python de biblioteca estándar — **no requiere `pip install` de nada** y corre igual en Windows, Linux y macOS.
 
-**Lo que NO hace:** no separa hablantes (no dice quién dijo qué), y no genera voz — es solo la dirección audio → texto.
+**Lo que NO hace:** no separa hablantes (no dice quién dijo qué). Y no genera voz — es solo la
+dirección audio → texto; para lo contrario ver `kokoro-deepinfra`, su hermana.
+
+### `kokoro-deepinfra`
+
+Convertir texto a voz sintética con `hexgrad/Kokoro-82M` en DeepInfra. Es el espejo de
+`whisper-deepinfra`: en vez de audio → texto, texto → audio. Cuesta **$0.62 USD por millón de
+caracteres**, o sea que un documento de 10 páginas (~20 mil caracteres) sale en alrededor de un
+centavo de dólar.
+
+**Prerrequisito adicional:** la misma **cuenta propia de DeepInfra** que usa `whisper-deepinfra`
+— comparten llave, guardada en `~/.config/deepinfra/credentials`. Si ya la diste para
+transcribir, no hay que volver a darla.
+
+**Textos largos:** el límite de DeepInfra es 10,000 caracteres por llamada; la skill lo maneja
+sola, partiendo en frontera de oración (no a tiempo fijo, así que no pierde palabras como su
+hermana) y uniendo los pedazos con `ffmpeg`, verificando con `ffprobe` que la duración final
+coincida con la suma de los pedazos.
+
+**Ejemplos de uso en Claude Code:**
+
+> *"Léeme los pendientes urgentes para hoy."*
+
+> *"Pásame este contrato a audio para oírlo en el camino."*
+
+El script es un solo archivo de Python de biblioteca estándar — **no requiere `pip install` de
+nada** y corre igual en Windows, Linux y macOS.
+
+**Lo que NO hace:** no es un asistente de voz en vivo (se pide, se genera, se manda el archivo;
+no contesta hablando en el momento), y solo trae tres voces decentes en español.
+
+⚠️ El MP3 queda en `salida/` dentro del proyecto. Sin la skill `instalar-lanzador-rc-linux` /
+`-windows` (que agrega esa carpeta al gitignore global en su sección A6), un `git add -A`
+subiría esos audios al repo sin que nadie lo note.
 
 ### `presentacion-elegante`
 
