@@ -494,10 +494,17 @@ repite.
 bastan, y el teléfono solo agrega el dedo. Un cliente al que su área de sistemas le bloquee
 Tailscale se queda solo con la fase A y **conserva la disciplina completa**.
 
-Se cierra igual que la bandeja de B5, más abajo: sembrando la convención en
-`~/.claude/CLAUDE.md`, que aplica a todos los proyectos de esa máquina:
+Se cierra igual que A6: sembrando la convención en `~/.claude/CLAUDE.md` **de forma
+aditiva e idempotente**, para que cualquier sesión, en cualquier proyecto de esa máquina,
+la conozca sin que haya que explicarla cada vez, y sin arriesgar lo que ya haya en el
+archivo:
 
-```markdown
+```bash
+claude_md=~/.claude/CLAUDE.md
+mkdir -p "$(dirname "$claude_md")"
+touch "$claude_md"
+
+grep -q '^## Agenda y avance' "$claude_md" || cat >> "$claude_md" << 'EOF'
 
 ## Agenda y avance: el calendario dice CUÁNDO, `pendientes.md` dice SI YA SE HIZO
 
@@ -514,6 +521,8 @@ Cada proyecto puede tener un `pendientes.md` en su raíz. El calendario reserva 
   leer y editar a mano.
 - Quien palomea agrega ` ✓ AAAA-MM-DD HH:MM` al final del texto, con hora local. Al
   despalomear se quita.
+- **En Windows el archivo llega con fin de línea CRLF y hay que conservarlo** al
+  reescribir.
 - **Yo solo palomeo lo que hice yo mismo y verifiqué.** Todo lo que dependa de que tú lo
   hagas, lo palomeas tú. Si yo palomeo trabajo ajeno, la señal deja de servir, que es justo
   lo que se quiso arreglar.
@@ -522,7 +531,12 @@ Cada proyecto puede tener un `pendientes.md` en su raíz. El calendario reserva 
 
 Al arrancar una sesión en un proyecto, reviso su `pendientes.md` para saber qué ya se hizo,
 en vez de preguntar o suponer.
+EOF
 ```
+
+> ⚠️ **Idempotente, igual que A6: correrlo dos veces no duplica la sección.** Y si
+> `~/.claude/CLAUDE.md` ya tiene contenido de otro paso (el más obvio: si por algún motivo
+> B5 ya corrió antes), esto se anexa, no lo reemplaza.
 
 Verificación: crear un `pendientes.md` de prueba con una tarea, abrir una sesión nueva en
 ese proyecto y pedirle que revise sus pendientes. Debe encontrar la tarea sin que se la
@@ -698,9 +712,16 @@ lanzador deja lo que se sube desde el teléfono en `bandeja/`, dentro del proyec
 **nada le dice a la sesión que esa convención existe**: al pedirle "mira lo que subí a la
 bandeja" contesta preguntando si te refieres al correo, porque para ella no significa nada.
 
-Se cierra con `~/.claude/CLAUDE.md`, que aplica a todos los proyectos de esa máquina:
+**Aditivo e idempotente, igual que A6 y A7** (que ya pudo haber escrito en este mismo
+archivo, porque la fase A corre antes que esta): se anexa a `~/.claude/CLAUDE.md`, nunca
+lo reemplaza.
 
-```markdown
+```bash
+claude_md=~/.claude/CLAUDE.md
+mkdir -p "$(dirname "$claude_md")"
+touch "$claude_md"
+
+grep -q '^## La bandeja' "$claude_md" || cat >> "$claude_md" << 'EOF'
 
 ## La bandeja: archivos que subo desde el teléfono
 
@@ -715,10 +736,15 @@ haya ahí.
 Está en el gitignore, así que no aparece en `git status`. Al terminar de usar un archivo,
 yo decido qué hacer con él desde el menú del lanzador, **no moverlo ni borrarlo por
 iniciativa propia**, salvo que lo pida.
+EOF
 ```
 
+> ⚠️ **Correrlo dos veces no duplica la sección**, ni pisa la convención de pendientes que
+> A7 ya sembró ahí. Es el mismo guardado con `grep` que usan A6 y A7.
+
 Verificación: subir un archivo desde el teléfono, abrir la sesión de ese proyecto y pedirle
-que vea la bandeja. Debe encontrarlo sin que le digas la ruta.
+que vea la bandeja. Debe encontrarlo sin que le digas la ruta. Rápido y sin teléfono:
+`grep -q '^## La bandeja' ~/.claude/CLAUDE.md`.
 
 ## 7. Verificación, en orden
 
