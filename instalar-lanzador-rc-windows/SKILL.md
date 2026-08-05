@@ -572,8 +572,10 @@ Cada proyecto puede tener un `pendientes.md` en su raíz. El calendario reserva 
 - Quien palomea agrega ` ✓ AAAA-MM-DD HH:MM` al final, con hora local. Al despalomear se
   quita.
 - **En Windows el archivo llega con fin de línea CRLF y hay que conservarlo** al reescribir.
-- **Yo solo palomeo lo que hice yo mismo y verifiqué.** Lo que dependa de que tú lo hagas,
-  lo palomeas tú.
+- **Palomeo lo que hice yo mismo y verifiqué, y también lo tuyo cuando en la sesión quedó
+  constancia de que ya se hizo** (me lo dijiste con todas sus letras, o lo comprobé por mi
+  cuenta). **Ante la duda no palomeo:** anoto en la nota lo que se supo y lo palomeas tú. Un
+  palomeo puesto por suposición vuelve inservible la señal entera.
 - **Tareas gruesas: una por entregable, no una por bloque de calendario.**
 
 **`## Me toca a mí` es lo que puedes avanzar hoy; `## Esperando a alguien` es lo que depende
