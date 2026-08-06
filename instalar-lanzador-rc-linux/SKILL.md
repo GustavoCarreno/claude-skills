@@ -761,16 +761,39 @@ no en la máquina, y sin ellos la instalación termina sin errores y no funciona
 ## B2. El lanzador
 
 
+> 🔴 **De dónde sale el código, porque este paso no se puede hacer sin traerlo.** A
+> diferencia de `bitacora.py` (A3), **el lanzador NO está en el repo público de skills** y no
+> hay URL de la que bajarlo. Vive en un repo privado, y **lo trae quien instala**: por `scp`
+> desde tu equipo, en una memoria USB, o clonando el repo privado si la máquina tiene acceso.
+> Consíguelo **antes** de empezar esta fase.
+
 ```bash
+# ORIGEN es la copia del lanzador que TRAJISTE. Ajusta la ruta a donde la dejaste.
+ORIGEN=/ruta/a/tu/copia/de/rc-launcher
+
 # el código va al home, no a una ruta de sistema
 rsync -a --exclude .venv --exclude __pycache__ --exclude .git \
-      <origen>/rc-launcher/ ~/rc-launcher/
+      "$ORIGEN"/ ~/rc-launcher/
 
+mkdir -p ~/claude          # la raíz de proyectos, que es donde vive el trabajo
+```
+
+**Comprobar que llegó completo antes de instalar nada**, porque una copia a medias arranca
+igual y falla después, lejos de aquí:
+
+```bash
+for f in app.py sessions.py procesos.py requirements.txt templates tests; do
+  [ -e ~/rc-launcher/"$f" ] || echo "FALTA: $f"
+done
+echo "revisión terminada (sin líneas FALTA arriba = completo)"
+```
+
+Ya con la copia completa, el entorno:
+
+```bash
 cd ~/rc-launcher
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-
-mkdir -p ~/claude          # la raíz de proyectos, que es donde vive el trabajo
 ```
 
 `~/claude` no es negociable sin tocar código: `sessions.py` la calcula como
@@ -782,8 +805,10 @@ mkdir -p ~/claude          # la raíz de proyectos, que es donde vive el trabajo
 cd ~/rc-launcher && .venv/bin/python -m pytest -q
 ```
 
-Debe pasar la suite completa. En la VM limpia pasaron 327 de 327 en medio segundo, sin
-tocar una línea, que es la prueba de que el código no depende de la máquina donde nació.
+Debe pasar **la suite completa, sin una sola falla**. Al 5 de agosto de 2026 son 431 pruebas
+y corren en un segundo. **El número crece con cada versión, así que no lo trates como
+contraseña**: lo que importa es que no falle ninguna, en la máquina del cliente, sin tocar
+una línea. Eso es lo que demuestra que el código no depende de la máquina donde nació.
 
 > 📌 **Si el proyecto ya tiene `pendientes.md` (A7), el lanzador ya lo pinta y lo palomea
 > con el dedo, sin configuración adicional.** No hay ningún paso extra que hacer aquí.

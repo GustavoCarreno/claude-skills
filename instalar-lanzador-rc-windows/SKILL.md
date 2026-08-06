@@ -794,15 +794,51 @@ con el nodo marcado `offline` todo ese tiempo.
 > escoge entre `procesos_tmux.py` y `procesos_windows.py`). **Copiar la carpeta completa, sin
 > mezclar archivos de ningún otro lado.**
 
-Copiar la carpeta del lanzador a `%USERPROFILE%\rc-launcher\` (los `.py` y `templates\`), y
-crear la raíz de proyectos:
+> 🔴 **De dónde sale el código, porque este paso no se puede hacer sin traerlo.** A
+> diferencia de `bitacora.py` (A3), **el lanzador NO está en el repo público de skills** y no
+> hay URL de la que bajarlo. Vive en un repo privado, y **lo trae quien instala**: por red
+> desde tu equipo, en una memoria USB, o clonando el repo privado si la máquina tiene acceso.
+> Consíguelo **antes** de empezar esta fase.
 
 ```powershell
+# $ORIGEN es la copia del lanzador que TRAJISTE. Ajusta la ruta a donde la dejaste.
+$ORIGEN = "D:\ruta\a\tu\copia\de\rc-launcher"
+
+# el código va al perfil del usuario, no a Archivos de programa
+robocopy $ORIGEN "$env:USERPROFILE\rc-launcher" /E /XD .venv __pycache__ .git
+
 New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\claude"
+```
+
+> ⚠️ **`robocopy` sale con código 1 cuando copió bien.** No es un error: usa 0 para "nada
+> que copiar" y 1 para "copió archivos". Solo de 8 para arriba hay falla real.
+
+**Comprobar que llegó completo antes de seguir**, porque una copia a medias arranca igual y
+falla después, lejos de aquí:
+
+```powershell
+foreach ($f in "app.py","sessions.py","procesos.py","procesos_windows.py","requirements.txt","templates","tests") {
+  if (-not (Test-Path "$env:USERPROFILE\rc-launcher\$f")) { "FALTA: $f" }
+}
+"revisión terminada (sin líneas FALTA arriba = completo)"
+```
+
+Ya con la copia completa:
+
+```powershell
 cd $env:USERPROFILE\rc-launcher
-python -m pytest -q        # deben pasar todas
+python -m pytest -q        # deben pasar todas, sin una sola falla
 python app.py              # debe quedarse escuchando; Ctrl+C para salir
 ```
+
+Al 5 de agosto de 2026 son 431 pruebas. **El número crece con cada versión, así que no lo
+trates como contraseña**: lo que importa es que no falle ninguna.
+
+> ⚠️ **Si fallan por rutas demasiado largas, no es defecto del lanzador.** Windows corta en
+> 260 caracteres por omisión, y el esquema que codifica sesiones incrusta la ruta absoluta
+> como nombre de carpeta. Apunta `TMP` a una ruta corta y vuelve a correrlas. **No toques el
+> registro de una máquina de cliente para esto**: eso pide aprobación de su área de sistemas,
+> y de todos modos el cliente nunca corre estas pruebas.
 
 La raíz **tiene que ser** `%USERPROFILE%\claude`: `sessions.py` la calcula así y no es
 configurable sin tocar código.
