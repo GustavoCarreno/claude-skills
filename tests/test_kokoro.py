@@ -458,3 +458,43 @@ def test_unir_sigue_atrapando_un_pedazo_truncado_con_encabezados_corregidos():
             unir([p1, p2], destino, carpeta, _registrar_fallo_de_prueba)
         # fallar() debe haber limpiado el destino a medias.
         assert not destino.exists()
+
+
+# --------------------------------------------------------------------------
+# Lectura de la llave desde el archivo de credenciales
+# --------------------------------------------------------------------------
+
+import kokoro_deepinfra as k
+
+
+@pytest.fixture
+def credenciales(tmp_path, monkeypatch):
+    """Apunta el lector del archivo de credenciales a un temporal."""
+    ruta = tmp_path / "credentials"
+    monkeypatch.setattr(k, "RUTA_CREDENCIALES", ruta)
+    return ruta
+
+
+def test_lee_la_llave_de_la_linea_exportable(credenciales):
+    credenciales.write_text('export DEEPINFRA_API_KEY="abc123"\n', encoding="utf-8")
+    assert k.leer_llave_de_archivo() == "abc123"
+
+
+def test_ignora_una_variable_de_nombre_parecido(credenciales):
+    """El mismo defecto que su gemela whisper-deepinfra, arreglado igual."""
+    credenciales.write_text(
+        'export DEEPINFRA_API_KEY_VIEJA="la-de-antes"\n'
+        'export DEEPINFRA_API_KEY="la-buena"\n',
+        encoding="utf-8")
+    assert k.leer_llave_de_archivo() == "la-buena"
+
+
+def test_no_se_queda_con_una_variable_parecida_cuando_no_esta_la_buena(credenciales):
+    credenciales.write_text('export DEEPINFRA_API_KEY_VIEJA="la-de-antes"\n',
+                            encoding="utf-8")
+    assert k.leer_llave_de_archivo() is None
+
+
+def test_ignora_el_nombre_suelto_sin_signo_de_igual(credenciales):
+    credenciales.write_text("DEEPINFRA_API_KEY\n", encoding="utf-8")
+    assert k.leer_llave_de_archivo() is None

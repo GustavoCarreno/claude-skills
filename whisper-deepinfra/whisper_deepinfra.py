@@ -25,6 +25,7 @@ aun asi no caben, los parte en tramos y une el texto. No hay que hacerlo a mano.
 Log de llamadas en ~/.cache/whisper-deepinfra.log
 """
 import argparse
+import http.client
 import json
 import mimetypes
 import os
@@ -49,6 +50,14 @@ LIMITE_ENVIO = 24 * 1024 * 1024
 BITRATE_COMPRIMIDO = "32k"
 BYTES_POR_SEGUNDO = 4000
 SEGUNDOS_POR_TRAMO = 4800  # ~19 MB por tramo, con holgura bajo el limite
+
+# Umbral para sospechar de una transcripcion corta. El habla normal da entre 12
+# y 15 caracteres por segundo, asi que 1 por segundo es un piso muy por debajo
+# de cualquier grabacion con voz: solo lo cruza un audio casi mudo, un idioma
+# forzado que no corresponde, o una respuesta truncada. Debajo de medio minuto
+# no se revisa, porque en media frase caben pocos caracteres y es legitimo.
+CARACTERES_MINIMOS_POR_SEGUNDO = 1.0
+SEGUNDOS_MINIMOS_PARA_REVISAR = 30
 
 RUTA_LOG = Path.home() / ".cache" / "whisper-deepinfra.log"
 RUTA_CREDENCIALES = Path.home() / ".config" / "deepinfra" / "credentials"
@@ -127,9 +136,13 @@ def leer_llave_de_archivo():
         linea = linea.strip()
         if linea.startswith("export "):
             linea = linea[len("export "):].strip()
-        if not linea.startswith("DEEPINFRA_API_KEY"):
+        nombre, signo, valor = linea.partition("=")
+        # El nombre tiene que ser exacto y traer su signo de igual. Con un
+        # startswith suelto, un DEEPINFRA_API_KEY_VIEJA de al lado devolvia la
+        # llave equivocada y el error aparecia hasta el HTTP 401, mandando a
+        # revisar la llave buena en vez de la de junto.
+        if signo != "=" or nombre.strip() != "DEEPINFRA_API_KEY":
             continue
-        _, _, valor = linea.partition("=")
         valor = valor.strip().strip('"').strip("'")
         if valor:
             return valor
@@ -355,8 +368,16 @@ def transcribir_archivo(ruta, llave, tarea, idioma, intentos=3):
             ultimo_error = f"HTTP {e.code}: {detalle}"
             if e.code not in (408, 409, 429, 500, 502, 503, 504):
                 morir(ultimo_error)
-        except urllib.error.URLError as e:
-            ultimo_error = f"error de red: {e.reason}"
+        except (urllib.error.URLError, TimeoutError, http.client.IncompleteRead,
+                http.client.RemoteDisconnected, ConnectionResetError) as e:
+            # Ninguna de las cuatro ultimas es URLError: el timeout de 900s salta
+            # como TimeoutError durante la lectura de la respuesta, y un corte de
+            # conexion a media respuesta llega como IncompleteRead o
+            # RemoteDisconnected (que a su vez hereda de ConnectionResetError, se
+            # listan las dos para que quede explicito). Sin este bloque ampliado
+            # se escapaban como traza cruda, ya pagada la llamada.
+            detalle = getattr(e, "reason", None)
+            ultimo_error = f"error de red: {detalle if detalle else e}"
         except json.JSONDecodeError as e:
             ultimo_error = f"respuesta no-JSON: {e}"
 
@@ -369,10 +390,28 @@ def transcribir_archivo(ruta, llave, tarea, idioma, intentos=3):
     morir(f"la API no respondio bien tras {intentos} intentos. {ultimo_error}")
 
 
-def anotar_log(audio, tarea, idioma, duracion, costo, salida, ok):
+def revisar_longitud(caracteres, duracion_segundos):
+    """Devuelve un aviso si la transcripcion salio sospechosamente corta.
+
+    Es un aviso, no una falla: el texto ya se pago y se entrega igual. Solo
+    existe porque una transcripcion real reporto exito con 11 caracteres, y sin
+    esto el unico sintoma era un archivo de salida que nadie volvio a abrir.
+    """
+    if not duracion_segundos or duracion_segundos < SEGUNDOS_MINIMOS_PARA_REVISAR:
+        return None
+    if caracteres >= duracion_segundos * CARACTERES_MINIMOS_POR_SEGUNDO:
+        return None
+    return (f"aviso: la transcripcion trae solo {caracteres:,} caracteres para "
+            f"{duracion_segundos:.0f} s de audio ({duracion_segundos / 60:.1f} min). "
+            "Revisala antes de usarla: puede ser un audio casi mudo, un --idioma "
+            "que no corresponde, o una respuesta cortada. El texto se entrega "
+            "igual, la llamada ya se pago.")
+
+
+def anotar_log(audio, tarea, idioma, duracion, costo, salida, ok, sospechosa=False):
     RUTA_LOG.parent.mkdir(parents=True, exist_ok=True)
     ts = time.strftime("%Y-%m-%d %H:%M:%S")
-    estado = "OK " if ok else "ERR"
+    estado = ("OK?" if sospechosa else "OK ") if ok else "ERR"
     dur = f"{duracion:.1f}s" if duracion is not None else "?s"
     destino = str(salida) if salida else "stdout"
     with RUTA_LOG.open("a", encoding="utf-8") as f:
@@ -515,8 +554,11 @@ def main():
     duracion_final = duracion_real or duracion
     costo_final = (PRECIO_POR_MINUTO * (duracion_final / 60)
                    if duracion_final else (costo or 0))
+    aviso = revisar_longitud(len(texto_final), duracion_final)
     anotar_log(ruta_audio, args.tarea, idioma_detectado, duracion_final,
-               costo_final, ruta_salida, ok=True)
+               costo_final, ruta_salida, ok=True, sospechosa=bool(aviso))
+    if aviso:
+        print(f"whisper-deepinfra: {aviso}", file=sys.stderr)
 
     if ruta_salida:
         ruta_salida.write_text(texto_final + "\n", encoding=codificacion_de_salida())

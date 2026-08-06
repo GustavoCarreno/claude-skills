@@ -135,9 +135,13 @@ def leer_llave_de_archivo():
         linea = linea.strip()
         if linea.startswith("export "):
             linea = linea[len("export "):].strip()
-        if not linea.startswith("DEEPINFRA_API_KEY"):
+        nombre, signo, valor = linea.partition("=")
+        # El nombre tiene que ser exacto y traer su signo de igual. Con un
+        # startswith suelto, un DEEPINFRA_API_KEY_VIEJA de al lado devolvia la
+        # llave equivocada y el error aparecia hasta el HTTP 401, mandando a
+        # revisar la llave buena en vez de la de junto.
+        if signo != "=" or nombre.strip() != "DEEPINFRA_API_KEY":
             continue
-        _, _, valor = linea.partition("=")
         valor = valor.strip().strip('"').strip("'")
         if valor:
             return valor

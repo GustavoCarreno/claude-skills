@@ -100,6 +100,15 @@ imprime. Cada llamada queda anotada en `~/.cache/whisper-deepinfra.log`:
 2026-08-03 23:58:12	OK 	3869.1s	$0.01290	Audio Cadena.m4a	transcribe	es	cadena.txt
 ```
 
+> ⚠️ **Si sale el aviso de transcripción corta, hay que decírselo al usuario**, no
+> entregarle el texto como si nada. El script compara los caracteres devueltos contra la
+> duración del audio y avisa por `stderr` cuando salen menos de uno por segundo (el habla
+> normal da entre 12 y 15). Esas llamadas quedan en el log con estado `OK?` en vez de
+> `OK `. **No es una falla y el texto se entrega igual**, la llamada ya se pagó: es que
+> pasó de verdad una vez, con una transcripción que reportó éxito con 11 caracteres, y el
+> único síntoma fue un archivo que nadie volvió a abrir. Las causas típicas son un audio
+> casi mudo, un `--idioma` que no corresponde a lo que se habla, o una respuesta cortada.
+
 Lo gastado hoy:
 
 ```bash
@@ -125,3 +134,4 @@ awk -F'\t' -v d="$(date +%Y-%m-%d)" '$1 ~ d {gsub(/[$]/,"",$4); s+=$4} END {prin
 | `HTTP 402` | La cuenta de DeepInfra no tiene saldo. Va a https://deepinfra.com/dash/billing |
 | `hace falta ffmpeg` | Audio grande sin ffmpeg instalado. El mensaje trae el comando |
 | Transcripción vacía | El archivo no trae voz, o está corrupto. Verificar con `--simulacion` |
+| `aviso: la transcripcion trae solo N caracteres` | Salió muy corta para lo que dura el audio. Decírselo al usuario y revisar el audio o el `--idioma` |
