@@ -193,9 +193,26 @@ Windows**.
 
 ```bash
 mkdir -p ~/.claude/hooks
-cp <origen>/bitacora/bitacora.py ~/.claude/hooks/bitacora.py
+curl -fsSL https://raw.githubusercontent.com/GustavoCarreno/claude-skills/main/bitacora/bitacora.py \
+  -o ~/.claude/hooks/bitacora.py
 chmod +x ~/.claude/hooks/bitacora.py
 ```
+
+> 💡 **Si ya clonaste el repo `claude-skills`** (en vez del one-liner de instalación, que
+> lo clona a un temporal y lo borra), cópialo de ahí en su lugar:
+> `cp <carpeta-del-clon>/bitacora/bitacora.py ~/.claude/hooks/bitacora.py`.
+
+**Comprobar que llegó completo antes de seguir** — una descarga a medias es justo el
+modo de fallar silencioso que este mecanismo no puede tener:
+
+```bash
+test -s ~/.claude/hooks/bitacora.py && echo "existe y no está vacío"
+python3 ~/.claude/hooks/bitacora.py pendiente < /dev/null; echo "código de salida: $?"
+```
+
+El archivo completo pesa unos 30 KB. Si `test -s` no imprime nada, la descarga falló o
+quedó vacía; si `python3 ... pendiente` truena con una traza en vez de terminar
+limpio, el archivo llegó corrupto o incompleto.
 
 `~/.claude/bitacora.json`:
 
@@ -602,7 +619,7 @@ mueve al final bajo `## Descartados`, con ` ✗ AAAA-MM-DD` y el motivo en la no
 casa con la expresión de arriba, así que deja de contar y de pintarse solo.
 
 > 🔴 **REGLA QUE NO SE PUEDE ROMPER: al reescribir un `pendientes.md`, NUNCA borrar los
-> renglones `[x]` ni `[-]`.** Son un registro que creaste con el dedo; una reescritura que se
+> renglones `[x]` ni `[-]`.** Son un registro de lo que ya se cerró; una reescritura que se
 > los lleva por delante lo destruye en silencio, y si el archivo nunca se confirmó en git, no
 > hay forma de recuperarlo.
 >

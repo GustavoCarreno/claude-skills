@@ -171,8 +171,26 @@ mismo que corre en Linux**.
 ```powershell
 $hooks = "$env:USERPROFILE\.claude\hooks"
 New-Item -ItemType Directory -Force -Path $hooks
-Copy-Item <origen>\bitacora\bitacora.py $hooks\bitacora.py
+Invoke-WebRequest -UseBasicParsing `
+  -Uri "https://raw.githubusercontent.com/GustavoCarreno/claude-skills/main/bitacora/bitacora.py" `
+  -OutFile "$hooks\bitacora.py"
 ```
+
+> 💡 **Si ya clonaste el repo `claude-skills`** (en vez del one-liner de instalación, que
+> lo clona a un temporal y lo borra), cópialo de ahí en su lugar:
+> `Copy-Item <carpeta-del-clon>\bitacora\bitacora.py "$hooks\bitacora.py"`.
+
+**Comprobar que llegó completo antes de seguir** — una descarga a medias es justo el
+modo de fallar silencioso que este mecanismo no puede tener:
+
+```powershell
+(Get-Item "$hooks\bitacora.py").Length   # debe rondar los 30 KB, no 0
+'' | python "$hooks\bitacora.py" pendiente
+"código de salida: $LASTEXITCODE"
+```
+
+Si el tamaño sale en 0 o vacío, la descarga falló; si el `python` truena con una traza
+en vez de terminar limpio, el archivo llegó corrupto o incompleto.
 
 Configuración en `%USERPROFILE%\.claude\bitacora.json`:
 
@@ -607,7 +625,7 @@ mueve al final bajo `## Descartados`, con ` ✗ AAAA-MM-DD` y el motivo en la no
 casa con la expresión de arriba, así que deja de contar y de pintarse solo.
 
 > 🔴 **REGLA QUE NO SE PUEDE ROMPER: al reescribir un `pendientes.md`, NUNCA borrar los
-> renglones `[x]` ni `[-]`.** Son un registro que creaste con el dedo; una reescritura que se
+> renglones `[x]` ni `[-]`.** Son un registro de lo que ya se cerró; una reescritura que se
 > los lleva por delante lo destruye en silencio, y si el archivo nunca se confirmó en git, no
 > hay forma de recuperarlo.
 >
