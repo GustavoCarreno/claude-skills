@@ -63,6 +63,12 @@ INSTRUCCION_POR_DEFECTO = """Escribe la bitacora de la sesion en {archivo}, sin 
 5. Atiende tambien {pendientes}, la lista de pendientes del proyecto:
    - Si ese archivo YA EXISTE: palomea las tareas que esta sesion hizo y verifico, y tambien las del usuario de las que en la sesion quedo constancia de que ya se hicieron (te lo dijo con todas sus letras, o lo comprobaste por tu cuenta). ANTE LA DUDA NO PALOMEES: anota en la nota de la tarea lo que se supo y dejasela a el. Al palomear agrega " ✓ AAAA-MM-DD HH:MM" con hora local al final del texto de la tarea, y si fue por constancia di en la nota de donde salio. Agrega las tareas nuevas que salieron de esta sesion, en la seccion que corresponda segun quien deba mover, con sus indicadores. NO descartes, NO reordenes, y NUNCA borres un renglon [x] ni [-]: son un registro que el usuario creo con el dedo. Conserva el fin de linea y la marca de orden de bytes que el archivo ya traiga.
    - Si NO EXISTE: crealo solo si de esta sesion salio trabajo abierto de verdad, con el formato de la convencion. Si el proyecto quedo quieto, no crees nada y no lo menciones.
+6. Atiende tambien el calendario, porque es la otra mitad de la convencion: el calendario dice CUANDO y pendientes.md dice SI YA SE HIZO. Toca unicamente los bloques que esta sesion movio de verdad. Cual es suele estar citado en CLAUDE.md o en la nota del pendiente.
+   - ACTUALIZA el bloque que ya existe cuando la sesion produjo material que se va a usar en el, cuando cambio de que trata, o cuando cambiaron sus supuestos. Adjunta lo que se genero y pon al dia la descripcion AGREGANDO, sin reescribir ni borrar lo que ya decia. Verifica leyendo el evento de vuelta: la respuesta de la escritura no es prueba de que quedo.
+   - AGENDA un bloque nuevo solo si el usuario lo pidio en la sesion, o si un pendiente nuevo trae fecha ya comprometida con alguien mas. Un pendiente sin fecha vive en pendientes.md y no en el calendario.
+   - NO AGREGUES INVITADOS. Sumar asistentes manda correo y eso sale de la maquina. Se propone en una linea y lo decide el usuario.
+   - NO BORRES eventos por iniciativa propia, aunque su pendiente ya se haya cerrado. Dilo en una linea al final y que el decida.
+   - Si no hubo nada que tocar en el calendario, no lo menciones.
 
 Si de verdad no hubo nada que valga la pena registrar, dilo en una linea y termina sin escribir nada."""
 
