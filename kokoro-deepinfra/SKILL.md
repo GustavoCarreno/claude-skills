@@ -151,7 +151,29 @@ Acompáñalo de una línea corta con lo que necesita saber: qué es, cuánto dur
 que el script ya imprime.
 
 Si el entorno no permite mandar archivos, entonces sí reporta la ruta local del archivo.
-**No inventes una URL de descarga:** no existe ninguna ruta del lanzador que sirva audio.
+
+### Si la máquina tiene el lanzador rc, mándale también la liga
+
+Escuchar desde el teléfono un archivo adjunto significa descargarlo, buscarlo en el navegador
+de archivos y abrirlo. **Con una liga le pica y suena.** El lanzador sirve lo que hay en
+`salida/` por `GET /audio/<proyecto>/<archivo>`, con el tipo y los rangos correctos para que el
+navegador lo reproduzca en vez de bajarlo.
+
+Comprobar que existe, y sacar el nombre del equipo, **sin clavarlo**:
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8765/salud   # 200 = el lanzador corre
+tailscale status --json | jq -r '.Self.DNSName' | sed 's/\.$//'         # el nombre del equipo
+```
+
+Si el primero no da `200`, esa máquina no tiene el lanzador: entrega el archivo y ya. Si sí, la
+liga es `https://<nombre-del-equipo>/audio/<proyecto>/<archivo>`, y va **además** del archivo, no
+en su lugar: el adjunto sigue siendo la forma de reenviárselo a alguien más.
+
+> ⚠️ **La liga solo abre desde un equipo de la misma tailnet.** El lanzador exige la identidad
+> que verifica Tailscale en todas sus rutas, así que sin ella contesta 403. Eso es lo que la
+> hace segura, y también lo que la vuelve inútil para compartir el audio con un tercero: para
+> eso va el archivo.
 
 > ⚠️ **El MP3 cae dentro de la carpeta del proyecto, y por defecto se subiría con un
 > `git add -A`.** Quien instale esta skill sola, con el catálogo completo del one-liner pero
