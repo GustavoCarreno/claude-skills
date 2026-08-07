@@ -46,6 +46,7 @@ está verificado más recientemente.
 | **Su correo, su calendario y su Drive** | Pregunta qué le escribieron o pide que le agenden algo, y se resuelve sin salir de la conversación |
 | **Sus pendientes por proyecto** | Ve qué falta y palomea lo hecho, desde la computadora o desde el teléfono |
 | **Transcribir juntas y escuchar documentos** (opcional, con cuenta propia) | Sube la grabación de una junta y pide la minuta, o pide que le lean un documento para el camino |
+| **El audio se escucha con un clic** (requiere la fase B) | Lo que pidió que le leyeran llega como liga: le pica desde el teléfono y suena, sin descargarlo ni buscarlo en el navegador de archivos |
 
 ## Antes de empezar
 
@@ -699,6 +700,12 @@ documento, y viceversa.
 | Transcribir una grabación | $0.00020 USD por minuto | una junta de una hora, poco más de un centavo de dólar ($0.012) |
 | Convertir un documento a audio | $0.62 USD por millón de caracteres | un documento de 10 páginas (~20 mil caracteres), alrededor de un centavo de dólar |
 
+> 📌 **Si además se contrató la fase B, el audio se escucha con un clic.** El MP3 cae en
+> `salida\` del proyecto y el lanzador lo sirve por una liga, así que desde el teléfono se
+> toca y suena, en vez de descargarlo y buscarlo en el navegador de archivos. Sin la fase B
+> la capacidad funciona igual, solo que el audio llega como archivo adjunto. Se verifica en
+> el renglón 13.
+
 ### A8c. Lo que hay que decirle, antes de que lo descubra él
 
 🔴 **El audio de sus juntas y el texto de sus documentos salen de su computadora y se
@@ -831,7 +838,7 @@ python -m pytest -q        # deben pasar todas, sin una sola falla
 python app.py              # debe quedarse escuchando; Ctrl+C para salir
 ```
 
-Al 5 de agosto de 2026 son 431 pruebas. **El número crece con cada versión, así que no lo
+Al 6 de agosto de 2026 son 445 pruebas. **El número crece con cada versión, así que no lo
 trates como contraseña**: lo que importa es que no falle ninguna.
 
 > ⚠️ **Si fallan por rutas demasiado largas, no es defecto del lanzador.** Windows corta en
@@ -941,9 +948,9 @@ que vea la bandeja. Debe encontrarlo sin que le digas la ruta. Rápido y sin tel
 
 > **Cómo se reparte por fases:** los renglones 1, 2, 3, 9, 10, 11 y 12 cierran la **fase A**
 > (gitignore, la convención de pendientes, el servicio local, la bitácora, el runtime de
-> documentos, los conectores y la cuenta de DeepInfra); del 4 al 8 cierran la **fase B**, y
-> necesitan el teléfono. Si solo se contrató la fase A, la verificación termina en el 12 y eso
-> es una entrega completa.
+> documentos, los conectores y la cuenta de DeepInfra); del 4 al 8, más el 13, cierran la
+> **fase B**, y necesitan el teléfono. Si solo se contrató la fase A, la verificación termina
+> en el 12 y eso es una entrega completa.
 
 
 | # | Qué | Cómo | Esperado |
@@ -960,6 +967,26 @@ que vea la bandeja. Debe encontrarlo sin que le digas la ruta. Rápido y sin tel
 | 10 | El runtime de documentos | las cinco pruebas de A4g | los cinco archivos salen bien, **con el Excel trayendo resultados y no celdas vacías** |
 | 11 | Los conectores | `claude mcp list` | `claude.ai Gmail`, `Google Calendar` y `Google Drive` en `Connected` |
 | 12 | La cuenta de DeepInfra (opcional) | `python "$env:USERPROFILE\.claude\skills\whisper-deepinfra\whisper_deepinfra.py" --estado` | `llave: CONFIGURADA` si el cliente ya la dio; `NO CONFIGURADA` es correcto si todavía no la necesita |
+| 13 | El audio se escucha con un clic (solo si ya usó la voz sintética) | ver el recuadro de abajo | el navegador del teléfono lo **reproduce**, no lo descarga |
+
+> 📌 **Cómo se comprueba el renglón 13, y por qué no basta con que conteste 200.** El lanzador
+> sirve lo que hay en `salida\` por `GET /audio/<proyecto>/<archivo>`. Lo que decide si el
+> navegador lo toca o lo baja son tres cabeceras, así que se miran las tres:
+>
+> ```powershell
+> $r = Invoke-WebRequest "http://127.0.0.1:8765/audio/<proyecto>/<archivo>.mp3" `
+>        -Headers @{ "Tailscale-User-Login" = "<el correo del dueño de la tailnet>" }
+> $r.StatusCode
+> $r.Headers["Content-Type"]; $r.Headers["Content-Disposition"]; $r.Headers["Accept-Ranges"]
+> ```
+>
+> Esperado: `200`, `audio/mpeg`, `**inline**` (nunca `attachment`, que fuerza la descarga) y
+> `bytes`, que es lo que permite adelantar dentro de un audio largo. **La prueba de verdad es
+> picarle a la liga desde el teléfono**, porque el comportamiento final lo decide su navegador.
+>
+> ⚠️ **Sin el encabezado de identidad contesta 403, y eso es correcto**, igual que el renglón
+> 4. Desde el teléfono lo inyecta Tailscale solo. Es también lo que hace que esa liga **no
+> sirva para compartirle el audio a un tercero**: para eso va el archivo adjunto.
 
 > ⚠️ **El 403 del renglón 4 es la respuesta correcta, no una falla.** La raíz exige la
 > identidad que inyecta Tailscale, que en local no existe. **Medir salud con `/salud`, nunca
