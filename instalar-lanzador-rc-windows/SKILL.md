@@ -885,6 +885,26 @@ schtasks /Run /TN "rc-launcher"
 
 > ⚠️ **`schtasks /run` NO reinicia una tarea que ya corre.** Contesta "is currently running"
 > y no hace nada. La secuencia correcta es `schtasks /end` y luego `schtasks /run`.
+>
+> 🔴 **Y esa secuencia NO basta para recargar el código, cosa que importa cada vez que se
+> actualice el lanzador.** `schtasks /end` termina el `.cmd` de la tarea pero **deja vivo al
+> `python` que ese `.cmd` lanzó**, así que el proceso viejo conserva el puerto 8765 y el
+> `/run` arranca un segundo que no puede escuchar. Las dos órdenes contestan `SUCCESS` y el
+> lanzador sigue respondiendo, o sea que **el síntoma es que el código nuevo simplemente no
+> está**: una ruta recién agregada devuelve el 404 genérico de Flask, como si no existiera.
+> Medido en la VM de dogfooding el 6 ago 2026, con dos `python.exe` vivos a la vez.
+>
+> Hay que matar al que tiene el puerto, **por PID y no por nombre**, para no llevarse por
+> delante otros Python de la máquina del cliente:
+>
+> ```powershell
+> $pid_lanzador = (Get-NetTCPConnection -LocalPort 8765 -State Listen).OwningProcess
+> Stop-Process -Id $pid_lanzador -Force
+> schtasks /run /tn rc-launcher
+> ```
+>
+> Y comprobar que quedó **uno solo**: `tasklist /fi "imagename eq python.exe"`. En Windows
+> viejo sin `Get-NetTCPConnection`, el PID sale de `netstat -ano | findstr :8765`.
 
 ## B4. Publicarlo en la tailnet
 
@@ -1056,6 +1076,7 @@ Decirlo antes de instalarla en casa de un cliente:
 | La sesión no cierra desde el teléfono | Falta `pywinpty` |
 | La tarea programada "nunca ha ejecutado" (`267011`) | Se creó con `/SC ONSTART` sin contraseña guardada; usar `ONLOGON` |
 | Reiniciar la tarea no hace nada | `schtasks /run` sobre una tarea corriendo no reinicia; primero `/end` |
+| Se actualizó el código y el lanzador sigue con el viejo (una ruta nueva da 404) | `schtasks /end` deja vivo al `python` hijo, que conserva el puerto. Matar por PID al que escucha el 8765 y volver a lanzar la tarea. Ver B3 |
 | El nodo desaparece de la tailnet en la pantalla de contraseña | Falta `tailscale set --unattended=true` |
 | La raíz da 403 y parece roto | Es correcto sin identidad de Tailscale; medir con `/salud` |
 | Acentos rotos en el `CLAUDE.md` global | Se guardó en cp1252. Abrir con VS Code o Notepad++ y guardar como UTF-8, o desde PowerShell: `$f="$env:USERPROFILE\.claude\CLAUDE.md"; $c=[System.IO.File]::ReadAllText($f,[System.Text.Encoding]::GetEncoding('cp1252')); [System.IO.File]::WriteAllText($f, $c, [System.Text.Encoding]::UTF8)` |
