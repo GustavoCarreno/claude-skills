@@ -56,6 +56,13 @@ frente a un navegador. Planear la sesión de instalación con esa persona presen
 | `sudo` disponible | `sudo -v` | Sin sudo no se instalan paquetes ni unidades de systemd. **Aquí se para la instalación** |
 | Cuenta de Anthropic con plan que incluya Claude Code | entrar a `claude.ai` | Sin plan no hay nada que instalar. Contratarlo antes de la cita |
 | La máquina va a quedar encendida | preguntar | Si se apaga, el teléfono no encuentra nada. Es una condición del montaje, no un defecto |
+| El correo del cliente permite apps de terceros | que **él mismo** entre a `claude.ai/customize/connectors` e intente conectar su calendario | Si su administrador de Google Workspace o Microsoft 365 tiene bloqueadas las apps de terceros, **no hay rodeo técnico**: es conversación con su área de sistemas. Descubrirlo aquí cuesta un minuto; descubrirlo en la cita cuesta la sesión |
+
+> 📌 **Por qué ese renglón del correo está aquí y no en A5, que es donde se conecta.** Es la
+> misma lógica que Tailscale: **lo que depende del área de sistemas del cliente es una barrera
+> de calificación, no un paso de instalación.** Y no es hipotético — el primer piloto se quedó
+> parado semanas esperando que un departamento externo devolviera un archivo. Además de correo
+> y calendario, de ahí depende que el cierre automático pueda poner al día sus bloques (A7).
 
 ---
 
@@ -239,6 +246,18 @@ limpio, el archivo llegó corrupto o incompleto.
   De fábrica trae las de archivo más las de Google Calendar. **Se toca solo para un cliente
   en Microsoft 365**, agregando las suyas. Una lista mal escrita se ignora con aviso, en vez
   de dejar al mecanismo sin herramientas.
+
+> 📌 **Cómo se averiguan los nombres si el cliente está en Microsoft 365, sin adivinarlos.**
+> Los nombres reales dependen de cómo se llame su conector, así que se leen de su propia
+> máquina: abrir una sesión ahí y pedirle **"dame los nombres exactos de las herramientas de
+> calendario que tienes disponibles"**. Contesta con la lista completa, que sigue el patrón
+> `mcp__claude_ai_<Conector>__<herramienta>`. Se copian a `herramientas` **junto con las seis
+> de archivo** (`Read`, `Write`, `Edit`, `Bash`, `Glob`, `Grep`), porque la clave reemplaza la
+> lista entera, no la extiende.
+>
+> ⚠️ **Dejar fuera la de borrar y la de contestar invitaciones**, igual que en la lista de
+> fábrica. Es lo que vuelve esas dos cosas imposibles en vez de solo prohibidas, y es la
+> garantía que se le ofrece al cliente en A7.
 
 Los cuatro hooks, en `~/.claude/settings.json`, dentro de `"hooks"`:
 
@@ -622,6 +641,10 @@ Cada proyecto puede tener un `pendientes.md` en su raíz. El calendario reserva 
 - Una tarea es un renglón que casa con `^\s*-\s\[([ xX])\]\s+(.+)$`. Todo lo demás es
   decoración: encabezados, prosa, viñetas sin casilla.
 - Las notas son los renglones siguientes con más sangría.
+- **Si la tarea tiene un bloque de calendario, la nota lo cita con su fecha.** Es lo que
+  engancha las dos mitades: sin esa referencia, al cerrar la sesión no hay forma de saber cuál
+  bloque poner al día. Cuando yo identifico o agendo uno, dejo la cita escrita ahí mismo, para
+  que la próxima vez no haya que adivinar.
 - **Sin identificadores** en el renglón (nada de `id: 4f2a`): el archivo se tiene que poder
   leer y editar a mano.
 - Quien palomea agrega ` ✓ AAAA-MM-DD HH:MM` al final, con hora local. Al despalomear se

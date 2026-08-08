@@ -1159,6 +1159,24 @@ class HerramientasDelEscritor(Base):
                                           pendientes="/x/pendientes.md")
         self.assertIn("notificationLevel NONE", texto)
 
+    def test_la_instruccion_sabe_encontrar_el_bloque_sin_cita(self):
+        """El enganche entre los dos archivos es una cita que casi nadie
+        escribe, asi que sin salida de emergencia el punto 6 no dispara nunca.
+        La salida es buscar, pero acotada: una sola coincidencia clara."""
+        cfg = bitacora._config()
+        texto = cfg["instruccion"].format(archivo="/x/CLAUDE.md",
+                                          pendientes="/x/pendientes.md")
+        self.assertIn("search_events", texto)
+        self.assertIn("UNA COINCIDENCIA CLARA", texto)
+
+    def test_la_instruccion_deja_la_cita_escrita(self):
+        """Lo que hace que la convencion se sostenga sola: identificado el
+        bloque una vez, queda anotado y la proxima no adivina."""
+        cfg = bitacora._config()
+        texto = cfg["instruccion"].format(archivo="/x/CLAUDE.md",
+                                          pendientes="/x/pendientes.md")
+        self.assertIn("DEJA LA CITA ESCRITA", texto)
+
     def test_una_lista_propia_reemplaza_la_de_fabrica(self):
         """Para el cliente que esta en Microsoft 365, cuyas herramientas se
         llaman distinto y no vienen en la lista de fabrica."""
