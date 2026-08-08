@@ -25,7 +25,7 @@ Subcomandos, uno por hook:
 Configuracion opcional en ~/.claude/bitacora.json:
 
     {"raiz_proyectos": "C:/Users/gusta/claude", "umbral": 6,
-     "max_recordatorios": 2, "instruccion": "..."}
+     "max_recordatorios": 2, "instruccion": "...", "herramientas": [...]}
 """
 import json
 import os
@@ -54,7 +54,31 @@ VENTANA_CIERRE = 120      # segundos en que un segundo disparo se toma por dupli
 RETENCION_DIAS = 3
 TIEMPO_CIERRE = 600
 
-INSTRUCCION_POR_DEFECTO = """Escribe la bitacora de la sesion en {archivo}, sin que el usuario tenga que pedirlo:
+# Lo que la sesion escritora puede tocar. Es una lista cerrada: lo que no
+# aparece aqui queda bloqueado, porque en modo -p nadie puede conceder un
+# permiso que se pida a media corrida.
+#
+# Las de calendario estan por el punto 6 de la instruccion. Se escogieron una
+# por una: delete_event y respond_to_event NO estan a proposito, para que
+# borrar un evento y contestar una invitacion sean imposibles y no solo esten
+# prohibidos en la prosa. Lo que si depende de la prosa es no mover invitados
+# y notificar con NONE, porque ambos son parametros de update_event y no
+# herramientas aparte.
+#
+# Ojo si el cliente esta en Microsoft 365: sus herramientas se llaman distinto
+# y no estan aqui, asi que el punto 6 se queda mudo. Se extiende con la clave
+# "herramientas" de ~/.claude/bitacora.json.
+HERRAMIENTAS_CIERRE = [
+    "Read", "Write", "Edit", "Bash", "Glob", "Grep",
+    "mcp__claude_ai_Google_Calendar__list_calendars",
+    "mcp__claude_ai_Google_Calendar__list_events",
+    "mcp__claude_ai_Google_Calendar__search_events",
+    "mcp__claude_ai_Google_Calendar__get_event",
+    "mcp__claude_ai_Google_Calendar__update_event",
+    "mcp__claude_ai_Google_Calendar__create_event",
+]
+
+INSTRUCCION_POR_DEFECTO ="""Escribe la bitacora de la sesion en {archivo}, sin que el usuario tenga que pedirlo:
 
 1. Agrega la entrada del dia al Session Log de ese archivo, o actualiza la de hoy si ya existe.
 2. Respeta el formato, la estructura y el estilo que el archivo ya usa. No inventes secciones nuevas ni reescribas lo viejo.
@@ -64,11 +88,12 @@ INSTRUCCION_POR_DEFECTO = """Escribe la bitacora de la sesion en {archivo}, sin 
    - Si ese archivo YA EXISTE: palomea las tareas que esta sesion hizo y verifico, y tambien las del usuario de las que en la sesion quedo constancia de que ya se hicieron (te lo dijo con todas sus letras, o lo comprobaste por tu cuenta). ANTE LA DUDA NO PALOMEES: anota en la nota de la tarea lo que se supo y dejasela a el. Al palomear agrega " ✓ AAAA-MM-DD HH:MM" con hora local al final del texto de la tarea, y si fue por constancia di en la nota de donde salio. Agrega las tareas nuevas que salieron de esta sesion, en la seccion que corresponda segun quien deba mover, con sus indicadores. NO descartes, NO reordenes, y NUNCA borres un renglon [x] ni [-]: son un registro que el usuario creo con el dedo. Conserva el fin de linea y la marca de orden de bytes que el archivo ya traiga.
    - Si NO EXISTE: crealo solo si de esta sesion salio trabajo abierto de verdad, con el formato de la convencion. Si el proyecto quedo quieto, no crees nada y no lo menciones.
 6. Atiende tambien el calendario, porque es la otra mitad de la convencion: el calendario dice CUANDO y pendientes.md dice SI YA SE HIZO. Toca unicamente los bloques que esta sesion movio de verdad. Cual es suele estar citado en CLAUDE.md o en la nota del pendiente.
-   - ACTUALIZA el bloque que ya existe cuando la sesion produjo material que se va a usar en el, cuando cambio de que trata, o cuando cambiaron sus supuestos. Adjunta lo que se genero y pon al dia la descripcion AGREGANDO, sin reescribir ni borrar lo que ya decia. Verifica leyendo el evento de vuelta: la respuesta de la escritura no es prueba de que quedo.
+   - ACTUALIZA el bloque que ya existe cuando la sesion produjo material que se va a usar en el, cuando cambio de que trata, o cuando cambiaron sus supuestos. Pon al dia la descripcion AGREGANDO, sin reescribir ni borrar lo que ya decia, y cita ahi la ruta de lo que se genero en vez de adjuntarlo. Verifica leyendo el evento de vuelta: la respuesta de la escritura no es prueba de que quedo.
+   - SIEMPRE con notificationLevel NONE, en toda escritura. De fabrica es ALL, o sea que actualizar un bloque que ya tiene invitados les manda correo a todos, sin que nadie lo haya pedido y desde una sesion que corre sola.
    - AGENDA un bloque nuevo solo si el usuario lo pidio en la sesion, o si un pendiente nuevo trae fecha ya comprometida con alguien mas. Un pendiente sin fecha vive en pendientes.md y no en el calendario.
-   - NO AGREGUES INVITADOS. Sumar asistentes manda correo y eso sale de la maquina. Se propone en una linea y lo decide el usuario.
-   - NO BORRES eventos por iniciativa propia, aunque su pendiente ya se haya cerrado. Dilo en una linea al final y que el decida.
-   - Si no hubo nada que tocar en el calendario, no lo menciones.
+   - NO AGREGUES NI QUITES INVITADOS. Mover asistentes manda correo y eso sale de la maquina. Se propone en una linea y lo decide el usuario.
+   - NO BORRES eventos por iniciativa propia, aunque su pendiente ya se haya cerrado. Dilo en una linea al final y que el decida. La herramienta de borrar tampoco esta disponible aqui, a proposito.
+   - Si no tienes herramientas de calendario, o no hubo nada que tocar, no lo menciones.
 
 Si de verdad no hubo nada que valga la pena registrar, dilo en una linea y termina sin escribir nada."""
 
@@ -179,7 +204,29 @@ def _config():
             datos, "max_recordatorios", MAX_RECORDATORIOS_POR_DEFECTO
         ),
         "instruccion": datos.get("instruccion") or INSTRUCCION_POR_DEFECTO,
+        "herramientas": _lista_config(datos, "herramientas", HERRAMIENTAS_CIERRE),
     }
+
+
+def _lista_config(datos, clave, defecto):
+    """Una lista de la configuracion, o la de fabrica si no sirve.
+
+    Se valida en vez de confiar: una clave mal escrita (una cadena suelta,
+    una lista con numeros) dejaria la sesion escritora sin sus herramientas
+    de siempre, y este mecanismo no puede fallar en silencio.
+    """
+    valor = datos.get(clave)
+    if isinstance(valor, list) and valor and all(
+        isinstance(x, str) and x.strip() for x in valor
+    ):
+        return [x.strip() for x in valor]
+    if valor is not None:
+        _avisar_una_vez(
+            f"config-{clave}",
+            f"config invalida  {clave}={valor!r} no es una lista de textos, "
+            "se usa la de fabrica",
+        )
+    return list(defecto)
 
 
 # --------------------------------------------------------------------------
@@ -541,7 +588,7 @@ def escribir(argv):
                 proceso = subprocess.Popen(
                     [cfg["claude_bin"], "-p", "--resume", sid,
                      "--permission-mode", "acceptEdits",
-                     "--allowedTools", "Read,Write,Edit,Bash,Glob,Grep"],
+                     "--allowedTools", ",".join(cfg["herramientas"])],
                     cwd=str(proy), env=entorno,
                     stdin=subprocess.PIPE, stdout=registro, stderr=registro,
                 )

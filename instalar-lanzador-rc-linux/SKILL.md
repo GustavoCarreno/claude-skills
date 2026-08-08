@@ -30,7 +30,7 @@ orden. Para Windows existe el equivalente en `instalar-lanzador-rc-windows`.
 | Retomar una conversación anterior | El menú del proyecto lista sus sesiones previas |
 | Crear un proyecto nuevo | Botón "+ Nuevo proyecto", con nombre y contexto |
 | Subir archivos desde el teléfono | Caen en `bandeja/` dentro del proyecto |
-| **La bitácora se escribe sola** | Al cerrar, el `CLAUDE.md` del proyecto queda actualizado sin pedirlo, y su `pendientes.md` también (se crea solo si hubo trabajo abierto) |
+| **La bitácora se escribe sola** | Al cerrar, el `CLAUDE.md` del proyecto queda actualizado sin pedirlo, su `pendientes.md` también (se crea solo si hubo trabajo abierto), y los bloques de calendario que esa sesión movió quedan al día |
 | **Documentos de oficina de verdad** | Pide un Word, un Excel con fórmulas o una presentación y salen archivos que abren en Office |
 | **Su correo, su calendario y su Drive** | Pregunta qué le escribieron o pide que le agenden algo, y se resuelve sin salir de la conversación |
 | **Sus pendientes por proyecto** | Ve qué falta y palomea lo hecho, desde la computadora o desde el teléfono |
@@ -192,6 +192,14 @@ también atiende el `pendientes.md` del proyecto (A7), y puede crearlo si de la 
 trabajo abierto. Un único archivo de Python, biblioteca estándar, **el mismo que corre en
 Windows**.
 
+> 📌 **El cierre también pone al día el calendario, y eso depende de A5.** La sesión que
+> escribe la bitácora corre con una **lista cerrada** de herramientas, y las de Google
+> Calendar vienen dentro. Si el cliente no conectó su calendario en A5, el cierre
+> sencillamente no lo menciona y todo lo demás funciona igual. **Si está en Microsoft 365
+> sus herramientas se llaman distinto y no están en la lista**, así que esa mitad se queda
+> muda hasta que se extienda con la clave `herramientas` de abajo. Qué hace y qué nunca
+> hace con el calendario está en A7.
+
 ```bash
 mkdir -p ~/.claude/hooks
 curl -fsSL https://raw.githubusercontent.com/GustavoCarreno/claude-skills/main/bitacora/bitacora.py \
@@ -227,6 +235,10 @@ limpio, el archivo llegó corrupto o incompleto.
 - **`instruccion`** (opcional): el texto que se le pide al asistente. **Para un cliente
   conviene reescribirlo en su vocabulario**; el de fábrica habla de "Session Log" y
   "pipeline", que no son palabras suyas.
+- **`herramientas`** (opcional): la lista cerrada con la que corre la sesión que escribe.
+  De fábrica trae las de archivo más las de Google Calendar. **Se toca solo para un cliente
+  en Microsoft 365**, agregando las suyas. Una lista mal escrita se ignora con aviso, en vez
+  de dejar al mecanismo sin herramientas.
 
 Los cuatro hooks, en `~/.claude/settings.json`, dentro de `"hooks"`:
 
@@ -384,6 +396,10 @@ python3 "$SK/pptx/scripts/thumbnail.py" archivo.pptx     # rejilla de miniaturas
 **Lo que deja funcionando:** que pueda decir "¿qué me escribió el broker esta semana?" o
 "agéndame con él el martes" y la sesión lo resuelva sin que él salga de la conversación.
 
+> 📌 **El conector de calendario hace doble trabajo.** Además de esto, es lo que le permite
+> al cierre automático de la bitácora (A3) dejar al día los bloques que la sesión movió. Si
+> este paso se salta, esa mitad del cierre sencillamente no existe, y **no avisa**.
+
 Se hace con los **conectores de claude.ai**, no instalando nada en la máquina. La cuenta que
 ya se autenticó en A2 es la misma que los trae, así que **no hay proyecto de nube que crear,
 ni credenciales que administrar, ni permisos que pedirle a nadie.**
@@ -529,6 +545,30 @@ grep -q "bandeja/" "$ignore" && echo "✓ bandeja/ está en el gitignore" || ech
 proyecto dice si ya se hizo.** La mitad del calendario ya quedó montada en A5 (los
 conectores de Google Calendar / Microsoft 365); esta sección solo la referencia, no la
 repite.
+
+> 📌 **Qué hace el cierre automático con el calendario, y qué nunca hace.** Desde que la
+> bitácora atiende también esta mitad (A3), al cerrar una sesión puede **poner al día el
+> bloque que esa sesión movió** — agregando a la descripción, sin reescribir lo que ya
+> decía — y **agendar uno nuevo solo si se lo pidieron**, o si un pendiente nuevo trae fecha
+> ya comprometida con alguien más. Un pendiente sin fecha vive en `pendientes.md` y no en el
+> calendario.
+>
+> **Lo que nunca hace, y vale decírselo al cliente, porque es lo que vuelve seguro dejarlo
+> corriendo solo:**
+>
+> - **No borra eventos, ni contesta invitaciones.** No es una promesa de buena conducta: esas
+>   herramientas **no están** en la lista con la que corre la sesión que escribe, así que son
+>   imposibles y no solo están prohibidas.
+> - **No agrega ni quita invitados**, porque mover asistentes manda correo. Lo propone en una
+>   línea y lo decide el cliente.
+> - **No notifica a nadie.** Toda escritura va con `notificationLevel NONE`. De fábrica ese
+>   parámetro es `ALL`, o sea que **actualizar un bloque que ya tiene invitados les manda
+>   correo a todos**; sin esa regla, un cierre desatendido acabaría escribiéndole a terceros.
+>
+> ⚠️ **Para que el cierre sepa cuál bloque tocar, la nota del pendiente tiene que citarlo**,
+> que es justo lo que pide el formato de abajo. Sin esa referencia no adivina: se queda
+> callado, y como el silencio es también su respuesta normal cuando no hay nada que hacer,
+> nadie nota la diferencia.
 
 **Por qué va en la fase A y no en la B: funciona sin lanzador.** El archivo y el asistente
 bastan, y el teléfono solo agrega el dedo. Un cliente al que su área de sistemas le bloquee
@@ -944,7 +984,7 @@ que vea la bandeja. Debe encontrarlo sin que le digas la ruta. Rápido y sin tel
 
 ## 7. Verificación, en orden
 
-> **Cómo se reparte por fases:** los renglones 1, 2, 3, 10, 11, 12 y 13 cierran la **fase A**
+> **Cómo se reparte por fases:** los renglones 1, 2, 3, 10, 10b, 11, 12 y 13 cierran la **fase A**
 > (el gitignore, la convención de pendientes, el servicio local, la bitácora, el runtime de
 > documentos, los conectores y la cuenta de DeepInfra); del 4 al 9, más el 14, cierran la
 > **fase B**, y necesitan el teléfono. Si solo se contrató la fase A, la verificación termina
@@ -965,10 +1005,19 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 | 8 | Cierra | tocar el proyecto → "Terminar sesión" | desaparece de la app |
 | 9 | Retoma | tocar un proyecto apagado | lista sus sesiones previas |
 | 10 | La bitácora | ver el recuadro de abajo, que tiene truco | el `CLAUDE.md` de ese proyecto trae una entrada nueva |
+| 10b | La bitácora trae lo del calendario | `grep -c "Google_Calendar" ~/.claude/hooks/bitacora.py` | **`6`**. Menos que eso es una copia vieja bajada en A3 |
 | 11 | El runtime de documentos | las cinco pruebas de A4f | los cinco archivos salen bien, **con el Excel trayendo resultados y no celdas vacías** |
 | 12 | Los conectores | `claude mcp list` | `claude.ai Gmail`, `Google Calendar` y `Google Drive` en `Connected` |
 | 13 | La cuenta de DeepInfra (opcional) | `python3 ~/.claude/skills/whisper-deepinfra/whisper_deepinfra.py --estado` | `llave: CONFIGURADA` si el cliente ya la dio; `NO CONFIGURADA` es correcto si todavía no la necesita |
 | 14 | El audio se escucha con un clic (solo si ya usó la voz sintética) | ver el recuadro de abajo | el navegador del teléfono lo **reproduce**, no lo descarga |
+
+
+> 📌 **Por qué el renglón del calendario mira el archivo y no el comportamiento.** Comprobar
+> que el cierre de verdad toca un bloque exige cerrar una sesión que haya movido uno, y su
+> respuesta normal cuando no hay nada que hacer es **quedarse callado**, o sea que un fallo
+> se ve igual que un acierto. Lo que sí distingue una cosa de otra en un segundo es si el
+> `bitacora.py` que quedó instalado trae las herramientas de calendario: si no las trae, el
+> `curl` de A3 sirvió una copia vieja y esa mitad **nunca** va a funcionar.
 
 > 📌 **Cómo se comprueba el renglón 14, y por qué no basta con que conteste 200.** El lanzador
 > sirve lo que hay en `salida/` por `GET /audio/<proyecto>/<archivo>`. Lo que decide si el

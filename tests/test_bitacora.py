@@ -1091,5 +1091,100 @@ class InstruccionConPendientes(Base):
         salida.encode("ascii")   # stdout del hook es cp1252 en Windows
 
 
+class HerramientasDelEscritor(Base):
+    """El punto 6 de la instruccion pide tocar el calendario, y la sesion
+    escritora corre con una lista cerrada de herramientas. Si las dos se
+    desacoplan, la instruccion queda muda: pide algo que la sesion no puede
+    hacer, y como el propio punto 6 dice "si no hubo nada que tocar no lo
+    menciones", nadie se entera nunca.
+
+    Por eso estas pruebas miran el argumento que de verdad LLEGA a Popen por
+    el camino real de escribir(), y no la constante suelta.
+    """
+
+    def _allowed_tools_de_una_corrida_real(self):
+        proy = self.proyecto("devops")
+        capturado = {}
+
+        class ProcesoFalso:
+            returncode = 0
+
+            def communicate(self, entrada=None, timeout=None):
+                return b"", b""
+
+        def popen_falso(argumentos, **kwargs):
+            capturado["argumentos"] = argumentos
+            return ProcesoFalso()
+
+        with mock.patch.object(bitacora.subprocess, "Popen", popen_falso):
+            self.assertEqual(bitacora.escribir(["s1", str(proy)]), 0)
+
+        argumentos = capturado["argumentos"]
+        return argumentos[argumentos.index("--allowedTools") + 1].split(",")
+
+    def test_el_escritor_recibe_las_herramientas_de_calendario(self):
+        permitidas = self._allowed_tools_de_una_corrida_real()
+        for herramienta in ("update_event", "create_event", "get_event",
+                            "search_events", "list_events"):
+            self.assertIn(
+                "mcp__claude_ai_Google_Calendar__" + herramienta, permitidas,
+                "sin esta herramienta el punto 6 de la instruccion no puede "
+                "hacer nada, y falla en silencio",
+            )
+
+    def test_el_escritor_conserva_las_herramientas_de_archivo(self):
+        """Lo de calendario se agrego a la lista, no la reemplazo: sin estas
+        no se escribe ni el CLAUDE.md ni el pendientes.md, que es el 100% del
+        valor del mecanismo."""
+        permitidas = self._allowed_tools_de_una_corrida_real()
+        for herramienta in ("Read", "Write", "Edit", "Bash", "Glob", "Grep"):
+            self.assertIn(herramienta, permitidas)
+
+    def test_el_escritor_no_puede_borrar_un_evento(self):
+        """La prohibicion de borrar no descansa en que el modelo obedezca la
+        prosa: la herramienta no esta, asi que borrar es imposible. Lo mismo
+        con contestar invitaciones, que le hablaria a terceros."""
+        permitidas = self._allowed_tools_de_una_corrida_real()
+        self.assertNotIn(
+            "mcp__claude_ai_Google_Calendar__delete_event", permitidas)
+        self.assertNotIn(
+            "mcp__claude_ai_Google_Calendar__respond_to_event", permitidas)
+
+    def test_la_instruccion_exige_no_notificar(self):
+        """Este si depende de la prosa, porque notificationLevel es un
+        parametro de update_event y no una herramienta aparte. De fabrica es
+        ALL, o sea que actualizar un bloque con invitados les manda correo."""
+        cfg = bitacora._config()
+        texto = cfg["instruccion"].format(archivo="/x/CLAUDE.md",
+                                          pendientes="/x/pendientes.md")
+        self.assertIn("notificationLevel NONE", texto)
+
+    def test_una_lista_propia_reemplaza_la_de_fabrica(self):
+        """Para el cliente que esta en Microsoft 365, cuyas herramientas se
+        llaman distinto y no vienen en la lista de fabrica."""
+        (self.casa / ".claude" / "bitacora.json").write_text(
+            json.dumps({
+                "raiz_proyectos": str(self.raiz),
+                "herramientas": ["Read", "Write", "otra_cosa"],
+            }),
+            encoding="utf-8",
+        )
+        self.assertEqual(bitacora._config()["herramientas"],
+                         ["Read", "Write", "otra_cosa"])
+
+    def test_una_lista_invalida_no_deja_al_escritor_sin_herramientas(self):
+        """Una clave mal escrita no puede dejar mudo al mecanismo: se avisa y
+        se usa la de fabrica, en vez de mandar una lista rota a Popen."""
+        (self.casa / ".claude" / "bitacora.json").write_text(
+            json.dumps({
+                "raiz_proyectos": str(self.raiz),
+                "herramientas": "Read,Write",
+            }),
+            encoding="utf-8",
+        )
+        self.assertEqual(bitacora._config()["herramientas"],
+                         bitacora.HERRAMIENTAS_CIERRE)
+
+
 if __name__ == "__main__":
     unittest.main()
