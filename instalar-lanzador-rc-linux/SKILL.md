@@ -620,6 +620,8 @@ Cada proyecto puede tener un `pendientes.md` en su raíz. El calendario reserva 
 - [ ] Título de la tarea
       · dónde · cuánto · cabeza
       Nota con el contexto, y a qué bloque de calendario corresponde.
+      » AAAA-MM-DD HH:MM · lo que dictaste desde el teléfono, sin procesar
+      » AAAA-MM-DD HH:MM · otra que ya leí  ✓ AAAA-MM-DD HH:MM
 
 ## Esperando a alguien
 
@@ -641,6 +643,15 @@ Cada proyecto puede tener un `pendientes.md` en su raíz. El calendario reserva 
 - Una tarea es un renglón que casa con `^\s*-\s\[([ xX])\]\s+(.+)$`. Todo lo demás es
   decoración: encabezados, prosa, viñetas sin casilla.
 - Las notas son los renglones siguientes con más sangría.
+- **La retroalimentación que dictas desde el teléfono es una nota que empieza con `»`**,
+  seguida de la fecha y hora y de `· `. Así: `» 2026-08-09 14:32 · lo llevé, aceptaron dos
+  de tres`. La `»` es procedencia y **es permanente**: dice que eso lo dictaste tú, no yo.
+  Se reconoce solo al **inicio** del renglón, así que lo que dictes puede llevar otra `»`
+  adentro sin confundir nada.
+- **Una retroalimentación sin procesar es la que NO termina en ` ✓ AAAA-MM-DD HH:MM`.** Al
+  procesarla **agrego** ese sello; **nunca borro el texto que dictaste**. Es el mismo
+  registro que los renglones `[x]`, y se protege igual: procesarla es leerla y sellarla, no
+  vaciarla.
 - **Si la tarea tiene un bloque de calendario, la nota lo cita con su fecha.** Es lo que
   engancha las dos mitades: sin esa referencia, al cerrar la sesión no hay forma de saber cuál
   bloque poner al día. Cuando yo identifico o agendo uno, dejo la cita escrita ahí mismo, para
@@ -698,6 +709,12 @@ EOF
 > ⚠️ **Idempotente, igual que A6: correrlo dos veces no duplica la sección.** Y si
 > `~/.claude/CLAUDE.md` ya tiene contenido de otro paso (el más obvio: si por algún motivo
 > B5 ya corrió antes), esto se anexa, no lo reemplaza.
+
+> 🔴 **El reverso de esa misma moneda, y muerde al ACTUALIZAR una máquina ya instalada:** como
+> la guarda es el encabezado, en una máquina que ya trae la sección **este bloque no corre**.
+> O sea que **las reglas nuevas del contrato no llegan solas**: el asistente de esa máquina
+> sigue con el contrato del día que se instaló, y nada avisa. Al actualizar una instalación
+> vieja hay que **agregar a mano lo que le falte**, comparando contra el bloque de aquí.
 
 Verificación: crear un `pendientes.md` de prueba con una tarea, abrir una sesión nueva en
 ese proyecto y pedirle que revise sus pendientes. Debe encontrar la tarea sin que se la
@@ -875,7 +892,7 @@ python3 -m venv .venv
 cd ~/rc-launcher && .venv/bin/python -m pytest -q
 ```
 
-Debe pasar **la suite completa, sin una sola falla**. Al 6 de agosto de 2026 son 445 pruebas
+Debe pasar **la suite completa, sin una sola falla**. Al 9 de agosto de 2026 son 493 pruebas
 y corren en un segundo. **El número crece con cada versión, así que no lo trates como
 contraseña**: lo que importa es que no falle ninguna, en la máquina del cliente, sin tocar
 una línea. Eso es lo que demuestra que el código no depende de la máquina donde nació.
