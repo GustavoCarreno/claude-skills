@@ -6,6 +6,8 @@ import importlib.util
 import io
 import json
 import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -479,6 +481,153 @@ class PendientesSinAtender(Base):
         (proy / "pendientes.md").write_text("# Pendientes\n", encoding="utf-8")
         self.fechar(proy / "pendientes.md", 120)
         self.assertFalse(bitacora._hay_pendiente(base, proy, 6))
+
+
+class Worktrees(Base):
+    """Un worktree de git es OTRO directorio del MISMO proyecto.
+
+    Medido el 9 ago 2026 en el proyecto lanzador: una sesion trabajo en
+    .claude/worktrees/retroalimentacion-por-pendiente, escribio ahi su
+    bitacora y la confirmo en la rama. El SessionStart siguiente, ya en el
+    checkout principal, la reporto como "muerta sin registrar": acerto en la
+    senal y se equivoco en la conclusion, porque solo sabia mirar un
+    directorio. Con subagentes en worktrees eso se repite cada vez.
+
+    El layout de .git se fabrica a mano en vez de invocar a git, para que
+    estas pruebas corran igual en una maquina sin git instalado. Que lo
+    fabricado coincida con lo que git escribe de verdad lo comprueba aparte
+    la clase WorktreeDeGitDeVerdad.
+    """
+
+    def repo(self, nombre="devops"):
+        """Un proyecto que es el checkout principal de un repositorio."""
+        proy = self.proyecto(nombre)
+        (proy / ".git").mkdir()
+        return proy
+
+    def worktree(self, proy, nombre="rama", con_claude_md=True):
+        """Un arbol de trabajo enlazado, colgado dentro del proyecto."""
+        arbol = proy / ".claude" / "worktrees" / nombre
+        arbol.mkdir(parents=True)
+        (arbol / ".git").write_text(
+            f"gitdir: {proy / '.git' / 'worktrees' / nombre}\n", encoding="utf-8"
+        )
+        admin = proy / ".git" / "worktrees" / nombre
+        admin.mkdir(parents=True)
+        (admin / "commondir").write_text("../..\n", encoding="utf-8")
+        (admin / "gitdir").write_text(f"{arbol / '.git'}\n", encoding="utf-8")
+        if con_claude_md:
+            (arbol / "CLAUDE.md").write_text("# " + proy.name + "\n", encoding="utf-8")
+        return arbol.resolve()
+
+    def test_un_proyecto_sin_git_solo_se_mira_a_si_mismo(self):
+        proy = self.proyecto("devops")
+        self.assertEqual(bitacora._checkouts(proy), [proy])
+
+    def test_desde_el_principal_se_ven_sus_worktrees(self):
+        proy = self.repo()
+        arbol = self.worktree(proy)
+        self.assertEqual(bitacora._checkouts(proy), [proy, arbol])
+
+    def test_desde_el_worktree_se_ve_el_principal(self):
+        proy = self.repo()
+        arbol = self.worktree(proy)
+        self.assertEqual(bitacora._checkouts(arbol), [arbol, proy])
+
+    def test_la_bitacora_escrita_en_el_worktree_apaga_la_alarma(self):
+        """El defecto reportado, en una linea."""
+        proy = self.repo()
+        arbol = self.worktree(proy)
+        trabajo = time.time() - 60
+        self.fechar(proy / "CLAUDE.md", 3600)      # master quedo atras
+        self.fechar(arbol / "CLAUDE.md", 0)        # la bitacora fue a la rama
+        self.assertFalse(bitacora._sin_atender(proy, trabajo))
+
+    def test_sin_bitacora_en_ningun_checkout_la_alarma_sigue_encendida(self):
+        """La honesta: el arreglo no puede callar la alarma de todo."""
+        proy = self.repo()
+        arbol = self.worktree(proy)
+        trabajo = time.time() - 60
+        self.fechar(proy / "CLAUDE.md", 3600)
+        self.fechar(arbol / "CLAUDE.md", 3600)
+        self.assertTrue(bitacora._sin_atender(proy, trabajo))
+
+    def test_un_pendientes_md_que_solo_existe_en_el_worktree_cuenta(self):
+        proy = self.repo()
+        arbol = self.worktree(proy)
+        trabajo = time.time() - 60
+        self.fechar(proy / "CLAUDE.md", 0)
+        pend = arbol / "pendientes.md"
+        pend.write_text("# Pendientes\n", encoding="utf-8")
+        self.fechar(pend, 3600)                    # existe y quedo sin atender
+        self.assertTrue(bitacora._sin_atender(proy, trabajo))
+
+    def test_escribir_la_bitacora_en_el_worktree_no_cuenta_como_trabajo(self):
+        """La otra cara: marcar() no puede contar el cierre como faena."""
+        proy = self.repo()
+        arbol = self.worktree(proy)
+        trabajo = time.time() - 60
+        self.fechar(proy / "CLAUDE.md", 3600)
+        self.fechar(arbol / "CLAUDE.md", 0)
+        self.assertTrue(bitacora._acaba_de_atender(proy, trabajo))
+
+    def test_un_git_ilegible_no_revienta_y_se_queda_con_el_proyecto(self):
+        proy = self.proyecto("devops")
+        (proy / ".git").write_text("gitdir: /no/existe/en/ningun/lado\n",
+                                   encoding="utf-8")
+        self.assertEqual(bitacora._checkouts(proy), [proy])
+
+    def test_sessionstart_ya_no_reporta_huerfana_la_que_registro_en_la_rama(self):
+        """El sintoma completo, por el camino real del hook."""
+        proy = self.repo()
+        arbol = self.worktree(proy)
+        base = self.base_de("vieja", proy)
+        bitacora._dir_marcas().mkdir(parents=True, exist_ok=True)
+        Path(str(base) + ".conteo").write_text("9", encoding="utf-8")
+        trabajo = Path(str(base) + ".trabajo")
+        trabajo.write_text("", encoding="utf-8")
+        self.fechar(proy / "CLAUDE.md", 3600)
+        self.fechar(trabajo, 600)
+        self.fechar(arbol / "CLAUDE.md", 0)
+        codigo, salida = self.pendiente_con(
+            {"session_id": "nueva", "cwd": str(proy)}
+        )
+        self.assertEqual(codigo, 0)
+        self.assertEqual(salida, "")
+
+
+@unittest.skipUnless(shutil.which("git"), "hace falta git para este contraste")
+class WorktreeDeGitDeVerdad(Base):
+    """Contrasta el layout fabricado arriba contra el que escribe git.
+
+    Sin esta prueba, las de Worktrees comprobarian que el codigo entiende una
+    invencion mia, no lo que git pone en el disco.
+    """
+
+    def test_git_worktree_add_deja_el_layout_que_las_otras_pruebas_fabrican(self):
+        proy = self.proyecto("devops")
+
+        def git(*args, cwd=proy):
+            subprocess.run(
+                ["git", *args], cwd=str(cwd), check=True, capture_output=True,
+                env={**os.environ, "GIT_CONFIG_GLOBAL": os.devnull,
+                     "GIT_CONFIG_SYSTEM": os.devnull},
+            )
+
+        git("init", "-q", "-b", "master")
+        git("config", "user.email", "prueba@ejemplo.mx")
+        git("config", "user.name", "prueba")
+        git("add", "-A")
+        git("commit", "-qm", "inicial")
+        arbol = proy / ".claude" / "worktrees" / "rama"
+        git("worktree", "add", "-q", "-b", "rama", str(arbol))
+
+        self.assertEqual(
+            bitacora._checkouts(proy), [proy, arbol.resolve()]
+        )
+        self.assertEqual(
+            bitacora._checkouts(arbol.resolve()), [arbol.resolve(), proy]
+        )
 
 
 class ReinicioDelConteo(Base):

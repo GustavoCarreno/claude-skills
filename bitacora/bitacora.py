@@ -280,6 +280,89 @@ def _mtime(ruta):
         return None
 
 
+def _dir_git_comun(proy):
+    """El .git compartido del repositorio de proy, o None si no hay.
+
+    Sin invocar a git, a proposito: esto corre en cada llamada de herramienta
+    y leer dos archivos chicos cuesta muchisimo menos que un subproceso. En un
+    arbol de trabajo enlazado, .git es un ARCHIVO con "gitdir: <ruta>", y ese
+    directorio administrativo trae un commondir que apunta al .git del
+    checkout principal.
+    """
+    punto = proy / ".git"
+    if punto.is_dir():
+        return punto
+    if not punto.is_file():
+        return None
+    texto = punto.read_text(encoding="utf-8", errors="replace").strip()
+    if not texto.startswith("gitdir:"):
+        return None
+    admin = Path(texto.split(":", 1)[1].strip())
+    if not admin.is_absolute():
+        admin = proy / admin
+    # Sin commondir, la convencion de git deja el .git comun dos niveles
+    # arriba: <principal>/.git/worktrees/<nombre>.
+    comun = admin / ".." / ".."
+    archivo = admin / "commondir"
+    if archivo.is_file():
+        relativo = archivo.read_text(encoding="utf-8", errors="replace").strip()
+        if relativo:
+            comun = admin / relativo
+    comun = comun.resolve()
+    return comun if comun.is_dir() else None
+
+
+def _checkouts(proy):
+    """proy y los demas arboles de trabajo del MISMO repositorio.
+
+    Un worktree de git no es otro proyecto: es el mismo, en otra rama. La
+    bitacora que una sesion escribe ahi cuenta igual que la del checkout
+    principal.
+
+    Sin esto, el vigilante acierta en la senal y se equivoca en la conclusion.
+    Medido el 9 ago 2026 en el proyecto lanzador: una sesion trabajo en
+    .claude/worktrees/retroalimentacion-por-pendiente, escribio ahi su
+    bitacora y la confirmo en la rama; el SessionStart siguiente, ya en el
+    checkout principal, la reporto como muerta sin registrar. Con subagentes
+    en worktrees eso se repite cada vez.
+    """
+    arboles = [proy]
+    try:
+        comun = _dir_git_comun(proy)
+        if comun is None:
+            return arboles
+        # Solo cuando el comun se llama .git su padre es un checkout. Un
+        # repositorio pelon (foo.git) no tiene arbol de trabajo, y su padre es
+        # un directorio ajeno que no hay que mirar.
+        if comun.name == ".git":
+            arboles.append(comun.parent)
+        for gitdir in sorted((comun / "worktrees").glob("*/gitdir")):
+            texto = gitdir.read_text(encoding="utf-8", errors="replace").strip()
+            if texto:
+                arboles.append(Path(texto).parent)
+    except OSError:
+        pass
+
+    vistos, unicos = set(), []
+    for ruta in arboles:
+        try:
+            clave = ruta.resolve()
+        except (OSError, RuntimeError):
+            continue
+        if clave in vistos or not clave.is_dir():
+            continue
+        vistos.add(clave)
+        unicos.append(clave)
+    return unicos
+
+
+def _mtime_reciente(nombre, arboles):
+    """El mtime mas nuevo de <nombre> entre los checkouts del repositorio."""
+    fechas = [f for f in (_mtime(arbol / nombre) for arbol in arboles)
+              if f is not None]
+    return max(fechas) if fechas else None
+
+
 def _sin_atender(proy, trabajo):
     """Los archivos del cierre que quedaron mas viejos que el trabajo.
 
@@ -287,11 +370,15 @@ def _sin_atender(proy, trabajo):
     registrar. El pendientes.md cuenta SOLO SI EXISTE: donde no hay lista no
     hay nada que atender, y el punto 5 de la instruccion ya decide por su
     cuenta si vale la pena crearla.
+
+    Se mira en todos los arboles de trabajo del repositorio, no solo en el
+    directorio de proy: ver _checkouts.
     """
-    escrito = _mtime(proy / "CLAUDE.md")
+    arboles = _checkouts(proy)
+    escrito = _mtime_reciente("CLAUDE.md", arboles)
     if escrito is None or trabajo > escrito:
         return True
-    pendientes = _mtime(proy / "pendientes.md")
+    pendientes = _mtime_reciente("pendientes.md", arboles)
     return pendientes is not None and trabajo > pendientes
 
 
@@ -302,8 +389,9 @@ def _acaba_de_atender(proy, trabajo):
     conocida: una bitacora escrita con un heredoc o con sed no pasa por Write
     ni por Edit y quedaria contada al reves.
     """
+    arboles = _checkouts(proy)
     for nombre in ("CLAUDE.md", "pendientes.md"):
-        cuando = _mtime(proy / nombre)
+        cuando = _mtime_reciente(nombre, arboles)
         if cuando is not None and cuando > trabajo:
             return True
     return False
