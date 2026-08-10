@@ -658,13 +658,20 @@ Cada proyecto puede tener un `pendientes.md` en su raíz. El calendario reserva 
   ` ✓ AAAA-MM-DD HH:MM` dice que ya se procesó— y **nunca se borra lo dictado**. La sección
   se crea al final del archivo, y **un `»` a ras de margen no es una tarea ni la nota de
   ninguna**, así que no cuenta ni se pinta como pendiente.
+  - El encabezado lleva **exactamente dos almohadillas**. Con `###` la sección deja de
+    reconocerse y tus recados dejan de contarse, **sin que nada avise**.
+  - La sección **termina en el siguiente encabezado**, del nivel que sea. Si agregas uno
+    después, los recados que queden debajo se vuelven invisibles.
+  - Dentro de un bloque de código cercado no se lee nada, así que un `#` ahí no la corta.
 
-  ```markdown
-  ## Dicho del proyecto
+  Queda así, y el encabezado va **pegado al margen izquierdo**, sin sangría:
 
-  » 2026-08-09 21:40 · el cliente movió la junta al martes
-  » 2026-08-08 09:12 · ya no urge lo del respaldo  ✓ 2026-08-09 10:05
-  ```
+```markdown
+## Dicho del proyecto
+
+» 2026-08-09 21:40 · el cliente movió la junta al martes
+» 2026-08-08 09:12 · ya no urge lo del respaldo  ✓ 2026-08-09 10:05
+```
 - **Si la tarea tiene un bloque de calendario, la nota lo cita con su fecha.** Es lo que
   engancha las dos mitades: sin esa referencia, al cerrar la sesión no hay forma de saber cuál
   bloque poner al día. Cuando yo identifico o agendo uno, dejo la cita escrita ahí mismo, para
