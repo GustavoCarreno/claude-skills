@@ -280,22 +280,44 @@ def _mtime(ruta):
         return None
 
 
+def _sin_atender(proy, trabajo):
+    """Los archivos del cierre que quedaron mas viejos que el trabajo.
+
+    El CLAUDE.md cuenta siempre; si no existe, todo el trabajo esta sin
+    registrar. El pendientes.md cuenta SOLO SI EXISTE: donde no hay lista no
+    hay nada que atender, y el punto 5 de la instruccion ya decide por su
+    cuenta si vale la pena crearla.
+    """
+    escrito = _mtime(proy / "CLAUDE.md")
+    if escrito is None or trabajo > escrito:
+        return True
+    pendientes = _mtime(proy / "pendientes.md")
+    return pendientes is not None and trabajo > pendientes
+
+
 def _hay_pendiente(base, proy, umbral):
     """Hubo trabajo real que todavia no se registro.
 
-    Se compara contra el mtime real del CLAUDE.md, no contra una marca que
+    Se compara contra el mtime real de los archivos, no contra una marca que
     escriba el hook. Antes se marcaba solo cuando la escritura pasaba por Write
     o Edit, asi que escribir la bitacora con un heredoc o con sed la contaba
     como trabajo, o sea al reves. Observado cuatro veces entre julio y agosto
     de 2026.
+
+    Mira los DOS archivos del cierre, no solo el CLAUDE.md. Medido el 9 ago
+    2026: una sesion escribio su bitacora a media faena, el conteo se reinicio
+    por eso, cerro con 2 llamadas de 6 y el punto 5 de la instruccion -- el que
+    atiende pendientes.md -- no corrio nunca. El efecto era perverso: mientras
+    mas disciplinada la sesion con su bitacora, mas segura de no tocar nunca
+    los pendientes, y dos tareas ya hechas siguieron pintandose como abiertas
+    en el telefono.
     """
     if _leer_entero(Path(str(base) + ".conteo")) < umbral:
         return False
     trabajo = _mtime(Path(str(base) + ".trabajo"))
     if trabajo is None:
         return False
-    escrito = _mtime(proy / "CLAUDE.md")
-    return escrito is None or trabajo > escrito
+    return _sin_atender(proy, trabajo)
 
 
 def _payload():
@@ -341,10 +363,15 @@ def marcar():
     # Se toca .trabajo ademas de poner el conteo en cero. Sin eso, el CLAUDE.md
     # quedaria mas nuevo para siempre y el trabajo real posterior no volveria a
     # contarse nunca.
+    #
+    # La alarma se apaga solo cuando los DOS archivos del cierre quedaron al
+    # dia. Antes bastaba el CLAUDE.md, asi que escribir la bitacora a media
+    # faena reiniciaba el conteo y dejaba pendientes.md sin atender hasta el
+    # cierre, que ya nunca se disparaba. Bajar el umbral no lo arreglaba: el
+    # problema no era su altura, era que un archivo apagaba la alarma del otro.
     trabajo = Path(str(base) + ".trabajo")
     marca_trabajo = _mtime(trabajo)
-    escrito = _mtime(proy / "CLAUDE.md")
-    if marca_trabajo is not None and escrito is not None and escrito > marca_trabajo:
+    if marca_trabajo is not None and not _sin_atender(proy, marca_trabajo):
         _dir_marcas().mkdir(parents=True, exist_ok=True)
         Path(str(base) + ".conteo").write_text("0", encoding="utf-8")
         recordatorios = Path(str(base) + ".recordatorios")

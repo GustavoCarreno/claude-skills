@@ -422,6 +422,126 @@ class CausaB(Base):
         self.assertEqual(bitacora._leer_entero(recordatorios), 1)
 
 
+class PendientesSinAtender(Base):
+    """El cierre tambien se dispara cuando pendientes.md quedo sin atender.
+
+    Medido el 9 ago 2026: una sesion escribio su CLAUDE.md a media faena, el
+    conteo se reinicio por eso, cerro con 2 llamadas de 6 y el punto 5 de la
+    instruccion -- el que atiende pendientes.md -- no corrio nunca. Dos tareas
+    ya hechas siguieron pintandose como abiertas en el telefono.
+
+    El efecto es perverso: mientras mas disciplinada es una sesion escribiendo
+    su bitacora, mas segura esta de cerrar bajo el umbral y de no tocar nunca
+    pendientes.md.
+    """
+
+    def preparar(self, conteo=6, con_pendientes=True, pendientes_al_dia=False):
+        proy = self.proyecto("devops")
+        base = self.base_de("s1", proy)
+        bitacora._dir_marcas().mkdir(parents=True, exist_ok=True)
+        Path(str(base) + ".conteo").write_text(str(conteo), encoding="utf-8")
+        trabajo = Path(str(base) + ".trabajo")
+        trabajo.write_text("", encoding="utf-8")
+        # El CLAUDE.md queda SIEMPRE mas nuevo que el trabajo, o sea que la
+        # condicion vieja da False. Asi, si la prueba pasa, pasa por el
+        # pendientes.md y no por la mitad que ya existia.
+        self.fechar(trabajo, 60)
+        self.fechar(proy / "CLAUDE.md", 0)
+        if con_pendientes:
+            pend = proy / "pendientes.md"
+            pend.write_text("# Pendientes\n\n- [ ] algo\n", encoding="utf-8")
+            self.fechar(pend, 0 if pendientes_al_dia else 120)
+        return base, proy
+
+    def test_el_claude_md_al_dia_por_si_solo_no_alcanza(self):
+        """La mitad vieja da False, que es lo que hace honesta a la siguiente."""
+        base, proy = self.preparar(con_pendientes=False)
+        self.assertFalse(bitacora._hay_pendiente(base, proy, 6))
+
+    def test_el_pendientes_md_sin_atender_deja_pendiente_el_cierre(self):
+        base, proy = self.preparar()
+        self.assertTrue(bitacora._hay_pendiente(base, proy, 6))
+
+    def test_con_los_dos_archivos_al_dia_no_queda_pendiente(self):
+        base, proy = self.preparar(pendientes_al_dia=True)
+        self.assertFalse(bitacora._hay_pendiente(base, proy, 6))
+
+    def test_el_pendientes_md_sin_atender_tambien_respeta_el_umbral(self):
+        """No es una puerta trasera: bajo el umbral sigue sin disparar."""
+        base, proy = self.preparar(conteo=5)
+        self.assertFalse(bitacora._hay_pendiente(base, proy, 6))
+
+    def test_sin_marca_de_trabajo_el_pendientes_md_no_inventa_pendiente(self):
+        proy = self.proyecto("devops")
+        base = self.base_de("s1", proy)
+        bitacora._dir_marcas().mkdir(parents=True, exist_ok=True)
+        Path(str(base) + ".conteo").write_text("9", encoding="utf-8")
+        (proy / "pendientes.md").write_text("# Pendientes\n", encoding="utf-8")
+        self.fechar(proy / "pendientes.md", 120)
+        self.assertFalse(bitacora._hay_pendiente(base, proy, 6))
+
+
+class ReinicioDelConteo(Base):
+    """El conteo se reinicia cuando los DOS archivos quedaron al dia.
+
+    Bajar el umbral no arreglaria nada: el problema no es su altura, es que
+    el contador se reiniciaba por un archivo y el otro se quedaba sin atender.
+    """
+
+    def sesion_de_seis_llamadas(self, con_pendientes=True):
+        proy = self.proyecto("devops")
+        base = self.base_de("s1", proy)
+        if con_pendientes:
+            pend = proy / "pendientes.md"
+            pend.write_text("# Pendientes\n\n- [ ] algo\n", encoding="utf-8")
+            self.fechar(pend, 120)
+        for _ in range(6):
+            self.marcar_con(self.pago("s1", proy, "Write",
+                                      archivo=proy / "notas.md"))
+        self.fechar(Path(str(base) + ".trabajo"), 60)
+        (proy / "CLAUDE.md").write_text("# devops\n\nentrada\n", encoding="utf-8")
+        self.fechar(proy / "CLAUDE.md", 0)
+        return base, proy
+
+    def test_escribir_solo_el_claude_md_ya_no_reinicia_el_conteo(self):
+        base, proy = self.sesion_de_seis_llamadas()
+        self.marcar_con(self.pago("s1", proy, "Edit",
+                                  archivo=proy / "CLAUDE.md"))
+        self.assertEqual(bitacora._leer_entero(Path(str(base) + ".conteo")), 7)
+
+    def test_con_los_dos_al_dia_el_conteo_si_se_reinicia(self):
+        base, proy = self.sesion_de_seis_llamadas()
+        self.fechar(proy / "pendientes.md", 0)
+        self.marcar_con(self.pago("s1", proy, "Edit",
+                                  archivo=proy / "CLAUDE.md"))
+        self.assertEqual(bitacora._leer_entero(Path(str(base) + ".conteo")), 0)
+
+    def test_sin_pendientes_md_el_conteo_se_reinicia_como_siempre(self):
+        base, proy = self.sesion_de_seis_llamadas(con_pendientes=False)
+        self.marcar_con(self.pago("s1", proy, "Edit",
+                                  archivo=proy / "CLAUDE.md"))
+        self.assertEqual(bitacora._leer_entero(Path(str(base) + ".conteo")), 0)
+
+    def test_la_sesion_del_9_de_agosto_si_pide_el_cierre(self):
+        """El caso exacto que dejo dos tareas hechas pintadas como abiertas.
+
+        Seis llamadas de trabajo, la bitacora escrita a mano a media faena y
+        dos llamadas mas. Cerraba con el conteo en 2 de 6 y el hook se quedaba
+        callado, asi que el punto 5 nunca corria.
+        """
+        base, proy = self.sesion_de_seis_llamadas()
+        self.marcar_con(self.pago("s1", proy, "Edit",
+                                  archivo=proy / "CLAUDE.md"))
+        self.marcar_con(self.pago("s1", proy, "Write",
+                                  archivo=proy / "otro.md"))
+        codigo, salida = self.verificar_con(
+            {"session_id": "s1", "cwd": str(proy)}
+        )
+        self.assertEqual(codigo, 0)
+        self.assertEqual(json.loads(salida)["decision"], "block")
+        self.assertIn("pendientes.md", json.loads(salida)["reason"])
+
+
 class Escritor(Base):
     def test_lanzar_escritura_desprende_el_proceso_y_no_espera(self):
         proy = self.proyecto("devops")
