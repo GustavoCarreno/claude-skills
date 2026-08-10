@@ -652,6 +652,19 @@ Cada proyecto puede tener un `pendientes.md` en su raíz. El calendario reserva 
   procesarla **agrego** ese sello; **nunca borro el texto que dictaste**. Es el mismo
   registro que los renglones `[x]`, y se protege igual: procesarla es leerla y sellarla, no
   vaciarla.
+- **Lo que no cuelga de ningún pendiente va bajo `## Dicho del proyecto`**, con los
+  renglones `»` a ras de margen: un recado del proyecto, no una tarea. Se reconocen igual
+  que las retroalimentaciones de una tarea —la `»` es procedencia, el sello
+  ` ✓ AAAA-MM-DD HH:MM` dice que ya se procesó— y **nunca se borra lo dictado**. La sección
+  se crea al final del archivo, y **un `»` a ras de margen no es una tarea ni la nota de
+  ninguna**, así que no cuenta ni se pinta como pendiente.
+
+  ```markdown
+  ## Dicho del proyecto
+
+  » 2026-08-09 21:40 · el cliente movió la junta al martes
+  » 2026-08-08 09:12 · ya no urge lo del respaldo  ✓ 2026-08-09 10:05
+  ```
 - **Si la tarea tiene un bloque de calendario, la nota lo cita con su fecha.** Es lo que
   engancha las dos mitades: sin esa referencia, al cerrar la sesión no hay forma de saber cuál
   bloque poner al día. Cuando yo identifico o agendo uno, dejo la cita escrita ahí mismo, para
