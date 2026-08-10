@@ -504,10 +504,17 @@ class ReinicioDelConteo(Base):
         return base, proy
 
     def test_escribir_solo_el_claude_md_ya_no_reinicia_el_conteo(self):
+        """El conteo se conserva, no se reinicia ni sube.
+
+        No sube porque escribir un archivo del cierre no es trabajo, que es la
+        regla que ya traia el mecanismo. Lo que importa aqui es que la alarma
+        siga encendida con el pendientes.md sin atender.
+        """
         base, proy = self.sesion_de_seis_llamadas()
         self.marcar_con(self.pago("s1", proy, "Edit",
                                   archivo=proy / "CLAUDE.md"))
-        self.assertEqual(bitacora._leer_entero(Path(str(base) + ".conteo")), 7)
+        self.assertEqual(bitacora._leer_entero(Path(str(base) + ".conteo")), 6)
+        self.assertTrue(bitacora._hay_pendiente(base, proy, 6))
 
     def test_con_los_dos_al_dia_el_conteo_si_se_reinicia(self):
         base, proy = self.sesion_de_seis_llamadas()
@@ -540,6 +547,73 @@ class ReinicioDelConteo(Base):
         self.assertEqual(codigo, 0)
         self.assertEqual(json.loads(salida)["decision"], "block")
         self.assertIn("pendientes.md", json.loads(salida)["reason"])
+
+
+class SecuenciaReal(Base):
+    """Sin fechar mtimes a mano, que es donde se esconde el defecto.
+
+    El resto de la bateria fija los mtimes con os.utime para no depender de la
+    resolucion del reloj, y esta bien: sin eso las pruebas salen intermitentes.
+    Pero fechar a mano tambien BORRA un hecho del mecanismo real: la marca
+    .trabajo se toca DESPUES de la escritura, dentro de la misma llamada, asi
+    que queda unas milesimas mas nueva que el archivo que esa llamada acaba de
+    escribir. Comparar "trabajo > archivo" contra el archivo que se acaba de
+    escribir da True para siempre, y la alarma no se apaga nunca.
+
+    Aqui se corre la secuencia como pasa de verdad, con escrituras reales y sin
+    tocar ningun mtime.
+    """
+
+    def preparar(self):
+        proy = self.proyecto("devops")
+        (proy / "pendientes.md").write_text(
+            "# Pendientes\n\n- [ ] algo\n", encoding="utf-8"
+        )
+        return self.base_de("s1", proy), proy
+
+    def trabajar(self, proy, veces=6):
+        for i in range(veces):
+            (proy / "notas.md").write_text(f"trabajo {i}\n", encoding="utf-8")
+            self.marcar_con(self.pago("s1", proy, "Write",
+                                      archivo=proy / "notas.md"))
+
+    def escribir(self, proy, nombre, texto):
+        (proy / nombre).write_text(texto, encoding="utf-8")
+        self.marcar_con(self.pago("s1", proy, "Edit", archivo=proy / nombre))
+
+    def test_el_trabajo_sin_registrar_enciende_la_alarma(self):
+        base, proy = self.preparar()
+        self.trabajar(proy)
+        self.assertTrue(bitacora._hay_pendiente(base, proy, 6))
+
+    def test_atender_solo_el_pendientes_md_deja_la_alarma_encendida(self):
+        base, proy = self.preparar()
+        self.trabajar(proy)
+        self.escribir(proy, "pendientes.md", "# Pendientes\n\n- [x] algo\n")
+        self.assertTrue(bitacora._hay_pendiente(base, proy, 6))
+
+    def test_atender_los_dos_archivos_apaga_la_alarma(self):
+        base, proy = self.preparar()
+        self.trabajar(proy)
+        self.escribir(proy, "pendientes.md", "# Pendientes\n\n- [x] algo\n")
+        self.escribir(proy, "CLAUDE.md", "# devops\n\nentrada\n")
+        self.assertFalse(bitacora._hay_pendiente(base, proy, 6))
+        self.assertEqual(bitacora._leer_entero(Path(str(base) + ".conteo")), 0)
+
+    def test_el_trabajo_posterior_vuelve_a_encender_la_alarma(self):
+        base, proy = self.preparar()
+        self.trabajar(proy)
+        self.escribir(proy, "pendientes.md", "# Pendientes\n\n- [x] algo\n")
+        self.escribir(proy, "CLAUDE.md", "# devops\n\nentrada\n")
+        self.trabajar(proy)
+        self.assertTrue(bitacora._hay_pendiente(base, proy, 6))
+
+    def test_sin_pendientes_md_el_claude_md_solo_ya_apaga_la_alarma(self):
+        proy = self.proyecto("devops")
+        base = self.base_de("s1", proy)
+        self.trabajar(proy)
+        self.escribir(proy, "CLAUDE.md", "# devops\n\nentrada\n")
+        self.assertFalse(bitacora._hay_pendiente(base, proy, 6))
 
 
 class Escritor(Base):

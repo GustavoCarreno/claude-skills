@@ -295,6 +295,20 @@ def _sin_atender(proy, trabajo):
     return pendientes is not None and trabajo > pendientes
 
 
+def _acaba_de_atender(proy, trabajo):
+    """Esta llamada dejo mas nuevo alguno de los dos archivos del cierre.
+
+    Se mide por mtime y no por el file_path del payload, que es la trampa ya
+    conocida: una bitacora escrita con un heredoc o con sed no pasa por Write
+    ni por Edit y quedaria contada al reves.
+    """
+    for nombre in ("CLAUDE.md", "pendientes.md"):
+        cuando = _mtime(proy / nombre)
+        if cuando is not None and cuando > trabajo:
+            return True
+    return False
+
+
 def _hay_pendiente(base, proy, umbral):
     """Hubo trabajo real que todavia no se registro.
 
@@ -378,6 +392,16 @@ def marcar():
         if recordatorios.exists():
             recordatorios.write_text("0", encoding="utf-8")
         _tocar(trabajo)
+        return 0
+
+    # La llamada que atiende UNO de los dos archivos no cuenta como trabajo, y
+    # sobre todo NO toca la marca. Tocarla la dejaria unas milesimas mas nueva
+    # que el archivo que esta misma llamada acaba de escribir, o sea que ese
+    # archivo se leeria como "sin atender" para siempre y la alarma no se
+    # apagaria nunca. Con un solo archivo el defecto no se veia, porque el
+    # CLAUDE.md era el ultimo en escribirse y la comparacion usaba la marca
+    # anterior. Medido el 9 ago 2026 con la secuencia real, sin fechar mtimes.
+    if marca_trabajo is not None and _acaba_de_atender(proy, marca_trabajo):
         return 0
 
     entrada = datos.get("tool_input") or {}
