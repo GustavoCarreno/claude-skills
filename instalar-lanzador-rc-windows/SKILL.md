@@ -918,7 +918,7 @@ python -m pytest -q        # deben pasar todas, sin una sola falla
 python app.py              # debe quedarse escuchando; Ctrl+C para salir
 ```
 
-Al 9 de agosto de 2026 son 493 pruebas. **El número crece con cada versión, así que no lo
+Al 9 de agosto de 2026 son 521 pruebas. **El número crece con cada versión, así que no lo
 trates como contraseña**: lo que importa es que no falle ninguna.
 
 > ⚠️ **Si fallan por rutas demasiado largas, no es defecto del lanzador.** Windows corta en
@@ -1043,6 +1043,53 @@ propia**, salvo que lo pida.
 Verificación: subir un archivo desde el teléfono, abrir la sesión de ese proyecto y pedirle
 que vea la bandeja. Debe encontrarlo sin que le digas la ruta. Rápido y sin teléfono:
 `Select-String -Path "$env:USERPROFILE\.claude\CLAUDE.md" -Pattern "La bandeja" -Quiet`.
+
+## B6. El comando `rc`, para lanzar desde la terminal (opcional)
+
+**El camino principal es el teléfono**, y esta sección se puede saltar entera sin perder
+nada de lo demás. Sirve para quien ya está frente a una terminal y prefiere teclear en vez
+de sacar el celular.
+
+**Lo que importa, y es lo que lo hace seguro: la sesión que nace aquí es la misma que nace
+desde el teléfono.** El comando llama al mismo código, así que aparece en el mosaico y se
+puede cerrar con el dedo. Dos formas distintas de crear una sesión se separan sin que nadie
+lo note, y ahí es donde una sesión se vuelve invisible e inmatable.
+
+Windows necesita además **desde dónde** llamarlo: de fábrica no trae servidor SSH
+encendido, así que esto es para quien se sienta frente a la máquina, o para quien encienda
+OpenSSH a propósito. Es la razón principal por la que esta sección es opcional.
+
+Crear `%USERPROFILE%\bin\rc.cmd` (y asegurarse de que esa carpeta esté en el `PATH`):
+
+```powershell
+$bin = "$env:USERPROFILE\bin"
+New-Item -ItemType Directory -Force -Path $bin | Out-Null
+@"
+@echo off
+python "RUTA_DEL_LANZADOR\procesos_windows.py" %*
+"@ | Set-Content -Path "$bin\rc.cmd" -Encoding ascii
+```
+
+Sustituir `RUTA_DEL_LANZADOR` por la carpeta real. Uso:
+
+```
+rc                      :: lista las carpetas disponibles
+rc mi-proyecto          :: crea la sesión y devuelve la terminal
+rc mi-proyecto --resume <session-id>
+```
+
+> ⚠️ **En Windows la sesión SIEMPRE nace desprendida**, o sea que el comando la crea y te
+> devuelve el símbolo del sistema; no te deja trabajando dentro como en Linux. Quedarse
+> adentro exige que la consola hospede la terminal falsa, y eso está sin construir. `-d` se
+> acepta igual, para que el mismo tecleo funcione en las dos plataformas.
+
+> 🔴 **Y un gotcha que costó medir: la sesión tiene que desprenderse del Job de Windows, o
+> muere con la consola que la lanzó.** Ya viene resuelto en el código
+> (`CREATE_BREAKAWAY_FROM_JOB`); se menciona porque el síntoma es desconcertante — la ficha
+> de la sesión queda escrita y el proceso ya no existe.
+
+Verificación: `rc` sin argumentos lista los proyectos; `rc <alguno>` crea la sesión, el
+mosaico la muestra en **Activos**, y **sigue viva después de cerrar esa consola**.
 
 ## 7. Verificación, en orden
 

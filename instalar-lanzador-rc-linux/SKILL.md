@@ -892,7 +892,7 @@ python3 -m venv .venv
 cd ~/rc-launcher && .venv/bin/python -m pytest -q
 ```
 
-Debe pasar **la suite completa, sin una sola falla**. Al 9 de agosto de 2026 son 493 pruebas
+Debe pasar **la suite completa, sin una sola falla**. Al 9 de agosto de 2026 son 521 pruebas
 y corren en un segundo. **El número crece con cada versión, así que no lo trates como
 contraseña**: lo que importa es que no falle ninguna, en la máquina del cliente, sin tocar
 una línea. Eso es lo que demuestra que el código no depende de la máquina donde nació.
@@ -1021,6 +1021,37 @@ EOF
 Verificación: subir un archivo desde el teléfono, abrir la sesión de ese proyecto y pedirle
 que vea la bandeja. Debe encontrarlo sin que le digas la ruta. Rápido y sin teléfono:
 `grep -q '^## La bandeja' ~/.claude/CLAUDE.md`.
+
+## B6. El comando `rc`, para lanzar desde la terminal (opcional)
+
+**El camino principal es el teléfono**, y esta sección se puede saltar entera sin perder
+nada de lo demás. Sirve para quien ya está frente a una terminal y prefiere teclear en vez
+de sacar el celular.
+
+**Lo que importa, y es lo que lo hace seguro: la sesión que nace aquí es la misma que nace
+desde el teléfono.** El comando llama al mismo código, así que aparece en el mosaico y se
+puede cerrar con el dedo. Dos formas distintas de crear una sesión se separan sin que nadie
+lo note, y ahí es donde una sesión se vuelve invisible e inmatable.
+
+```bash
+sudo tee /usr/local/bin/rc > /dev/null << 'EOF'
+#!/bin/bash
+exec /usr/bin/python3 RUTA_DEL_LANZADOR/procesos_tmux.py "$@"
+EOF
+sudo chmod +x /usr/local/bin/rc
+```
+
+Sustituir `RUTA_DEL_LANZADOR` por la carpeta real. Uso:
+
+```bash
+rc                      # lista las carpetas disponibles
+rc mi-proyecto          # abre la sesión y te deja trabajando DENTRO
+rc mi-proyecto -d       # la deja corriendo y te devuelve la terminal
+rc mi-proyecto --resume <session-id>
+```
+
+Verificación: `rc` sin argumentos lista los proyectos; `rc <alguno> -d` crea la sesión y el
+mosaico la muestra en **Activos**.
 
 ## 7. Verificación, en orden
 
