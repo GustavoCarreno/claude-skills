@@ -252,8 +252,44 @@ def _proyecto_valido(proy, raiz):
     return (proy / "CLAUDE.md").is_file()
 
 
+def _canonizar(proy, raiz):
+    """El checkout principal del repositorio de proy, cuando aplica.
+
+    Un worktree que cuelga dentro del proyecto pasa por proyecto propio --
+    esta bajo la raiz y tiene su CLAUDE.md -- asi que se ganaba su propio
+    slug. Una misma sesion dejaba entonces DOS juegos de marcas, y las dos
+    guardas de idempotencia del cierre (la de sesion y la de proyecto) se
+    calculan sobre el slug, asi que ninguna veia a la otra: el cierre lanzaba
+    dos escritores headless. Medido el 9 ago 2026 en cierres.log, lineas 98 y
+    99, sid e1f5b363, los dos con rc=0.
+
+    Canoniza SOLO la identidad, no el directorio de trabajo: el escritor
+    headless sigue retomando la sesion en el arbol donde de verdad vivio,
+    porque Claude Code guarda el historial por cwd y resumir desde otro lado
+    no lo encuentra.
+
+    Las dos guardas, y las dos tienen prueba: el principal tiene que seguir
+    siendo un proyecto valido del ecosistema, o sea con CLAUDE.md y bajo la
+    raiz. Sin ellas, un arbol prestado de un repositorio de fuera sacaria la
+    identidad de la raiz y _slug reventaria con ValueError.
+    """
+    try:
+        comun = _dir_git_comun(proy)
+    except OSError:
+        return proy
+    # Solo cuando el comun se llama .git su padre es un checkout; un
+    # repositorio pelon (foo.git) no tiene arbol de trabajo. Misma razon que
+    # en _checkouts.
+    if comun is None or comun.name != ".git":
+        return proy
+    principal = comun.parent
+    if principal == proy or not _proyecto_valido(principal, raiz):
+        return proy
+    return principal
+
+
 def _slug(proy, raiz):
-    relativa = proy.relative_to(raiz.resolve())
+    relativa = _canonizar(proy, raiz).relative_to(raiz.resolve())
     return "-".join(relativa.parts)
 
 

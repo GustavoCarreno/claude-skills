@@ -59,6 +59,39 @@ class Base(unittest.TestCase):
     def base_de(self, sid, proy):
         return bitacora._base(sid, proy, self.raiz)
 
+    def repo(self, nombre="devops"):
+        """Un proyecto que es el checkout principal de un repositorio."""
+        proy = self.proyecto(nombre)
+        (proy / ".git").mkdir()
+        return proy
+
+    def repo_sin_claude_md(self, nombre="suelto"):
+        """Un repositorio bajo la raiz que NO es un proyecto que mantener."""
+        proy = self.proyecto(nombre, con_claude_md=False)
+        (proy / ".git").mkdir()
+        return proy
+
+    def worktree(self, proy, nombre="rama", con_claude_md=True):
+        """Un arbol de trabajo enlazado, colgado dentro del proyecto.
+
+        El layout de .git se fabrica a mano en vez de invocar a git, para que
+        estas pruebas corran igual en una maquina sin git instalado. Que lo
+        fabricado coincida con lo que git escribe de verdad lo comprueba
+        aparte la clase WorktreeDeGitDeVerdad.
+        """
+        arbol = proy / ".claude" / "worktrees" / nombre
+        arbol.mkdir(parents=True)
+        (arbol / ".git").write_text(
+            f"gitdir: {proy / '.git' / 'worktrees' / nombre}\n", encoding="utf-8"
+        )
+        admin = proy / ".git" / "worktrees" / nombre
+        admin.mkdir(parents=True)
+        (admin / "commondir").write_text("../..\n", encoding="utf-8")
+        (admin / "gitdir").write_text(f"{arbol / '.git'}\n", encoding="utf-8")
+        if con_claude_md:
+            (arbol / "CLAUDE.md").write_text("# " + proy.name + "\n", encoding="utf-8")
+        return arbol.resolve()
+
     def fechar(self, ruta, segundos_atras=0):
         """Fija el mtime de forma explicita.
 
@@ -496,29 +529,9 @@ class Worktrees(Base):
     El layout de .git se fabrica a mano en vez de invocar a git, para que
     estas pruebas corran igual en una maquina sin git instalado. Que lo
     fabricado coincida con lo que git escribe de verdad lo comprueba aparte
-    la clase WorktreeDeGitDeVerdad.
+    la clase WorktreeDeGitDeVerdad. Los ayudantes repo() y worktree() viven
+    en Base, porque IdentidadCanonica los usa igual.
     """
-
-    def repo(self, nombre="devops"):
-        """Un proyecto que es el checkout principal de un repositorio."""
-        proy = self.proyecto(nombre)
-        (proy / ".git").mkdir()
-        return proy
-
-    def worktree(self, proy, nombre="rama", con_claude_md=True):
-        """Un arbol de trabajo enlazado, colgado dentro del proyecto."""
-        arbol = proy / ".claude" / "worktrees" / nombre
-        arbol.mkdir(parents=True)
-        (arbol / ".git").write_text(
-            f"gitdir: {proy / '.git' / 'worktrees' / nombre}\n", encoding="utf-8"
-        )
-        admin = proy / ".git" / "worktrees" / nombre
-        admin.mkdir(parents=True)
-        (admin / "commondir").write_text("../..\n", encoding="utf-8")
-        (admin / "gitdir").write_text(f"{arbol / '.git'}\n", encoding="utf-8")
-        if con_claude_md:
-            (arbol / "CLAUDE.md").write_text("# " + proy.name + "\n", encoding="utf-8")
-        return arbol.resolve()
 
     def test_un_proyecto_sin_git_solo_se_mira_a_si_mismo(self):
         proy = self.proyecto("devops")
@@ -628,6 +641,117 @@ class WorktreeDeGitDeVerdad(Base):
         self.assertEqual(
             bitacora._checkouts(arbol.resolve()), [arbol.resolve(), proy]
         )
+        # El contraste vale igual para la identidad: si git escribiera otro
+        # layout, el slug canonico se calcularia sobre una invencion mia.
+        self.assertEqual(
+            bitacora._slug(arbol.resolve(), self.raiz),
+            bitacora._slug(proy, self.raiz),
+        )
+
+
+class IdentidadCanonica(Base):
+    """Un worktree NO es un proyecto aparte: es el mismo, en otra rama.
+
+    La identidad de un proyecto era su directorio, y un repositorio puede
+    tener varios arboles de trabajo. Un worktree que cuelga dentro del
+    proyecto pasa entonces por proyecto propio -- esta bajo la raiz y tiene
+    su CLAUDE.md -- asi que se gana su propio slug, y una misma sesion deja
+    DOS juegos de marcas.
+
+    Medido el 9 ago 2026 en cierres.log, lineas 98 y 99: sid e1f5b363, dos
+    cierres a las 15:42:43, uno con proy=lanzador y otro con
+    proy=lanzador/.claude/worktrees/retroalimentacion-por-pendiente, los dos
+    con rc=0. No corrompe nada porque escriben archivos distintos, pero es el
+    doble de tokens y una entrada duplicada, y las dos guardas de
+    idempotencia -- la de sesion y la de proyecto -- se calculan sobre el
+    slug, asi que ninguna de las dos alcanza a ver a la otra.
+    """
+
+    def con_trabajo_pendiente(self, sid, directorio):
+        """Marcas de una sesion con faena sin registrar, para ese directorio."""
+        base = self.base_de(sid, directorio)
+        bitacora._dir_marcas().mkdir(parents=True, exist_ok=True)
+        Path(str(base) + ".conteo").write_text("9", encoding="utf-8")
+        trabajo = Path(str(base) + ".trabajo")
+        trabajo.write_text("", encoding="utf-8")
+        self.fechar(trabajo, 0)
+        return base
+
+    def test_el_worktree_y_el_principal_comparten_slug(self):
+        proy = self.repo()
+        arbol = self.worktree(proy)
+        self.assertEqual(bitacora._slug(arbol, self.raiz), "devops")
+
+    def test_el_principal_conserva_el_suyo(self):
+        """La honesta: canonizar no puede mover al que ya estaba bien."""
+        proy = self.repo()
+        self.worktree(proy)
+        self.assertEqual(bitacora._slug(proy, self.raiz), "devops")
+
+    def test_la_misma_sesion_en_los_dos_deja_un_solo_juego_de_marcas(self):
+        proy = self.repo()
+        arbol = self.worktree(proy)
+        self.fechar(proy / "CLAUDE.md", 3600)
+        self.fechar(arbol / "CLAUDE.md", 3600)
+
+        self.marcar_con(self.pago("s1", proy))
+        self.marcar_con(self.pago("s1", arbol))
+
+        conteos = sorted(p.name for p in bitacora._dir_marcas().glob("*.conteo"))
+        self.assertEqual(conteos, ["s1__devops.conteo"])
+        # Y las dos llamadas cuentan: se funden, no se pierde una.
+        self.assertEqual(
+            bitacora._leer_entero(bitacora._dir_marcas() / "s1__devops.conteo"), 2
+        )
+
+    def test_el_cierre_por_las_dos_identidades_lanza_un_solo_escritor(self):
+        """El sintoma reportado, tal como quedo en cierres.log."""
+        proy = self.repo()
+        arbol = self.worktree(proy)
+        self.fechar(proy / "CLAUDE.md", 3600)
+        self.fechar(arbol / "CLAUDE.md", 3600)
+        self.con_trabajo_pendiente("s1", proy)
+        self.con_trabajo_pendiente("s1", arbol)
+
+        lanzados = []
+        with mock.patch.object(bitacora, "_lanzar_escritura",
+                               lambda s, p, c: lanzados.append(s)):
+            bitacora._cerrar_uno("s1", proy, bitacora._config())
+            bitacora._cerrar_uno("s1", arbol, bitacora._config())
+
+        self.assertEqual(lanzados, ["s1"])
+
+    def test_un_principal_que_no_es_proyecto_no_se_lleva_la_identidad(self):
+        """Guarda: sin CLAUDE.md el principal no es un proyecto que mantener."""
+        proy = self.repo_sin_claude_md("suelto")
+        arbol = self.worktree(proy)
+        self.assertEqual(
+            bitacora._slug(arbol, self.raiz),
+            "suelto-.claude-worktrees-rama",
+        )
+
+    def test_un_principal_fuera_de_la_raiz_no_saca_al_proyecto_de_ella(self):
+        """Guarda: canonizar no puede dejar la identidad fuera del ecosistema.
+
+        Es el caso del worktree podado de /tmp/rc-base, al reves: el arbol de
+        trabajo si esta bajo la raiz y su checkout principal no.
+        """
+        fuera = self.casa / "fuera-del-ecosistema"
+        (fuera / ".git").mkdir(parents=True)
+        (fuera / "CLAUDE.md").write_text("# fuera\n", encoding="utf-8")
+
+        arbol = self.raiz / "prestado"
+        arbol.mkdir()
+        (arbol / "CLAUDE.md").write_text("# prestado\n", encoding="utf-8")
+        (arbol / ".git").write_text(
+            f"gitdir: {fuera / '.git' / 'worktrees' / 'rama'}\n", encoding="utf-8"
+        )
+        admin = fuera / ".git" / "worktrees" / "rama"
+        admin.mkdir(parents=True)
+        (admin / "commondir").write_text("../..\n", encoding="utf-8")
+        (admin / "gitdir").write_text(f"{arbol / '.git'}\n", encoding="utf-8")
+
+        self.assertEqual(bitacora._slug(arbol.resolve(), self.raiz), "prestado")
 
 
 class ReinicioDelConteo(Base):
