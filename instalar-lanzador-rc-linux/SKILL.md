@@ -681,6 +681,16 @@ Cada proyecto puede tener un `pendientes.md` en su raíz. El calendario reserva 
   leer y editar a mano.
 - Quien palomea agrega ` ✓ AAAA-MM-DD HH:MM` al final, con hora local. Al despalomear se
   quita.
+
+> ⚠️ **Esa hora la pone la máquina donde corre el lanzador, así que su reloj y su zona
+> horaria acaban escritos en el archivo del cliente.** Medido el 13 de agosto de 2026 en una
+> máquina de pruebas que había quedado en UTC: palomeaba con **siete horas de adelanto** sobre
+> la hora local, y nada avisaba, porque un sello con fecha y hora se ve correcto aunque diga
+> otra cosa. **Comprobar la zona antes de entregar la máquina**, que cuesta un renglón:
+
+```bash
+timedatectl | grep "Time zone"     # debe decir la zona de quien la va a usar
+```
 - **En Windows el archivo llega con fin de línea CRLF y hay que conservarlo** al reescribir.
 - **Palomeo lo que hice yo mismo y verifiqué, y también lo tuyo cuando en la sesión quedó
   constancia de que ya se hizo** (me lo dijiste con todas sus letras, o lo comprobé por mi
