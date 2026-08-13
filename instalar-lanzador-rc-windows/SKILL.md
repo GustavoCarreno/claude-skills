@@ -47,6 +47,7 @@ está verificado más recientemente.
 | **Sus pendientes por proyecto** | Ve qué falta y palomea lo hecho, desde la computadora o desde el teléfono |
 | **Transcribir juntas y escuchar documentos** (opcional, con cuenta propia) | Sube la grabación de una junta y pide la minuta, o pide que le lean un documento para el camino |
 | **El audio se escucha con un clic** (requiere la fase B) | Lo que pidió que le leyeran llega como liga: le pica desde el teléfono y suena, sin descargarlo ni buscarlo en el navegador de archivos |
+| **Dejar dicho qué resultó, sin abrir sesión** (requiere la fase B) | Desde el teléfono, en cada pendiente hay un botón para dictar cómo quedó, y una sección aparte para los recados sueltos del proyecto, los que valen por sí mismos. Se dicta con el teclado del teléfono, así que cuesta cero llamadas al modelo, y la siguiente sesión se entera sola de que hay algo sin leer. **La lista se queda donde estaba al guardar**, para poder recorrerla de corrido |
 
 ## Antes de empezar
 
@@ -938,7 +939,7 @@ python -m pytest -q        # deben pasar todas, sin una sola falla
 python app.py              # debe quedarse escuchando; Ctrl+C para salir
 ```
 
-Al 9 de agosto de 2026 son 521 pruebas. **El número crece con cada versión, así que no lo
+Al 13 de agosto de 2026 son 615 pruebas. **El número crece con cada versión, así que no lo
 trates como contraseña**: lo que importa es que no falle ninguna.
 
 > ⚠️ **Si fallan por rutas demasiado largas, no es defecto del lanzador.** Windows corta en
@@ -952,6 +953,38 @@ configurable sin tocar código.
 
 > 📌 **Si el proyecto ya tiene `pendientes.md` (A7), el lanzador ya lo pinta y lo palomea
 > con el dedo, sin configuración adicional.** No hay ningún paso extra que hacer aquí.
+
+### B2b. Llevarle una versión nueva a una máquina que ya lo tiene
+
+**Esto es para las actualizaciones, no para la instalación inicial.** El lanzador se mejora
+seguido, y el código llegó aquí por copia: **nada se entera solo de que hay una versión
+nueva**, así que actualizar es volver a copiar y reiniciar.
+
+```powershell
+$ORIGEN = "D:\ruta\a\tu\copia\de\rc-launcher"
+
+robocopy $ORIGEN "$env:USERPROFILE\rc-launcher" /E /PURGE /XD .venv __pycache__ .git
+cd $env:USERPROFILE\rc-launcher
+python -m pip install -q -r requirements.txt   # por si la versión nueva pide algo más
+python -m pytest -q                            # todas en verde ANTES de reiniciar
+```
+
+> 🔴 **Reiniciar la tarea programada NO basta, y este es el error que más caro sale.**
+> `schtasks /end` termina el `.cmd` pero **deja vivo al `python` que ese `.cmd` lanzó**, que
+> conserva el puerto 8765; el `/run` arranca otro que nunca escucha. Las dos órdenes contestan
+> `SUCCESS` y el lanzador sigue respondiendo, **con el código viejo**. Hay que matar por PID
+> al proceso que tiene el puerto, nunca por nombre, para no llevarse otros Python de esa
+> máquina. El procedimiento completo está en B3.
+
+> ⚠️ **`/PURGE` es a propósito:** sin él, un archivo que la versión nueva ya eliminó se queda
+> en la máquina y puede seguir importándose. Los excluidos están a salvo, así que el `.venv`
+> sobrevive.
+
+> 🔴 **La pestaña que el teléfono ya tenía abierta sigue corriendo el código anterior.** El
+> HTML y su script viajan juntos en la respuesta de la raíz, y una pestaña abierta conserva el
+> que le tocó al cargarse: HTMX redibuja pedazos, y el script ya no se vuelve a leer. Tras
+> actualizar hay que **recargar** desde el teléfono. Sin eso se está probando código viejo
+> contra un servidor nuevo, y eso confunde cualquier diagnóstico.
 
 > ⚠️ **La primera sesión de un proyecto creado con "+ Nuevo proyecto" puede repetir la
 > pregunta de confianza de A2, aunque la raíz ya esté confiada.** Es el mismo síntoma, y
@@ -1136,6 +1169,7 @@ mosaico la muestra en **Activos**, y **sigue viva después de cerrar esa consola
 | 11 | Los conectores | `claude mcp list` | `claude.ai Gmail`, `Google Calendar` y `Google Drive` en `Connected` |
 | 12 | La cuenta de DeepInfra (opcional) | `python "$env:USERPROFILE\.claude\skills\whisper-deepinfra\whisper_deepinfra.py" --estado` | `llave: CONFIGURADA` si el cliente ya la dio; `NO CONFIGURADA` es correcto si todavía no la necesita |
 | 13 | El audio se escucha con un clic (solo si ya usó la voz sintética) | ver el recuadro de abajo | el navegador del teléfono lo **reproduce**, no lo descarga |
+| 14 | Dejar dicho, y que la lista se quede quieta | ver el recuadro de abajo | el recado queda escrito en el `pendientes.md` con su `»`, y el menú sigue mostrando la misma tarea |
 
 
 > 📌 **Por qué el renglón del calendario mira el archivo y no el comportamiento.** Comprobar
@@ -1163,6 +1197,29 @@ mosaico la muestra en **Activos**, y **sigue viva después de cerrar esa consola
 > ⚠️ **Sin el encabezado de identidad contesta 403, y eso es correcto**, igual que el renglón
 > 4. Desde el teléfono lo inyecta Tailscale solo. Es también lo que hace que esa liga **no
 > sirva para compartirle el audio a un tercero**: para eso va el archivo adjunto.
+
+> 📌 **Cómo se comprueba el renglón 14, que es de dos mitades.** La primera se mide desde la
+> máquina: el menú de un proyecto con pendientes tiene que traer el ancla con la que el menú
+> sabe a dónde volver, una por tarea.
+>
+> ```powershell
+> $r = Invoke-WebRequest -Uri "http://127.0.0.1:8765/menu/<proyecto>" `
+>   -Headers @{"Tailscale-User-Login"="<el correo del dueño de la tailnet>"}
+> ([regex]::Matches($r.Content, "data-renglon=")).Count
+> ```
+>
+> Un número mayor que cero es lo esperado. Un cero significa que ese proyecto tiene la lista
+> vacía, así que hay que probar con uno que sí tenga tareas abiertas.
+>
+> **La segunda mitad es del teléfono, y es la que de verdad importa:** abrir un proyecto con
+> una lista larga, bajar hasta una tarea del fondo, tocar "✎ Dejar retro", dictar algo y
+> guardar. La tarea tiene que quedarse **a la misma altura de la pantalla**, con lo dictado ya
+> pintado debajo de ella. Si la vista salta al primer pendiente, esa copia del lanzador es
+> anterior al 13 de agosto de 2026.
+>
+> ⚠️ **La `»` con la que se guarda una retro significa "esto lo dictó el dueño de la máquina",
+> y es permanente.** Al probarlo se escribe en su archivo de verdad: hacerlo en un proyecto de
+> prueba, o avisarle que ese renglón se queda.
 
 > ⚠️ **El 403 del renglón 4 es la respuesta correcta, no una falla.** La raíz exige la
 > identidad que inyecta Tailscale, que en local no existe. **Medir salud con `/salud`, nunca

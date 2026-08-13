@@ -36,6 +36,7 @@ orden. Para Windows existe el equivalente en `instalar-lanzador-rc-windows`.
 | **Sus pendientes por proyecto** | Ve qué falta y palomea lo hecho, desde la computadora o desde el teléfono |
 | **Transcribir juntas y escuchar documentos** (opcional, con cuenta propia) | Sube la grabación de una junta y pide la minuta, o pide que le lean un documento para el camino |
 | **El audio se escucha con un clic** (requiere la fase B) | Lo que pidió que le leyeran llega como liga: le pica desde el teléfono y suena, sin descargarlo ni buscarlo en el navegador de archivos |
+| **Dejar dicho qué resultó, sin abrir sesión** (requiere la fase B) | Desde el teléfono, en cada pendiente hay un botón para dictar cómo quedó, y una sección aparte para los recados sueltos del proyecto, los que valen por sí mismos. Se dicta con el teclado del teléfono, así que cuesta cero llamadas al modelo, y la siguiente sesión se entera sola de que hay algo sin leer. **La lista se queda donde estaba al guardar**, para poder recorrerla de corrido |
 
 ## El reparto, y conviene decirlo antes de empezar
 
@@ -912,13 +913,44 @@ python3 -m venv .venv
 cd ~/rc-launcher && .venv/bin/python -m pytest -q
 ```
 
-Debe pasar **la suite completa, sin una sola falla**. Al 9 de agosto de 2026 son 521 pruebas
+Debe pasar **la suite completa, sin una sola falla**. Al 13 de agosto de 2026 son 615 pruebas
 y corren en un segundo. **El número crece con cada versión, así que no lo trates como
 contraseña**: lo que importa es que no falle ninguna, en la máquina del cliente, sin tocar
 una línea. Eso es lo que demuestra que el código no depende de la máquina donde nació.
 
 > 📌 **Si el proyecto ya tiene `pendientes.md` (A7), el lanzador ya lo pinta y lo palomea
 > con el dedo, sin configuración adicional.** No hay ningún paso extra que hacer aquí.
+
+### B2b. Llevarle una versión nueva a una máquina que ya lo tiene
+
+**Esto es para las actualizaciones, no para la instalación inicial.** El lanzador se mejora
+seguido, y el código llegó aquí por copia: **nada se entera solo de que hay una versión
+nueva**, así que actualizar es volver a copiar y reiniciar.
+
+```bash
+ORIGEN=/ruta/a/tu/copia/de/rc-launcher
+
+rsync -a --delete --exclude .venv --exclude __pycache__ --exclude .git \
+      "$ORIGEN"/ ~/rc-launcher/
+cd ~/rc-launcher
+.venv/bin/pip install -q -r requirements.txt    # por si la versión nueva pide algo más
+.venv/bin/python -m pytest -q                   # todas en verde ANTES de reiniciar
+sudo systemctl restart rc-launcher
+curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8765/salud
+```
+
+> ✅ **Reiniciar el servicio NO mata las sesiones que estén trabajando**, gracias a
+> `KillMode=process` en el unit (B3). Se puede actualizar con el cliente usándolo.
+
+> ⚠️ **El `--delete` es a propósito:** sin él, un archivo que la versión nueva ya eliminó se
+> queda en la máquina y puede seguir importándose. Los excluidos están a salvo, así que el
+> `.venv` sobrevive.
+
+> 🔴 **La pestaña que el teléfono ya tenía abierta sigue corriendo el código anterior.** El
+> HTML y su script viajan juntos en la respuesta de la raíz, y una pestaña abierta conserva el
+> que le tocó al cargarse: HTMX redibuja pedazos, y el script ya no se vuelve a leer. Tras
+> actualizar hay que **recargar** desde el teléfono. Sin eso se está probando código viejo
+> contra un servidor nuevo, y eso confunde cualquier diagnóstico.
 
 > ⚠️ **La primera sesión de un proyecto creado con "+ Nuevo proyecto" puede repetir la
 > pregunta de confianza de A2, aunque la raíz ya esté confiada.** Es el mismo síntoma, y
@@ -1101,6 +1133,7 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 | 12 | Los conectores | `claude mcp list` | `claude.ai Gmail`, `Google Calendar` y `Google Drive` en `Connected` |
 | 13 | La cuenta de DeepInfra (opcional) | `python3 ~/.claude/skills/whisper-deepinfra/whisper_deepinfra.py --estado` | `llave: CONFIGURADA` si el cliente ya la dio; `NO CONFIGURADA` es correcto si todavía no la necesita |
 | 14 | El audio se escucha con un clic (solo si ya usó la voz sintética) | ver el recuadro de abajo | el navegador del teléfono lo **reproduce**, no lo descarga |
+| 15 | Dejar dicho, y que la lista se quede quieta | ver el recuadro de abajo | el recado queda escrito en el `pendientes.md` con su `»`, y el menú sigue mostrando la misma tarea |
 
 
 > 📌 **Por qué el renglón del calendario mira el archivo y no el comportamiento.** Comprobar
@@ -1128,6 +1161,28 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 > ⚠️ **Sin el encabezado de identidad contesta 403, y eso es correcto**, igual que el renglón
 > 5. Desde el teléfono lo inyecta Tailscale solo. Es también lo que hace que esa liga **no
 > sirva para compartirle el audio a un tercero**: para eso va el archivo adjunto.
+
+> 📌 **Cómo se comprueba el renglón 15, que es de dos mitades.** La primera se mide desde la
+> máquina: el menú de un proyecto con pendientes tiene que traer el ancla con la que el menú
+> sabe a dónde volver, una por tarea.
+>
+> ```bash
+> curl -s -H "Tailscale-User-Login: <el correo del dueño de la tailnet>" \
+>   http://127.0.0.1:8765/menu/<proyecto> | grep -c "data-renglon="
+> ```
+>
+> Un número mayor que cero es lo esperado. Un cero significa que ese proyecto tiene la lista
+> vacía, así que hay que probar con uno que sí tenga tareas abiertas.
+>
+> **La segunda mitad es del teléfono, y es la que de verdad importa:** abrir un proyecto con
+> una lista larga, bajar hasta una tarea del fondo, tocar "✎ Dejar retro", dictar algo y
+> guardar. La tarea tiene que quedarse **a la misma altura de la pantalla**, con lo dictado ya
+> pintado debajo de ella. Si la vista salta al primer pendiente, esa copia del lanzador es
+> anterior al 13 de agosto de 2026.
+>
+> ⚠️ **La `»` con la que se guarda una retro significa "esto lo dictó el dueño de la máquina",
+> y es permanente.** Al probarlo se escribe en su archivo de verdad: hacerlo en un proyecto de
+> prueba, o avisarle que ese renglón se queda.
 
 > ⚠️ **La prueba de la bitácora hay que pedirla bien o parece rota.** El umbral cuenta
 > **llamadas de herramienta, no archivos**: pedir "crea seis archivos" lo resuelve un
