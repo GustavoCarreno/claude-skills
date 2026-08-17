@@ -155,6 +155,68 @@ cd ~/claude && claude          # contestar las cinco, luego /exit
 > Verificado en las dos direcciones: con solo un proyecto confiado, uno nuevo se detuvo; con
 > la raíz confiada, uno recién creado arrancó directo al prompt.
 
+> 🔴 **Pero la herencia SE CORTA EN LA RAÍZ DE CADA REPOSITORIO DE GIT, así que contestarla una
+> vez en la raíz alcanza solo mientras los proyectos sean carpetas simples.** En cuanto una sesión
+> le corre `git init` a un proyecto, el siguiente arranque **vuelve a pedir la suya**. Medido el 13
+> de agosto de 2026 en una carpeta desechable, cambiando una sola variable:
+>
+> | Carpeta de prueba bajo una raíz ya confiada | Resultado |
+> |---|---|
+> | Sin `git init` | arranca callada, o sea que hereda |
+> | La misma, **con** `git init` | sale la pantalla completa, palabra por palabra, incluido el `No, exit` |
+> | La misma, con la llave sembrada | arranca callada |
+>
+> 🔴 **Y `--dangerously-skip-permissions` tampoco lo salta, que es lo que lo vuelve un tapón:** la
+> puerta de confianza se evalúa **antes** que los permisos, y el lanzador arranca cada sesión con
+> ese flag. Por eso el síntoma desde el teléfono es un botón encendido y una sesión que se queda
+> esperando para siempre.
+>
+> ✅ **Lo que sí queda cubierto, y conviene decirlo con la misma claridad: el camino del teléfono
+> entra directo.** El lanzador siembra esa llave antes de cada arranque, con la ruta ya resuelta
+> (fase B). **El hueco se ve cuando el cliente abre una sesión desde su propia computadora**, en un
+> proyecto que ya sea repo de git. O sea que es un pendiente de la entrega, y jamás un bloqueo del
+> uso diario.
+
+**Cómo se cierra, sin volver a contestar la pregunta proyecto por proyecto.** Es la salida que el
+propio programa documenta en su mensaje de error (*"or set
+projects[...].hasTrustDialogAccepted: true"*). Esto siembra la raíz y todos los proyectos que ya
+existan:
+
+```bash
+python3 - <<'PY'
+import json, pathlib, shutil
+raiz = pathlib.Path.home() / "claude"          # la raíz de proyectos
+cfg  = pathlib.Path.home() / ".claude.json"
+shutil.copy(cfg, str(cfg) + ".bak")            # respaldo antes de tocar nada
+datos = json.loads(cfg.read_text(encoding="utf-8"))
+proyectos = datos.setdefault("projects", {})
+nuevos = 0
+for carpeta in [raiz] + sorted(d for d in raiz.iterdir() if d.is_dir()):
+    ruta = str(carpeta.resolve()).replace("\\", "/")
+    e = proyectos.get(ruta)
+    if not isinstance(e, dict):
+        e = {"allowedTools": [], "mcpServers": {}, "enabledMcpjsonServers": [],
+             "disabledMcpjsonServers": [], "history": []}
+    if not e.get("hasTrustDialogAccepted"):
+        nuevos += 1
+    e["hasTrustDialogAccepted"] = True
+    proyectos[ruta] = e
+cfg.write_text(json.dumps(datos, ensure_ascii=False), encoding="utf-8")
+print("carpetas confiadas ahora:", nuevos)
+PY
+```
+
+> ⚠️ **Va la RUTA REAL, ya resuelta, y con barras diagonales.** La llave se compara como texto: si
+> la raíz de proyectos es un enlace a otro disco, sembrar la forma con el enlace deja la bandera al
+> lado de la llave que se lee **y el diálogo sigue saliendo igual**. Costó 12 registros huérfanos
+> descubrirlo, el 13 de agosto de 2026, y por eso el fragmento lleva el `resolve()`.
+
+> ⚠️ **Correrlo con las sesiones de Claude Code cerradas.** Ese archivo lo comparte Claude Code
+> entero y lo reescribe al salir, así que una sesión abierta puede pisar la siembra sin avisar.
+
+> 📌 **Y para los proyectos que nazcan después**, el mismo fragmento sirve tal cual, o se le pide
+> al asistente que lo corra. Lo que jamás hace falta es contestar la pregunta a mano en cada uno.
+
 **En una máquina sin pantalla** (un servidor, una VM, una mini PC en un rack) hay que
 manejar ese primer arranque desde otra terminal, porque el paso de inicio de sesión **abre
 un navegador y luego pide de vuelta un código pegado**:
@@ -1289,6 +1351,7 @@ Decirlo antes de instalarla en casa de alguien más:
 | El teléfono no abre la página | Tailscale del teléfono apagado, o MagicDNS apagado en la consola |
 | La primera sesión se queda colgada | Claude Code no pasó por su primer arranque; está detenido en una de las cinco preguntas, sin ventana donde verlas. Ver A2 |
 | Un proyecto nuevo se cuelga la primera vez, incluso con la raíz confiada | Si pasa con TODOS los proyectos nuevos: la confianza se aceptó dentro de un proyecto y no en la raíz `~/claude`, no se hereda (ver A2). Si es solo el primero de un proyecto creado desde "+ Nuevo proyecto": es normal, contestar desde el teléfono o adelantarlo abriendo la primera sesión desde la computadora (ver B2) |
+| Un proyecto que llevaba meses trabajando empieza a pedir la confianza | Le corrieron `git init`, y la herencia se corta en la raíz de cada repositorio. El flag de permisos omitidos tampoco lo salta. Se siembra la llave con el fragmento de A2 |
 | Se le pidió a un agente que hiciera el primer arranque y se quedó a medias | A2 no se puede delegar; exige a una persona con la sesión al frente, sobre todo para la pregunta 4. Ver A2 |
 | Aparece "acepta toda la responsabilidad" y nadie sabe si contestar | Es la pregunta 4 de A2 (modo sin confirmaciones); solo la acepta el dueño de la máquina, en persona. Ver A2 |
 | La bitácora nunca escribe y no avisa | `raiz_proyectos` apunta a una carpeta que no existe |
