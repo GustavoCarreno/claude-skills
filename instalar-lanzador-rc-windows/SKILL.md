@@ -40,6 +40,7 @@ está verificado más recientemente.
 | Cerrarlas desde el teléfono | Toca cerrar y desaparece de la app |
 | Retomar una conversación anterior | El menú del proyecto lista sus sesiones previas |
 | Crear un proyecto nuevo | Botón "+ Nuevo proyecto", con nombre y contexto |
+| **Hallar un proyecto tecleando su nombre** | Un campo arriba del mosaico deja a la vista los que coinciden y esconde el resto. Con treinta proyectos se llega al que quiere con media palabra, en vez de recorrer la reja entera con el dedo. Da igual mayúsculas y acentos, y el espacio vale por guion |
 | Subir archivos desde el teléfono | Caen en `bandeja/` dentro del proyecto |
 | **La bitácora se escribe sola** | Al cerrar, el `CLAUDE.md` del proyecto queda actualizado sin pedirlo, su `pendientes.md` también (se crea solo si hubo trabajo abierto), y los bloques de calendario que esa sesión movió quedan al día |
 | **Documentos de oficina de verdad** | Pide un Word, un Excel con fórmulas o una presentación y salen archivos que abren en Office |
@@ -949,7 +950,7 @@ python -m pytest -q        # deben pasar todas, sin una sola falla
 python app.py              # debe quedarse escuchando; Ctrl+C para salir
 ```
 
-Al 13 de agosto de 2026 son 615 pruebas. **El número crece con cada versión, así que no lo
+Al 17 de agosto de 2026 son 622 pruebas. **El número crece con cada versión, así que no lo
 trates como contraseña**: lo que importa es que no falle ninguna.
 
 > ⚠️ **Si fallan por rutas demasiado largas, no es defecto del lanzador.** Windows corta en
@@ -1160,9 +1161,9 @@ mosaico la muestra en **Activos**, y **sigue viva después de cerrar esa consola
 
 > **Cómo se reparte por fases:** los renglones 1, 2, 3, 9, 9b, 10, 11 y 12 cierran la **fase A**
 > (gitignore, la convención de pendientes, el servicio local, la bitácora, el runtime de
-> documentos, los conectores y la cuenta de DeepInfra); del 4 al 8, más el 13, cierran la
-> **fase B**, y necesitan el teléfono. Si solo se contrató la fase A, la verificación termina
-> en el 12 y eso es una entrega completa.
+> documentos, los conectores y la cuenta de DeepInfra); del 4 al 8, más el 13, el 14 y el 15,
+> cierran la **fase B**, y necesitan el teléfono. Si solo se contrató la fase A, la verificación
+> termina en el 12 y eso es una entrega completa.
 
 
 | # | Qué | Cómo | Esperado |
@@ -1182,6 +1183,7 @@ mosaico la muestra en **Activos**, y **sigue viva después de cerrar esa consola
 | 12 | La cuenta de DeepInfra (opcional) | `python "$env:USERPROFILE\.claude\skills\whisper-deepinfra\whisper_deepinfra.py" --estado` | `llave: CONFIGURADA` si el cliente ya la dio; `NO CONFIGURADA` es correcto si todavía no la necesita |
 | 13 | El audio se escucha con un clic (solo si ya usó la voz sintética) | ver el recuadro de abajo | el navegador del teléfono lo **reproduce**, no lo descarga |
 | 14 | Dejar dicho, y que la lista se quede quieta | ver el recuadro de abajo | el recado queda escrito en el `pendientes.md` con su `»`, y el menú sigue mostrando la misma tarea |
+| 15 | El filtro rápido del mosaico | ver el recuadro de abajo | teclear parte de un nombre deja a la vista solo los que coinciden, y la ✕ devuelve el mosaico completo |
 
 
 > 📌 **Por qué el renglón del calendario mira el archivo y no el comportamiento.** Comprobar
@@ -1232,6 +1234,45 @@ mosaico la muestra en **Activos**, y **sigue viva después de cerrar esa consola
 > ⚠️ **La `»` con la que se guarda una retro significa "esto lo dictó el dueño de la máquina",
 > y es permanente.** Al probarlo se escribe en su archivo de verdad: hacerlo en un proyecto de
 > prueba, o avisarle que ese renglón se queda.
+
+> 📌 **Cómo se comprueba el renglón 15, y desde dónde se corre.** Hay un guion que lo mide
+> completo, y **corre en la máquina de quien instala, apuntada a la laptop del cliente por la
+> tailnet**: usa Playwright, que esta instalación deja fuera a propósito. Viaja dentro de la copia
+> del lanzador que trajiste, así que ya lo tienes. **Así se verificó `win11-dogfood` el 17 de
+> agosto de 2026, desde Linux y por la tailnet, con las 14 en verde.**
+>
+> ```bash
+> # desde la máquina Linux de quien instala, no desde la laptop del cliente
+> ORIGEN=/ruta/a/tu/copia/de/rc-launcher
+>
+> RC_BASE=https://<la-laptop>.<tu-tailnet>.ts.net \
+>   node "$ORIGEN"/docs/superpowers/verificacion/2026-08-17-filtro-rapido-de-proyectos.js
+> ```
+>
+> Son **14 comprobaciones** a 390 px de ancho, que es un teléfono, y deja una captura para verlo
+> con los ojos. ✅ **El guion solo lee el mosaico y teclea en un campo**, así que se puede correr
+> contra una máquina en uso: al revés del renglón 14, aquí queda cero rastro en los archivos del
+> cliente.
+>
+> 🔴 **Tres ajustes antes de la primera corrida, y los tres fallan señalando el lugar equivocado:**
+>
+> - **El correo de la identidad va escrito dentro del guion** (`Tailscale-User-Login`, en las
+>   primeras líneas). Con el correo de otra tailnet el lanzador contesta 403 y el guion se queda
+>   esperando un mosaico que jamás llega. Va el correo del dueño de la tailnet del cliente.
+> - **Pide al menos 4 proyectos para significar algo.** Con uno o dos, "filtrar recorta la lista"
+>   pasa en verde por vacuidad, y eso se lee como si el filtro estuviera roto. El guion **para y lo
+>   dice con palabras**, saliendo con código 2 en vez de reportar fallas falsas. Una instalación
+>   recién hecha suele estar justo ahí: sembrar unas carpetas con su `CLAUDE.md` bajo la raíz de
+>   proyectos, que además la deja más parecida a una máquina en uso.
+> - **Si quien instala trabaja desde Windows**, la primera línea del guion busca Playwright en la
+>   ruta global de Linux (`/usr/lib/node_modules/playwright`) y hay que apuntarla a donde viva ahí.
+>   Lo cómodo es correrlo desde una máquina Linux, que es como se hizo.
+>
+> **Y la mitad del dedo, que es la que el cliente va a vivir:** desde el teléfono, teclear parte de
+> un nombre, ver que los encabezados de Activos y Fijados se esconden y queda una sola rejilla,
+> **esperar los 8 segundos del redibujado** y comprobar que lo tecleado y el recorte siguen ahí.
+> Si a los 8 segundos reaparecen los proyectos escondidos, o vuelve el botón de "+ Nuevo proyecto",
+> esa copia del lanzador es anterior al 17 de agosto de 2026.
 
 > ⚠️ **El 403 del renglón 4 es la respuesta correcta, no una falla.** La raíz exige la
 > identidad que inyecta Tailscale, que en local no existe. **Medir salud con `/salud`, nunca

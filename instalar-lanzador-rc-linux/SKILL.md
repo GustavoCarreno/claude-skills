@@ -29,6 +29,7 @@ orden. Para Windows existe el equivalente en `instalar-lanzador-rc-windows`.
 | Cerrarlas desde el teléfono | Toca cerrar y desaparece de la app |
 | Retomar una conversación anterior | El menú del proyecto lista sus sesiones previas |
 | Crear un proyecto nuevo | Botón "+ Nuevo proyecto", con nombre y contexto |
+| **Hallar un proyecto tecleando su nombre** | Un campo arriba del mosaico deja a la vista los que coinciden y esconde el resto. Con treinta proyectos se llega al que quiere con media palabra, en vez de recorrer la reja entera con el dedo. Da igual mayúsculas y acentos, y el espacio vale por guion |
 | Subir archivos desde el teléfono | Caen en `bandeja/` dentro del proyecto |
 | **La bitácora se escribe sola** | Al cerrar, el `CLAUDE.md` del proyecto queda actualizado sin pedirlo, su `pendientes.md` también (se crea solo si hubo trabajo abierto), y los bloques de calendario que esa sesión movió quedan al día |
 | **Documentos de oficina de verdad** | Pide un Word, un Excel con fórmulas o una presentación y salen archivos que abren en Office |
@@ -923,7 +924,7 @@ python3 -m venv .venv
 cd ~/rc-launcher && .venv/bin/python -m pytest -q
 ```
 
-Debe pasar **la suite completa, sin una sola falla**. Al 13 de agosto de 2026 son 615 pruebas
+Debe pasar **la suite completa, sin una sola falla**. Al 17 de agosto de 2026 son 622 pruebas
 y corren en un segundo. **El número crece con cada versión, así que no lo trates como
 contraseña**: lo que importa es que no falle ninguna, en la máquina del cliente, sin tocar
 una línea. Eso es lo que demuestra que el código no depende de la máquina donde nació.
@@ -1119,9 +1120,9 @@ mosaico la muestra en **Activos**.
 
 > **Cómo se reparte por fases:** los renglones 1, 2, 3, 10, 10b, 11, 12 y 13 cierran la **fase A**
 > (el gitignore, la convención de pendientes, el servicio local, la bitácora, el runtime de
-> documentos, los conectores y la cuenta de DeepInfra); del 4 al 9, más el 14, cierran la
-> **fase B**, y necesitan el teléfono. Si solo se contrató la fase A, la verificación termina
-> en el 13 y eso es una entrega completa.
+> documentos, los conectores y la cuenta de DeepInfra); del 4 al 9, más el 14, el 15 y el 16,
+> cierran la **fase B**, y necesitan el teléfono. Si solo se contrató la fase A, la verificación
+> termina en el 13 y eso es una entrega completa.
 
 
 Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ninguno.
@@ -1144,6 +1145,7 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 | 13 | La cuenta de DeepInfra (opcional) | `python3 ~/.claude/skills/whisper-deepinfra/whisper_deepinfra.py --estado` | `llave: CONFIGURADA` si el cliente ya la dio; `NO CONFIGURADA` es correcto si todavía no la necesita |
 | 14 | El audio se escucha con un clic (solo si ya usó la voz sintética) | ver el recuadro de abajo | el navegador del teléfono lo **reproduce**, no lo descarga |
 | 15 | Dejar dicho, y que la lista se quede quieta | ver el recuadro de abajo | el recado queda escrito en el `pendientes.md` con su `»`, y el menú sigue mostrando la misma tarea |
+| 16 | El filtro rápido del mosaico | ver el recuadro de abajo | teclear parte de un nombre deja a la vista solo los que coinciden, y la ✕ devuelve el mosaico completo |
 
 
 > 📌 **Por qué el renglón del calendario mira el archivo y no el comportamiento.** Comprobar
@@ -1193,6 +1195,40 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 > ⚠️ **La `»` con la que se guarda una retro significa "esto lo dictó el dueño de la máquina",
 > y es permanente.** Al probarlo se escribe en su archivo de verdad: hacerlo en un proyecto de
 > prueba, o avisarle que ese renglón se queda.
+
+> 📌 **Cómo se comprueba el renglón 16, y desde dónde se corre.** Hay un guion que lo mide
+> completo, y **corre en la máquina de quien instala, apuntada a la del cliente por la
+> tailnet**: usa Playwright, que esta instalación deja fuera a propósito. Viaja dentro de la
+> copia del lanzador que trajiste, así que ya lo tienes.
+>
+> ```bash
+> ORIGEN=/ruta/a/tu/copia/de/rc-launcher      # la misma de B2
+>
+> RC_BASE=https://<la-maquina>.<tu-tailnet>.ts.net \
+>   node "$ORIGEN"/docs/superpowers/verificacion/2026-08-17-filtro-rapido-de-proyectos.js
+> ```
+>
+> Son **14 comprobaciones** a 390 px de ancho, que es un teléfono, y deja una captura en
+> `/tmp/filtro-390.png` para verlo con los ojos. ✅ **El guion solo lee el mosaico y teclea en un
+> campo**, así que se puede correr contra una máquina en uso: al revés del renglón 15, aquí queda
+> cero rastro en los archivos del cliente.
+>
+> 🔴 **Dos ajustes antes de la primera corrida, y los dos fallan señalando el lugar equivocado:**
+>
+> - **El correo de la identidad va escrito dentro del guion** (`Tailscale-User-Login`, en las
+>   primeras líneas). Con el correo de otra tailnet el lanzador contesta 403 y el guion se queda
+>   esperando un mosaico que jamás llega. Va el correo del dueño de la tailnet del cliente.
+> - **Pide al menos 4 proyectos para significar algo.** Con uno o dos, "filtrar recorta la lista"
+>   pasa en verde por vacuidad, y eso se lee como si el filtro estuviera roto. El guion **para y lo
+>   dice con palabras**, saliendo con código 2 en vez de reportar fallas falsas. Una instalación
+>   recién hecha suele estar justo ahí: sembrar unas carpetas con su `CLAUDE.md` bajo la raíz de
+>   proyectos, que además la deja más parecida a una máquina en uso.
+>
+> **Y la mitad del dedo, que es la que el cliente va a vivir:** desde el teléfono, teclear parte de
+> un nombre, ver que los encabezados de Activos y Fijados se esconden y queda una sola rejilla,
+> **esperar los 8 segundos del redibujado** y comprobar que lo tecleado y el recorte siguen ahí.
+> Si a los 8 segundos reaparecen los proyectos escondidos, o vuelve el botón de "+ Nuevo proyecto",
+> esa copia del lanzador es anterior al 17 de agosto de 2026.
 
 > ⚠️ **La prueba de la bitácora hay que pedirla bien o parece rota.** El umbral cuenta
 > **llamadas de herramienta, no archivos**: pedir "crea seis archivos" lo resuelve un
