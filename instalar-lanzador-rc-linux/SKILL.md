@@ -37,6 +37,7 @@ orden. Para Windows existe el equivalente en `instalar-lanzador-rc-windows`.
 | **Sus pendientes por proyecto** | Ve qué falta y palomea lo hecho, desde la computadora o desde el teléfono |
 | **Transcribir juntas y escuchar documentos** (opcional, con cuenta propia) | Sube la grabación de una junta y pide la minuta, o pide que le lean un documento para el camino |
 | **El audio se escucha con un clic** (requiere la fase B) | Lo que pidió que le leyeran llega como liga: le pica desde el teléfono y suena, sin descargarlo ni buscarlo en el navegador de archivos |
+| **Le avisa cuando una tarea termina** (requiere la fase B) | El teléfono suena cuando Claude Code deja de trabajar y se queda esperando, con el nombre del proyecto, qué hizo, y una liga que abre esa misma sesión de un toque. Cubre el hueco que deja la aplicación de Claude, que avisa cuando hay algo que contestar y se calla cuando el trabajo simplemente terminó |
 | **Dejar dicho qué resultó, sin abrir sesión** (requiere la fase B) | Desde el teléfono, en cada pendiente hay un botón para dictar cómo quedó, y una sección aparte para los recados sueltos del proyecto, los que valen por sí mismos. Se dicta con el teclado del teléfono, así que cuesta cero llamadas al modelo, y la siguiente sesión se entera sola de que hay algo sin leer. **La lista se queda donde estaba al guardar**, para poder recorrerla de corrido |
 
 ## El reparto, y conviene decirlo antes de empezar
@@ -1094,6 +1095,79 @@ sudo systemctl enable --now rc-launcher.service rc-watcher.timer
 > todas las sesiones adentro. Para medirla:
 > `ps -o rss -p $(systemctl show -p MainPID --value rc-launcher.service)`.
 
+## B3b. El canal de avisos, para que el vigilante sirva de algo
+
+**Esto faltaba hasta el 10 sep 2026**, y es un hueco que conviene entender antes de
+saltárselo: **B3 habilita `rc-watcher.timer`, que corre cada minuto**, y su trabajo es
+avisar cuando una tarea termina, o sea cuando Claude Code se queda esperando a la
+persona. Sin este paso el vigilante corre, detecta el turno cerrado, **intenta avisar y
+falla**, porque le falta a dónde mandar. Y como un envío fallido se deja sin marcar a
+propósito, para reintentarlo, **el error se repite cada minuto** en el registro del
+sistema, donde el usuario jamás lo ve.
+
+El canal es **ntfy**: una aplicación de teléfono que recibe avisos y un servidor que los
+publica. Sin cuenta de correo, sin token de por medio, y con una versión gratuita.
+
+### Dos caminos, y el segundo es el normal
+
+| Camino | Cuándo | Qué se pone en `url` |
+|---|---|---|
+| **Servidor propio** | La organización ya tiene uno, o el material es delicado | Su dirección, más `usuario` y `clave` |
+| **`ntfy.sh`, el público** | Lo demás. Cero infraestructura, cero costo, cero cuenta | `https://ntfy.sh`, con `usuario` y `clave` vacíos |
+
+> 🔴 **Con `ntfy.sh` el tema TIENE que ser un nombre largo y difícil de adivinar**, porque
+> ahí un tema es público: quien lo escriba lo lee. El aviso lleva el **nombre del proyecto
+> y el título de lo que se hizo**, así que con un tema como `avisos` cualquiera vería de
+> qué trabaja el cliente. El comando de abajo lo genera al azar.
+>
+> ⚠️ **Y hay que decirlo en voz alta antes de elegir**, con la misma franqueza de A5c: en
+> el servidor público esos títulos viajan por una máquina ajena. Si el cliente maneja
+> material confidencial, o es servidor propio, o el aviso se deja genérico.
+
+### Dejarlo configurado
+
+```bash
+mkdir -p ~/.config/rc-launcher
+TEMA="rc-$(head -c 18 /dev/urandom | base64 | tr -dc 'a-z0-9' | head -c 16)"
+cat > ~/.config/rc-launcher/ntfy.json <<EOF
+{
+  "url": "https://ntfy.sh",
+  "tema": "$TEMA",
+  "usuario": "",
+  "clave": "",
+  "prioridad": "default",
+  "titulo_suelto": "Claude Code"
+}
+EOF
+chmod 600 ~/.config/rc-launcher/ntfy.json
+echo "El tema es: $TEMA"
+```
+
+**El tema hay que copiarlo**, porque es lo que la persona escribe en su teléfono. Con
+servidor propio se cambian `url`, `usuario` y `clave`, y el tema puede ser legible.
+
+### Del lado del teléfono
+
+Instalar **ntfy** (Play Store, App Store o F-Droid), tocar **Agregar suscripción** y
+escribir el tema. Con servidor propio, marcar **Usar otro servidor** y poner la dirección
+con su usuario y contraseña.
+
+### Comprobarlo, que es un renglón
+
+```bash
+cd ~/rc-launcher && .venv/bin/python -c "
+import avisos
+print(avisos.enviar('Prueba de instalación\nSi ves esto en el teléfono, el canal quedó.'))
+"
+```
+
+Sale `(True, 'avisado')` **y el aviso llega al teléfono**. Las dos cosas: el `True` dice
+que el servidor lo aceptó, y solo el teléfono dice que la suscripción está bien escrita.
+
+> 📌 **Si sale `(False, ...)`, el mensaje dice cuál de las tres cosas falló**: falta el
+> archivo, el servidor contestó un código (un 401 es usuario o clave), o la red. Un
+> `403` en `ntfy.sh` suele ser un tema con mayúsculas o con caracteres raros.
+
 ## B4. Publicarlo en la tailnet
 
 
@@ -1182,7 +1256,7 @@ mosaico la muestra en **Activos**.
 
 > **Cómo se reparte por fases:** los renglones 1, 2, 3, 10, 10b, 11, 12 y 13 cierran la **fase A**
 > (el gitignore, la convención de pendientes, el servicio local, la bitácora, el runtime de
-> documentos, los conectores y la cuenta de DeepInfra); del 4 al 9, más el 14, el 15 y el 16,
+> documentos, los conectores y la cuenta de DeepInfra); del 4 al 9b, más el 14, el 15 y el 16,
 > cierran la **fase B**, y necesitan el teléfono. Si solo se contrató la fase A, la verificación
 > termina en el 13 y eso es una entrega completa.
 
@@ -1200,6 +1274,7 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 | 7 | Lanza | tocar un proyecto → "Nueva sesión" | en 5 s el botón queda encendido y la sesión aparece en la app de Claude |
 | 8 | Cierra | tocar el proyecto → "Terminar sesión" | desaparece de la app |
 | 9 | Retoma | tocar un proyecto apagado | lista sus sesiones previas |
+| 9b | El aviso llega | terminar una tarea desde el teléfono y esperar 3 minutos sin contestar | llega la notificación con el nombre del proyecto, y al tocarla abre esa sesión |
 | 10 | La bitácora | ver el recuadro de abajo, que tiene truco | el `CLAUDE.md` de ese proyecto trae una entrada nueva |
 | 10b | La bitácora trae lo del calendario | `grep -c "Google_Calendar" ~/.claude/hooks/bitacora.py` | **`6`**. Menos que eso es una copia vieja bajada en A3 |
 | 11 | El runtime de documentos | las cinco pruebas de A4f | los cinco archivos salen bien, **con el Excel trayendo resultados y no celdas vacías** |
