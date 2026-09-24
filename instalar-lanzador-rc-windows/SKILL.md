@@ -45,10 +45,12 @@ está verificado más recientemente.
 | **La bitácora se escribe sola** | Al cerrar, el `CLAUDE.md` del proyecto queda actualizado sin pedirlo, su `pendientes.md` también (se crea solo si hubo trabajo abierto), y los bloques de calendario que esa sesión movió quedan al día |
 | **Documentos de oficina de verdad** | Pide un Word, un Excel con fórmulas o una presentación y salen archivos que abren en Office |
 | **Su correo, su calendario y su Drive** | Pregunta qué le escribieron o pide que le agenden algo, y se resuelve sin salir de la conversación |
+| **Más aplicaciones, y correos con adjunto** (opcional, con Composio) | Pide que le mande el contrato anexo al broker, o que actúe en una aplicación que los conectores de claude.ai no cubren, y se resuelve igual, sin salir de la conversación |
 | **Sus pendientes por proyecto** | Ve qué falta y palomea lo hecho, desde la computadora o desde el teléfono |
 | **Transcribir juntas y escuchar documentos** (opcional, con cuenta propia) | Sube la grabación de una junta y pide la minuta, o pide que le lean un documento para el camino |
 | **El audio se escucha con un clic** (requiere la fase B) | Lo que pidió que le leyeran llega como liga: le pica desde el teléfono y suena, sin descargarlo ni buscarlo en el navegador de archivos |
 | **Dejar dicho qué resultó, sin abrir sesión** (requiere la fase B) | Desde el teléfono, en cada pendiente hay un botón para dictar cómo quedó, y una sección aparte para los recados sueltos del proyecto, los que valen por sí mismos. Se dicta con el teclado del teléfono, así que cuesta cero llamadas al modelo, y la siguiente sesión se entera sola de que hay algo sin leer. **La lista se queda donde estaba al guardar**, para poder recorrerla de corrido |
+| **Las transcripciones de sus grabaciones llegan solas** (opcional, requiere la fase B) | Al abrir una sesión desde el teléfono, el asistente revisa la carpeta de Drive donde caen las transcripciones, le dice en un renglón cuáles son de ese proyecto y pregunta si las procesa. Con un sí, quedan guardadas en el proyecto y lo que salga de ellas llega a sus pendientes |
 
 ## Antes de empezar
 
@@ -575,6 +577,60 @@ Basta un `true` en cualquier nivel de configuración para que ganen; un `false` 
 revierte un `true` de usuario. Para bloquear solo uno, va por nombre en `deniedMcpServers`
 (por ejemplo `"claude.ai Gmail"`). Y para apagarlos en una sola corrida:
 `ENABLE_CLAUDEAI_MCP_SERVERS=false claude`.
+
+### A5e. Composio, para lo que los conectores no alcanzan (recomendado)
+
+**Lo que deja funcionando:** correos **con archivo adjunto**, que el conector de claude.ai
+todavía no permite, y acceso a **más de mil aplicaciones** además de Google y Microsoft. Cada
+aplicación se autoriza una vez, en el navegador, y a partir de ahí la sesión la usa sola a
+partir de una petición normal ("mándale al broker el contrato anexo").
+
+**Composio (`composio.dev`) es un servicio externo que guarda los permisos de acceso del
+cliente a cada aplicación y ejecuta las acciones en su nombre.** Es lo que se le recomienda al
+cliente para sus conexiones, porque le ahorra el trámite de credenciales que antes obligaba a
+pasar por Google Cloud o por su área de sistemas.
+
+> 📌 **Se suma a A5 y lo deja en su lugar, por una razón concreta:** el cierre automático de la
+> bitácora (A3) reconoce el calendario **por el nombre de las herramientas del conector de
+> claude.ai** (es lo que mide el renglón de verificación del calendario). Si el calendario
+> quedara solo en Composio, esa mitad del cierre dejaría de funcionar sin avisar. Así que
+> Gmail, Calendar y Drive se quedan conectados por A5, y Composio entra para lo demás.
+
+> ✅ **Probado el 18 de septiembre de 2026 en una Ubuntu recién instalada**, con la cuenta del
+> dueño de la máquina: una sesión, a partir de una petición en lenguaje normal, dejó un
+> borrador **dentro de su hilo** con un PDF adjunto **idéntico byte por byte** al original
+> (verificado leyendo el correo crudo). El adjunto llega marcado como
+> `application/octet-stream` y no como PDF; Gmail lo abre igual.
+
+🔴 **En Windows el camino es otro, porque el instalador del comando `composio` rechaza
+Windows.** Medido el 24 de septiembre de 2026 leyendo el instalador oficial: detecta Windows y
+sale con *"Windows is not supported. Use WSL"*. En vez del comando se usa el **servidor MCP
+remoto de Composio**, que Claude Code agrega con una sola línea (MCP es el protocolo con el
+que Claude Code se conecta a servicios externos):
+
+```powershell
+claude mcp add --scope user --transport http composio https://connect.composio.dev/mcp
+```
+
+Después, dentro de una sesión: `/mcp`, escoger `composio` y autenticar. Abre el navegador, y
+**la cuenta de Composio es del cliente**. Las aplicaciones se autorizan desde la misma sesión
+la primera vez que se piden, o en el tablero de `composio.dev`.
+
+Verificación: `claude mcp list` debe mostrar `composio` en `Connected`. Con `--scope user`
+queda disponible en todos sus proyectos, incluidas las sesiones que lance el teléfono.
+
+> 🔴 **Esta vía está sin probar en `win11-dogfood`**, a diferencia de la de Linux. Dos cosas
+> hay que medir ahí antes de prometerla en una entrega: que la autenticación de `/mcp`
+> complete, y sobre todo **que el adjunto llegue**. En Linux el adjunto sale de un archivo
+> local que el comando sube; por la vía remota, el archivo vive en la laptop y el servicio
+> está lejos, así que el mecanismo de subida es distinto y falta comprobarlo.
+
+**Lo que hay que decirle al cliente, junto con A5c y A8c:** 🔴 **Composio guarda el permiso
+de acceso a sus cuentas, y cada acción pasa por sus servidores.** Es la misma clase de aviso
+que DeepInfra con el audio, más pesado, porque aquí es su correo. La cuenta es suya y la
+conexión se revoca en cualquier momento desde el tablero de Composio o desde la seguridad de
+su cuenta de Google. **Revisar el plan vigente en `composio.dev` antes de la entrega**, para
+decirle si su uso cabe en el gratuito.
 
 ---
 
@@ -1380,11 +1436,104 @@ rc mi-proyecto --resume <session-id>
 Verificación: `rc` sin argumentos lista los proyectos; `rc <alguno>` crea la sesión, el
 mosaico la muestra en **Activos**, y **sigue viva después de cerrar esa consola**.
 
+## B7. Las transcripciones que llegan a Drive (opcional)
+
+**Lo que deja funcionando:** el cliente graba una junta con una grabadora o una aplicación que
+deja la transcripción en una carpeta de su Google Drive. Al abrir una sesión desde el teléfono,
+el asistente revisa esa carpeta **antes de cualquier otra cosa**, decide cuáles tratan de ese
+proyecto (primero por el nombre, y si hay duda, leyendo solo el resumen del principio), las
+resume en un renglón cada una y **pregunta si las procesa**. Con un sí:
+
+1. la guarda en `transcripciones/` del proyecto, con la fecha `AAAA-MM-DD` al inicio del nombre;
+2. lleva a `pendientes.md` y al `CLAUDE.md` lo que salga de ella;
+3. la mueve en Drive a la subcarpeta `Procesadas`, **para que ningún otro proyecto se la vuelva
+   a ofrecer**.
+
+**Es la continuación natural de A8:** allá el cliente sube el audio y pide la minuta; aquí la
+transcripción ya existe y lo que se automatiza es encontrarla y archivarla en el proyecto
+correcto.
+
+> 📌 **Solo lo reciben las sesiones que nacen del lanzador**, o sea las del teléfono y las del
+> comando `rc` (B6). Una sesión abierta directo en la terminal o en VS Code arranca sin el aviso.
+> Y **el lanzador en sí nunca habla con Google**: solo lee un archivo de configuración y le
+> redacta la instrucción a la sesión. Quien lista, lee y mueve en Drive es el asistente, con el
+> conector de A5.
+
+### B7a. Lo que tiene que existir antes
+
+| Requisito | Por qué |
+|---|---|
+| **Algo que deje las transcripciones en una carpeta de Drive** | El lanzador revisa la carpeta y le es indiferente de dónde llegan. El montaje de referencia es una grabadora Comulytic con una automatización de Zapier (un servicio que conecta aplicaciones entre sí) que copia cada transcripción a Drive. Conviene que cada archivo traiga la **fecha y un título** en el nombre, que es con lo que el asistente decide sin abrirlo |
+| **El conector de Google Drive de A5**, en `Connected` | Con él se lista la carpeta, se lee el archivo y se mueve a `Procesadas`. Composio (A5e) también sirve, si el Drive está conectado ahí |
+| **Una copia del lanzador del 22 de septiembre de 2026 o posterior** | Es la que trae `transcripciones_drive.py`. Una anterior ignora la configuración en silencio |
+
+Comprobar la copia:
+
+```powershell
+if (Test-Path "$env:USERPROFILE\rc-launcher\transcripciones_drive.py") { "trae la revisión" } else { "copia anterior al 22 de septiembre de 2026" }
+```
+
+### B7b. La carpeta y la configuración
+
+1. **En Drive, con la cuenta del cliente:** crear la carpeta donde caerán las transcripciones
+   (el nombre sugerido es `Transcripciones`) y **dentro de ella una subcarpeta llamada
+   exactamente `Procesadas`**, porque ese es el nombre que usa la instrucción.
+2. **Copiar el identificador de la carpeta** desde la barra de direcciones del navegador: es lo
+   que va después de `drive.google.com/drive/folders/`.
+3. **Escribir la configuración** en `%USERPROFILE%\.config\rc-launcher\transcripciones.json`, sustituyendo el identificador:
+
+```powershell
+$dir = "$env:USERPROFILE\.config\rc-launcher"
+New-Item -ItemType Directory -Force -Path $dir | Out-Null
+'{"carpeta": "Transcripciones", "carpeta_id": "EL_ID_DE_LA_CARPETA"}' |
+  Set-Content -Path "$dir\transcripciones.json" -Encoding utf8
+```
+
+> 📌 **El `-Encoding utf8` de PowerShell 5.1 escribe una marca de orden de bytes al inicio del
+> archivo.** El lanzador la tolera (lee con `utf-8-sig`), así que no hace falta quitarla.
+
+**Sin reinicios:** el lanzador lee ese archivo cada vez que lanza una sesión. Y para
+apagar la revisión basta con borrarlo; la sesión vuelve a arrancar exactamente como antes.
+
+### B7c. Verificar
+
+Primero que la configuración se lee (debe imprimir `True`):
+
+```powershell
+cd "$env:USERPROFILE\rc-launcher"; python -c "import transcripciones_drive as t; print(t.instruccion_para_la_sesion('prueba') is not None)"
+```
+
+Luego la prueba completa, que conviene hacer con el cliente enfrente:
+
+1. Dejar en la carpeta de Drive un archivo de prueba cuyo nombre diga de qué proyecto es, por
+   ejemplo `2026-09-24 Prueba de instalación para <proyecto>.txt`.
+2. Desde el teléfono, lanzar una sesión nueva en ese proyecto. **Lo primero que debe decir la
+   sesión** es que encontró esa transcripción, con su resumen en un renglón, y preguntar si la
+   procesa.
+3. Contestar que sí, y comprobar las dos mitades: el archivo en `transcripciones/` del proyecto
+   con la fecha al inicio, y **en Drive, el archivo ya dentro de `Procesadas`**.
+
+> ⚠️ **La mitad de mover en Drive es la que falta ejercitar en una máquina de cliente.** El
+> conector de Drive de claude.ai declara que mueve archivos (cambiando su carpeta padre), pero el
+> montaje de referencia mueve con otra herramienta. Si el archivo se queda en la carpeta
+> principal, cada sesión de cada proyecto lo va a volver a ofrecer: es el síntoma que delata el
+> fallo, y se revisa en este paso, antes de entregar.
+
+### B7d. Lo que cuesta, y lo que hay que decirle
+
+- **Cada sesión lanzada arranca con una consulta a Drive**, aunque la carpeta esté vacía. Es uso
+  de su suscripción, pequeño, y se paga en cada arranque.
+- **Un archivo ajeno a todos los proyectos se revisa para siempre** (la bienvenida de la
+  grabadora es el caso típico). Moverlo a `Procesadas` a mano, o borrarlo.
+- 🔴 **Lo grabado sale de su equipo**: la transcripción la hace el servicio de la grabadora y la
+  guarda Drive. Y **el consentimiento de las personas grabadas corre por su cuenta**, igual que
+  en A8c. Decirlo en la entrega, antes de que grabe una junta con terceros.
+
 ## 7. Verificación, en orden
 
-> **Cómo se reparte por fases:** los renglones 1, 2, 3, 9, 9b, 10, 11 y 12 cierran la **fase A**
+> **Cómo se reparte por fases:** los renglones 1, 2, 3, 9, 9b, 10, 11, 11b y 12 cierran la **fase A**
 > (gitignore, la convención de pendientes, el servicio local, la bitácora, el runtime de
-> documentos, los conectores y la cuenta de DeepInfra); del 4 al 8, más el 13, el 14 y el 15,
+> documentos, los conectores, Composio y la cuenta de DeepInfra); del 4 al 8, más el 13, el 14, el 15 y el 16,
 > cierran la **fase B**, y necesitan el teléfono. Si solo se contrató la fase A, la verificación
 > termina en el 12 y eso es una entrega completa.
 
@@ -1407,6 +1556,8 @@ mosaico la muestra en **Activos**, y **sigue viva después de cerrar esa consola
 | 13 | El audio se escucha con un clic (solo si ya usó la voz sintética) | ver el recuadro de abajo | el navegador del teléfono lo **reproduce**, no lo descarga |
 | 14 | Dejar dicho, y que la lista se quede quieta | ver el recuadro de abajo | el recado queda escrito en el `pendientes.md` con su `»`, y el menú sigue mostrando la misma tarea |
 | 15 | El filtro rápido del mosaico | ver el recuadro de abajo | teclear parte de un nombre deja a la vista solo los que coinciden, y la ✕ devuelve el mosaico completo |
+| 11b | Composio (opcional, A5e) | `claude mcp list` | `composio` en `Connected`; si el cliente no lo contrató, se salta |
+| 16 | Las transcripciones de Drive (opcional, B7) | los tres pasos de B7c | la sesión ofrece la de prueba al arrancar, y al procesarla queda en `transcripciones/` y en `Procesadas` |
 
 
 > 📌 **Por qué el renglón del calendario mira el archivo y no el comportamiento.** Comprobar
@@ -1576,6 +1727,9 @@ Decirlo antes de instalarla en casa de un cliente:
 | No deja conectar Gmail desde `/mcp` | Es lo esperado: va en claude.ai, no en la terminal. Ver A5a |
 | El borrador salió sin el archivo adjunto | Limitación vigente del conector; se adjunta a mano antes de enviar. Ver A5c |
 | Pide una llave de DeepInfra que el cliente no esperaba | No se le explicó A8 en la entrega. Es opcional y con su propia cuenta; explicarle y seguir cuando la tenga |
+| La misma transcripción se ofrece en cada sesión | No se movió a `Procesadas`: la subcarpeta falta, se llama distinto, o el conector no completó el movimiento. Ver B7c |
+| Hay transcripciones en Drive y la sesión arranca sin mencionarlas | La sesión no nació del lanzador, falta `transcripciones.json`, o la copia del lanzador es anterior al 22 de septiembre de 2026. Ver B7 |
+| `Windows is not supported. Use WSL` al instalar Composio | Es lo esperado: en Windows va por el servidor MCP remoto. Ver A5e |
 | `soffice` o `tesseract` "no se reconoce" | Se instalan en `Program Files` sin registrarse en el PATH. Ver A4b |
 | `module 'socket' has no attribute 'AF_UNIX'` | Se corrió un script auxiliar del plugin, que es solo para Linux. Usar `soffice` directo. Ver A4f |
 | `Cannot find module 'docx'` o `'pptxgenjs'` | Falta `NODE_PATH`. Ver A4d |
