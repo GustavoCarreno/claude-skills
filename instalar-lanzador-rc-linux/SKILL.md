@@ -1394,11 +1394,15 @@ Luego la prueba completa, que conviene hacer con el cliente enfrente:
 3. Contestar que sí, y comprobar las dos mitades: el archivo en `transcripciones/` del proyecto
    con la fecha al inicio, y **en Drive, el archivo ya dentro de `Procesadas`**.
 
-> ⚠️ **La mitad de mover en Drive es la que falta ejercitar en una máquina de cliente.** El
-> conector de Drive de claude.ai declara que mueve archivos (cambiando su carpeta padre), pero el
-> montaje de referencia mueve con otra herramienta. Si el archivo se queda en la carpeta
-> principal, cada sesión de cada proyecto lo va a volver a ofrecer: es el síntoma que delata el
-> fallo, y se revisa en este paso, antes de entregar.
+> ✅ **Probado el 24 de septiembre de 2026 en `win11-dogfood`, con el aviso real del lanzador:**
+> la sesión encontró la transcripción, la guardó en `transcripciones/` con la fecha al inicio,
+> llevó el acuerdo a `pendientes.md` y **la movió a `Procesadas` con el conector de Drive de
+> claude.ai**, cambiando su carpeta padre. Se confirmó leyendo el archivo en Drive, no el reporte
+> de la sesión.
+>
+> ⚠️ **El síntoma que delata un fallo:** si el archivo se queda en la carpeta principal, cada
+> sesión de cada proyecto lo va a volver a ofrecer. Por eso este paso se revisa antes de
+> entregar.
 
 ### B7d. Lo que cuesta, y lo que hay que decirle
 

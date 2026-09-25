@@ -619,11 +619,18 @@ la primera vez que se piden, o en el tablero de `composio.dev`.
 Verificación: `claude mcp list` debe mostrar `composio` en `Connected`. Con `--scope user`
 queda disponible en todos sus proyectos, incluidas las sesiones que lance el teléfono.
 
-> 🔴 **Esta vía está sin probar en `win11-dogfood`**, a diferencia de la de Linux. Dos cosas
-> hay que medir ahí antes de prometerla en una entrega: que la autenticación de `/mcp`
-> complete, y sobre todo **que el adjunto llegue**. En Linux el adjunto sale de un archivo
-> local que el comando sube; por la vía remota, el archivo vive en la laptop y el servicio
-> está lejos, así que el mecanismo de subida es distinto y falta comprobarlo.
+> ✅ **Probada el 24 de septiembre de 2026 en `win11-dogfood`**, con la cuenta del dueño de la
+> máquina: la autenticación de `/mcp` completó, y dos borradores salieron con su PDF adjunto
+> **idéntico byte por byte** al original, marcado como `application/pdf` (verificado leyendo el
+> correo crudo). Uno de 1.4 KB y otro de **339 KB**, que es el tamaño de un contrato escaneado.
+>
+> ⚠️ **Lo que cuesta: el de 339 KB tardó 13 minutos**, porque la sesión tuvo que descubrir cómo
+> subir el archivo. Por esta vía el archivo vive en la laptop y el servicio está lejos, así que
+> lo que funcionó fue pedirle al área de trabajo remota de Composio una dirección de subida y
+> mandarle el archivo directo desde Windows. **El camino que hay que evitar** es convertir el
+> archivo a texto y pasarlo por la conversación: sirvió con el de 1.4 KB y con un contrato real
+> se topa con el límite de lo que el modelo escribe de una vez. Vale avisarle al cliente que el
+> primer adjunto grande tarda, y en Linux el comando `composio` lo resuelve directo.
 
 **Lo que hay que decirle al cliente, junto con A5c y A8c:** 🔴 **Composio guarda el permiso
 de acceso a sus cuentas, y cada acción pasa por sus servidores.** Es la misma clase de aviso
@@ -1513,11 +1520,15 @@ Luego la prueba completa, que conviene hacer con el cliente enfrente:
 3. Contestar que sí, y comprobar las dos mitades: el archivo en `transcripciones/` del proyecto
    con la fecha al inicio, y **en Drive, el archivo ya dentro de `Procesadas`**.
 
-> ⚠️ **La mitad de mover en Drive es la que falta ejercitar en una máquina de cliente.** El
-> conector de Drive de claude.ai declara que mueve archivos (cambiando su carpeta padre), pero el
-> montaje de referencia mueve con otra herramienta. Si el archivo se queda en la carpeta
-> principal, cada sesión de cada proyecto lo va a volver a ofrecer: es el síntoma que delata el
-> fallo, y se revisa en este paso, antes de entregar.
+> ✅ **Probado el 24 de septiembre de 2026 en `win11-dogfood`, con el aviso real del lanzador:**
+> la sesión encontró la transcripción, la guardó en `transcripciones/` con la fecha al inicio,
+> llevó el acuerdo a `pendientes.md` y **la movió a `Procesadas` con el conector de Drive de
+> claude.ai**, cambiando su carpeta padre. Se confirmó leyendo el archivo en Drive, no el reporte
+> de la sesión.
+>
+> ⚠️ **El síntoma que delata un fallo:** si el archivo se queda en la carpeta principal, cada
+> sesión de cada proyecto lo va a volver a ofrecer. Por eso este paso se revisa antes de
+> entregar.
 
 ### B7d. Lo que cuesta, y lo que hay que decirle
 
