@@ -51,6 +51,7 @@ está verificado más recientemente.
 | **El audio se escucha con un clic** (requiere la fase B) | Lo que pidió que le leyeran llega como liga: le pica desde el teléfono y suena, sin descargarlo ni buscarlo en el navegador de archivos |
 | **Dejar dicho qué resultó, sin abrir sesión** (requiere la fase B) | Desde el teléfono, en cada pendiente hay un botón para dictar cómo quedó, y una sección aparte para los recados sueltos del proyecto, los que valen por sí mismos. Se dicta con el teclado del teléfono, así que cuesta cero llamadas al modelo, y la siguiente sesión se entera sola de que hay algo sin leer. **La lista se queda donde estaba al guardar**, para poder recorrerla de corrido |
 | **Las transcripciones de sus grabaciones llegan solas** (opcional, requiere la fase B) | Al abrir una sesión desde el teléfono, el asistente revisa la carpeta de Drive donde caen las transcripciones, le dice en un renglón cuáles son de ese proyecto y pregunta si las procesa. Con un sí, quedan guardadas en el proyecto y lo que salga de ellas llega a sus pendientes |
+| **La sesión le ofrece el bloque de su agenda** (opcional, requiere la fase B) | Si reservó en el calendario un bloque para ese proyecto y está en curso o empieza en media hora, la sesión se lo resume en dos renglones al abrir y pregunta si lo atienden. Pasa igual si abre la sesión desde el teléfono o en la computadora |
 
 ## Antes de empezar
 
@@ -1460,8 +1461,9 @@ resume en un renglón cada una y **pregunta si las procesa**. Con un sí:
 transcripción ya existe y lo que se automatiza es encontrarla y archivarla en el proyecto
 correcto.
 
-> 📌 **Solo lo reciben las sesiones que nacen del lanzador**, o sea las del teléfono y las del
-> comando `rc` (B6). Una sesión abierta directo en la terminal o en VS Code arranca sin el aviso.
+> 📌 **Lo reciben las sesiones que nacen del lanzador**, o sea las del teléfono y las del
+> comando `rc` (B6). **Una sesión abierta directo en la terminal o en VS Code lo recibe solo si
+> está instalado el gancho de B8b**; sin él, arranca sin el aviso.
 > Y **el lanzador en sí nunca habla con Google**: solo lee un archivo de configuración y le
 > redacta la instrucción a la sesión. Quien lista, lee y mueve en Drive es el asistente, con el
 > conector de A5.
@@ -1540,11 +1542,172 @@ Luego la prueba completa, que conviene hacer con el cliente enfrente:
   guarda Drive. Y **el consentimiento de las personas grabadas corre por su cuenta**, igual que
   en A8c. Decirlo en la entrega, antes de que grabe una junta con terceros.
 
+## B8. El bloque de calendario al arrancar (opcional)
+
+**Lo que deja funcionando:** el cliente reserva en su calendario un bloque para un proyecto, por
+ejemplo *"Marán · Carta al broker de LG"* de 10:00 a 12:00. Al abrir una sesión en ese proyecto
+mientras el bloque está en curso, o hasta 30 minutos antes de que empiece, el asistente lo
+encuentra solo, lee su descripción y la tarea de `pendientes.md` que le corresponde, **resume en
+dos renglones qué toca y pregunta «¿Lo atendemos?»**. Empieza a trabajar solo con un sí.
+
+**Es la mitad que le faltaba a A7:** allá quedó escrito que el calendario dice cuándo y
+`pendientes.md` dice si ya se hizo. Con esto, la sesión junta las dos cosas sin que el cliente
+tenga que pedir que se revise la agenda.
+
+**Trae dos piezas, y conviene instalar las dos:**
+
+| Pieza | Qué hace |
+|---|---|
+| **La configuración del calendario** (`calendario.json`) | Le dice al lanzador qué calendarios revisar. Sin ella, la revisión se queda apagada y la sesión arranca como antes |
+| **El aviso para las sesiones abiertas a mano** (`aviso_arranque.py`) | Un *gancho* de Claude Code, o sea un programa que Claude Code corre solo en cierto momento; este corre al iniciar la sesión. Le entrega el mismo aviso a una sesión abierta con `claude` en la terminal o en VS Code, que hasta ahora arrancaba sin él |
+
+> 📌 **El gancho también le lleva a esas sesiones las otras dos revisiones**, la retroalimentación
+> dictada desde el teléfono y las transcripciones de B7. Con el lanzador el aviso llega como
+> primera instrucción y la sesión lo atiende sola; con `claude` directo llega como contexto y se
+> atiende al primer mensaje, aunque sea un "hola". **Se calla a propósito en dos casos:** al
+> compactar la conversación, para no repetirlo a media sesión, y en las sesiones del lanzador,
+> que ya lo traen (llevan `RC_LANZADOR=1` en el entorno).
+
+> 📌 **El lanzador sigue sin hablar con Google**, igual que en B7: solo lee la configuración y le
+> redacta la instrucción a la sesión. Quien consulta el calendario es el asistente, con el
+> conector de Google Calendar de A5. **Probado el 25 de septiembre de 2026:** el conector acepta
+> tanto el identificador de un calendario secundario como `primary`.
+
+### B8a. Lo que tiene que existir antes
+
+| Requisito | Por qué |
+|---|---|
+| **El conector de Google Calendar de A5**, en `Connected` | Con él se buscan los eventos |
+| **Una copia del lanzador del 25 de septiembre de 2026 o posterior** | Es la que trae `calendario_sesion.py` y `aviso_arranque.py`. Una anterior ignora la configuración en silencio |
+| **La convención del título**, explicada al cliente | Ver B8d. Sin ella la sesión decide por la descripción y se equivoca más |
+
+```powershell
+foreach ($f in "calendario_sesion.py","aviso_arranque.py") {
+  if (-not (Test-Path "$env:USERPROFILE\rc-launcher\$f")) { "FALTA: $f" }
+}
+"revisión terminada"
+```
+
+### B8b. La configuración y el gancho
+
+1. **Sacar el identificador de cada calendario**, en Google Calendar desde la computadora: los
+   tres puntos junto al nombre del calendario → *Configuración y uso compartido* → sección
+   *Integrar el calendario* → *ID del calendario*. El calendario principal no hace falta
+   buscarlo: su identificador es `primary`.
+2. **Escribir la configuración**, sustituyendo el identificador:
+
+```powershell
+$dir = "$env:USERPROFILE\.config\rc-launcher"
+New-Item -ItemType Directory -Force -Path $dir | Out-Null
+'{"calendarios": [{"nombre": "Trabajo", "id": "EL_ID_DEL_CALENDARIO_DE_TRABAJO"}, {"nombre": "principal", "id": "primary"}], "minutos_antes": 30}' |
+  Set-Content -Path "$dir\calendario.json" -Encoding utf8
+```
+
+> 📌 **La marca de orden de bytes que agrega `-Encoding utf8` se tolera**, igual que en B7b.
+
+> ⚠️ **El principal va en la lista aunque el cliente tenga un calendario aparte para el
+> trabajo.** Las invitaciones de sus clientes caen en el principal, porque el dueño de ese
+> evento es quien invita. Si solo tiene el principal, la lista lleva ese renglón y ya.
+
+3. **Registrar el gancho** en `%USERPROFILE%\.claude\settings.json`. Este fragmento lo agrega
+   sin tocar lo demás, y no lo duplica si ya estaba. Toma la ruta del Python con el que se
+   corre, que es el mismo `<python>` de A3:
+
+```powershell
+@'
+import json, pathlib, shutil, sys
+cfg = pathlib.Path.home() / ".claude" / "settings.json"
+gancho = pathlib.Path.home() / "rc-launcher" / "aviso_arranque.py"
+orden = f'"{sys.executable}" -X utf8 "{gancho}"'
+shutil.copy(cfg, str(cfg) + ".bak")            # respaldo antes de tocar nada
+datos = json.loads(cfg.read_text(encoding="utf-8"))
+inicio = datos.setdefault("hooks", {}).setdefault("SessionStart", [])
+ya = any(h.get("command") == orden for g in inicio for h in g.get("hooks", []))
+if not ya:
+    inicio.append({"hooks": [{"type": "command", "command": orden}]})
+cfg.write_text(json.dumps(datos, ensure_ascii=False, indent=2), encoding="utf-8")
+print("ya estaba" if ya else "registrado")
+'@ | Set-Content -Encoding UTF8 "$env:TEMP\registrar_gancho.py"
+
+python "$env:TEMP\registrar_gancho.py"
+```
+
+> 🔴 **El `-X utf8` NO es opcional en Windows.** Sin él, Python escribe la salida del gancho en la
+> codificación de la consola de Windows (cp1252) y no en UTF-8, que es lo que lee Claude Code. El
+> aviso lleva acentos y comillas `«»`, así que llega ilegible y **la sesión arranca sin él, sin
+> mostrar error**. Medido el 25 de septiembre de 2026 simulando esa codificación: la salida deja
+> de ser UTF-8 válido en el byte 137, justo en la primera `«`.
+
+> 📌 **Basta cualquier Python de la máquina**, porque el gancho usa solo la biblioteca
+> estándar. Y queda junto al gancho `pendiente` de la bitácora (A3); los dos corren al
+> iniciar y cada uno hace lo suyo.
+
+**Sin reinicios:** el lanzador lee `calendario.json` cada vez que lanza una sesión, y Claude Code
+lee `settings.json` al abrir cada sesión. Para apagar la revisión basta con borrar
+`calendario.json`.
+
+### B8c. Verificar
+
+Primero que la configuración se lee y que la instrucción habla del cliente (deben imprimir
+`True` y luego `False`):
+
+```powershell
+cd "$env:USERPROFILE\rc-launcher"; python -c "import calendario_sesion as c; t = c.instruccion_para_la_sesion('prueba'); print(t is not None); print('Gustavo' in t)"
+```
+
+> 🔴 **Si el segundo renglón imprime `True`, la copia del lanzador todavía le dice a la sesión
+> que espere el sí de "Gustavo"**, que es el nombre de quien la construyó. En la máquina de otra
+> persona eso confunde a la sesión y al cliente. Llevarle una copia corregida con B2b antes de
+> entregar.
+
+Luego que el gancho habla y que se calla con la marca del lanzador (el primero imprime un
+renglón que empieza con `{"hookSpecificOutput"`, el segundo nada):
+
+```powershell
+$P = @{source="startup"; cwd="$env:USERPROFILE\claude\<proyecto>"} | ConvertTo-Json -Compress
+$G = "$env:USERPROFILE\rc-launcher\aviso_arranque.py"
+$env:RC_LANZADOR = $null; ($P | python -X utf8 $G).Substring(0, 30)
+$env:RC_LANZADOR = "1";   $P | python -X utf8 $G; "(vacío arriba = correcto)"
+$env:RC_LANZADOR = $null
+```
+
+Y la prueba completa, con el cliente enfrente:
+
+1. Crear en su calendario un evento que empiece en 10 minutos, titulado
+   `<proyecto> · Prueba de instalación`, con una descripción de una línea.
+2. Desde el teléfono, lanzar una sesión nueva en ese proyecto. **La sesión debe resumir el
+   evento y preguntar «¿Lo atendemos?»**, por su propia cuenta.
+3. En la computadora, abrir `claude` directo en esa carpeta y escribir "hola". **Debe ofrecer el
+   mismo evento.**
+4. **Mirar que el aviso salga una sola vez en la sesión del teléfono.** Si sale dos veces, la
+   marca `RC_LANZADOR` se perdió en el camino del supervisor a `claude.exe` y el gancho habló
+   además del lanzador (ver el aviso de abajo).
+5. Borrar el evento de prueba.
+
+> ⚠️ **Sin medir todavía en Windows, y es lo que decide el paso 4:** el lanzador le pasa la marca
+> al supervisor por el entorno, y falta comprobar en `win11-dogfood` que `claude.exe` la hereda a
+> través de winpty. Si se pierde, el costo es un aviso repetido, sin daño; el arreglo es del
+> lado del lanzador.
+
+### B8d. Lo que hay que decirle, y lo que cuesta
+
+- **La convención del título:** *nombre de la carpeta del proyecto, un punto medio, y qué toca*,
+  como `Marán · Carta al broker de LG`. Es con lo que la sesión decide de qué proyecto es el
+  evento. El punto medio `·` sale en el teléfono dejando presionado el punto, y en la computadora
+  vale copiarlo de un evento anterior.
+- **Conviene ofrecerle un calendario aparte para el trabajo**, que puede compartir con su equipo
+  o con su asistente sin enseñar lo personal. Es lo que usa Gustavo desde el 25 de septiembre de
+  2026.
+- **Los eventos de día completo se quedan fuera a propósito**: son cumpleaños, vacaciones y
+  recordatorios, y ofrecerlos al arrancar estorbaría.
+- **Cada sesión arranca con una consulta al calendario**, aunque no haya bloque. Es uso de su
+  suscripción, pequeño, y se paga en cada arranque, igual que la de Drive en B7.
+
 ## 7. Verificación, en orden
 
 > **Cómo se reparte por fases:** los renglones 1, 2, 3, 9, 9b, 10, 11, 11b y 12 cierran la **fase A**
 > (gitignore, la convención de pendientes, el servicio local, la bitácora, el runtime de
-> documentos, los conectores, Composio y la cuenta de DeepInfra); del 4 al 8, más el 13, el 14, el 15 y el 16,
+> documentos, los conectores, Composio y la cuenta de DeepInfra); del 4 al 8, más el 13, el 14, el 15, el 16 y el 17,
 > cierran la **fase B**, y necesitan el teléfono. Si solo se contrató la fase A, la verificación
 > termina en el 12 y eso es una entrega completa.
 
@@ -1569,6 +1732,7 @@ Luego la prueba completa, que conviene hacer con el cliente enfrente:
 | 15 | El filtro rápido del mosaico | ver el recuadro de abajo | teclear parte de un nombre deja a la vista solo los que coinciden, y la ✕ devuelve el mosaico completo |
 | 11b | Composio (opcional, A5e) | `claude mcp list` | `composio` en `Connected`; si el cliente no lo contrató, se salta |
 | 16 | Las transcripciones de Drive (opcional, B7) | los tres pasos de B7c | la sesión ofrece la de prueba al arrancar, y al procesarla queda en `transcripciones/` y en `Procesadas` |
+| 17 | El bloque de calendario (opcional, B8) | los tres bloques de B8c | la instrucción imprime `True` y `False`, el gancho habla y se calla con la marca, y la sesión ofrece el evento de prueba desde el teléfono y desde `claude` directo |
 
 
 > 📌 **Por qué el renglón del calendario mira el archivo y no el comportamiento.** Comprobar
@@ -1739,7 +1903,11 @@ Decirlo antes de instalarla en casa de un cliente:
 | El borrador salió sin el archivo adjunto | Limitación vigente del conector; se adjunta a mano antes de enviar. Ver A5c |
 | Pide una llave de DeepInfra que el cliente no esperaba | No se le explicó A8 en la entrega. Es opcional y con su propia cuenta; explicarle y seguir cuando la tenga |
 | La misma transcripción se ofrece en cada sesión | No se movió a `Procesadas`: la subcarpeta falta, se llama distinto, o el conector no completó el movimiento. Ver B7c |
-| Hay transcripciones en Drive y la sesión arranca sin mencionarlas | La sesión no nació del lanzador, falta `transcripciones.json`, o la copia del lanzador es anterior al 22 de septiembre de 2026. Ver B7 |
+| Hay transcripciones en Drive y la sesión arranca sin mencionarlas | La sesión se abrió a mano y falta el gancho de B8b, falta `transcripciones.json`, o la copia del lanzador es anterior al 22 de septiembre de 2026. Ver B7 |
+| Hay un bloque en curso y la sesión arranca sin ofrecerlo | Falta `calendario.json`, el título del evento no empieza con el nombre de la carpeta seguido de `·`, el evento es de día completo, o la copia del lanzador es anterior al 25 de septiembre de 2026. Ver B8 |
+| La sesión espera el sí de "Gustavo" | La copia del lanzador trae el nombre fijo en la instrucción. Llevarle una corregida con B2b. Ver B8c |
+| La sesión abierta con `claude` directo arranca sin aviso, y desde el teléfono sí lo trae | Al gancho le falta el `-X utf8`: su salida llega en cp1252 y Claude Code la descarta en silencio. Ver B8b |
+| El aviso sale dos veces en la sesión del teléfono | La marca `RC_LANZADOR` se pierde entre el supervisor y `claude.exe`. Es inofensivo; reportarlo para arreglarlo en el lanzador. Ver B8c |
 | `Windows is not supported. Use WSL` al instalar Composio | Es lo esperado: en Windows va por el servidor MCP remoto. Ver A5e |
 | `soffice` o `tesseract` "no se reconoce" | Se instalan en `Program Files` sin registrarse en el PATH. Ver A4b |
 | `module 'socket' has no attribute 'AF_UNIX'` | Se corrió un script auxiliar del plugin, que es solo para Linux. Usar `soffice` directo. Ver A4f |
