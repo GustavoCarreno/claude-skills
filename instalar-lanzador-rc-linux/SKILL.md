@@ -1350,7 +1350,7 @@ correcto.
 | Requisito | Por qué |
 |---|---|
 | **Algo que deje las transcripciones en una carpeta de Drive** | El lanzador revisa la carpeta y le es indiferente de dónde llegan. El montaje de referencia es una grabadora Comulytic con una automatización de Zapier (un servicio que conecta aplicaciones entre sí) que copia cada transcripción a Drive. Conviene que cada archivo traiga la **fecha y un título** en el nombre, que es con lo que el asistente decide sin abrirlo |
-| **El conector de Google Drive de A5**, en `Connected` | Con él se lista la carpeta, se lee el archivo y se mueve a `Procesadas`. Composio (A5e) también sirve, si el Drive está conectado ahí |
+| **El conector de Google Drive de A5**, en `Connected` | Con él se lista la carpeta, se lee el archivo y se mueve a `Procesadas`. Composio (A5e) también sirve, si el Drive está conectado ahí, y `gws` en la máquina que ya lo tenga configurado |
 | **Una copia del lanzador del 22 de septiembre de 2026 o posterior** | Es la que trae `transcripciones_drive.py`. Una anterior ignora la configuración en silencio |
 
 Comprobar la copia:
@@ -1443,15 +1443,24 @@ tenga que pedir que se revise la agenda.
 > que ya lo traen (llevan `RC_LANZADOR=1` en el entorno).
 
 > 📌 **El lanzador sigue sin hablar con Google**, igual que en B7: solo lee la configuración y le
-> redacta la instrucción a la sesión. Quien consulta el calendario es el asistente, con el
-> conector de Google Calendar de A5. **Probado el 25 de septiembre de 2026:** el conector acepta
-> tanto el identificador de un calendario secundario como `primary`.
+> redacta la instrucción a la sesión. Quien consulta el calendario es el asistente, y la
+> instrucción dice "revisa en Google Calendar" sin nombrar herramienta, así que **sirve cualquiera
+> de las tres vías** que tenga la máquina:
+>
+> | Vía | Cuándo |
+> |---|---|
+> | **El conector de Google Calendar de claude.ai** (A5) | La de fábrica, y la que casi todo cliente va a tener |
+> | **Composio** (A5e) | Si el cliente lo contrató y conectó ahí su Google Calendar. Una sola llamada consulta varios calendarios a la vez |
+> | **`gws`**, la herramienta de línea de comandos de Google Workspace | Solo en la máquina que ya lo tenga configurado. Exige un proyecto de Google Cloud propio, y por eso queda fuera como vía de fábrica |
+>
+> **Probadas las tres el 25 de septiembre de 2026**, cada una con el identificador de un
+> calendario secundario y con `primary`, y las tres encontraron el mismo bloque en curso.
 
 ### B8a. Lo que tiene que existir antes
 
 | Requisito | Por qué |
 |---|---|
-| **El conector de Google Calendar de A5**, en `Connected` | Con él se buscan los eventos |
+| **Una vía al calendario**: el conector de A5 en `Connected`, Composio con Google Calendar conectado, o `gws` configurado | Con ella se buscan los eventos. Basta una |
 | **Una copia del lanzador del 25 de septiembre de 2026 o posterior** | Es la que trae `calendario_sesion.py` y `aviso_arranque.py`. Una anterior ignora la configuración en silencio |
 | **La convención del título**, explicada al cliente | Ver B8d. Sin ella la sesión decide por la descripción y se equivoca más |
 
@@ -1744,7 +1753,7 @@ Decirlo antes de instalarla en casa de alguien más:
 | Pide una llave de DeepInfra que el cliente no esperaba | No se le explicó A8 en la entrega. Es opcional y con su propia cuenta; explicarle y seguir cuando la tenga |
 | La misma transcripción se ofrece en cada sesión | No se movió a `Procesadas`: la subcarpeta falta, se llama distinto, o el conector no completó el movimiento. Ver B7c |
 | Hay transcripciones en Drive y la sesión arranca sin mencionarlas | La sesión se abrió a mano y falta el gancho de B8b, falta `transcripciones.json`, o la copia del lanzador es anterior al 22 de septiembre de 2026. Ver B7 |
-| Hay un bloque en curso y la sesión arranca sin ofrecerlo | Falta `calendario.json`, el título del evento no empieza con el nombre de la carpeta seguido de `·`, el evento es de día completo, o la copia del lanzador es anterior al 25 de septiembre de 2026. Ver B8 |
+| Hay un bloque en curso y la sesión arranca sin ofrecerlo | A la sesión le falta una vía al calendario (ver B8a), falta `calendario.json`, el título del evento no empieza con el nombre de la carpeta seguido de `·`, el evento es de día completo, o la copia del lanzador es anterior al 25 de septiembre de 2026. Ver B8 |
 | La sesión espera el sí de "Gustavo" | La copia del lanzador trae el nombre fijo en la instrucción. Llevarle una corregida con B2b. Ver B8c |
 | `unzip is required to install Composio CLI` | Falta `unzip`; está en A1 |
 | `Cannot find module 'docx'` o `'pptxgenjs'` | Falta `NODE_PATH`. Están instalados global, pero `require()` no los ve desde otra carpeta. Ver A4d |
