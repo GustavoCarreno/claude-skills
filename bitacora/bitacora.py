@@ -96,6 +96,14 @@ INSTRUCCION_POR_DEFECTO ="""Escribe la bitacora de la sesion en {archivo}, sin q
    - NO AGREGUES NI QUITES INVITADOS. Mover asistentes manda correo y eso sale de la maquina. Se propone en una linea y lo decide el usuario.
    - NO BORRES eventos por iniciativa propia, aunque su pendiente ya se haya cerrado. Dilo en una linea al final y que el decida. La herramienta de borrar tampoco esta disponible aqui, a proposito.
    - Si no tienes herramientas de calendario, o no hubo nada que tocar, no lo menciones.
+7. Atiende tambien los contactos. Si en la sesion aparecio una persona real con al menos un dato para localizarla (correo o telefono), o un dato nuevo de alguien ya conocido (correo, telefono, empresa, puesto), llevalo a los contactos de Google del usuario:
+   - Copia tal cual lo que se dijo o se leyo en la sesion; lo que falte se queda vacio. Un nombre que salio de una transcripcion puede venir mal escrito: agregalo igual y dilo en su nota. Deja fuera al propio usuario y a las cuentas automaticas (no-reply, avisos de sistemas).
+   - Si en esta maquina responde `gws people people searchContacts`, usalo. Antes de crear, busca por correo y por telefono. La busqueda tarda hasta un minuto en ver un contacto recien creado, asi que dentro de esta misma corrida recuerda los que ya creaste. Si existe, agrega SOLO los campos que falten con updateContact, con el etag que te dio get: actualizar un campo REEMPLAZA su lista entera, asi que manda lo que ya tenia mas lo nuevo. Si no existe, crealo con createContact.
+   - CONSERVA todo dato que el contacto ya tenia y deja intactos los demas contactos: se agrega, y borrar o sobrescribir queda fuera de este punto. Si un dato choca con uno existente, ponlo junto al viejo.
+   - En la nota (biographies) de cada contacto creado o tocado agrega un renglon "Agregado por la bitacora de <proyecto> el AAAA-MM-DD: <de donde salio>", al final de lo que ya decia.
+   - gws imprime un renglon antes del JSON: lee la salida desde la primera llave y nunca la pases directo a jq, que da un error falso. Antes de repetir una escritura, verifica con get o con una busqueda si ya quedo.
+   - Si gws esta ausente o falla, escribe los contactos como vCard en salida/contactos-AAAA-MM-DD.vcf dentro del proyecto, agregando al final si ya existe, para que el usuario los importe a Google cuando quiera.
+   - Nombra en la entrada de la bitacora a quienes agregaste o actualizaste. Si la sesion trajo cero contactos, omite el tema.
 
 Si de verdad no hubo nada que valga la pena registrar, dilo en una linea y termina sin escribir nada."""
 

@@ -1636,6 +1636,17 @@ class HerramientasDelEscritor(Base):
         self.assertIn("search_events", texto)
         self.assertIn("UNA COINCIDENCIA CLARA", texto)
 
+    def test_la_instruccion_lleva_los_contactos_a_google(self):
+        """Punto 7: con gws sincroniza y sin gws deja un vCard. Lo que mas
+        cuida es que actualizar un campo reemplaza su lista entera, que es
+        como se perderia en silencio un correo que el contacto ya tenia."""
+        cfg = bitacora._config()
+        texto = cfg["instruccion"].format(archivo="/x/CLAUDE.md",
+                                          pendientes="/x/pendientes.md")
+        self.assertIn("searchContacts", texto)
+        self.assertIn("REEMPLAZA su lista entera", texto)
+        self.assertIn("salida/contactos-AAAA-MM-DD.vcf", texto)
+
     def test_la_instruccion_deja_la_cita_escrita(self):
         """Lo que hace que la convencion se sostenga sola: identificado el
         bloque una vez, queda anotado y la proxima no adivina."""
