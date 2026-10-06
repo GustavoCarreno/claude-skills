@@ -46,9 +46,10 @@ computadora. Con el siguiente respaldo bueno el aviso desaparece. **Se probó as
 octubre de 2026**, contra GitHub real: falla registrada, aviso al arrancar, arreglo, subida y
 aviso borrado.
 
-> ⚠️ **En Windows está sin medir todavía.** El código es el mismo y corre con la biblioteca
-> estándar de Python, pero la prueba contra GitHub se hizo en Linux el 5 de octubre de 2026.
-> Correr A9e y A9f completas en `win11-dogfood` antes de prometerlo en una laptop con Windows.
+> ✅ **Medido en Windows el 5 de octubre de 2026, en `win11-dogfood`**, contra GitHub real:
+> el respaldo directo creó el repositorio privado y subió el proyecto, y **una sesión lanzada y
+> cerrada desde el lanzador subió sola el archivo nuevo**. Ese cierre corre en la tarea programada
+> de B3, sin nadie conectado, que es justo el caso del cliente.
 
 ### A9a. La cuenta de GitHub, que es del cliente
 
@@ -62,11 +63,23 @@ cuenta guarda copia de todo su trabajo.
 ```powershell
 winget install --id GitHub.cli -e --accept-source-agreements --accept-package-agreements
 # cerrar y abrir PowerShell para que gh entre al PATH
-gh auth login --hostname github.com --git-protocol https --web
+gh auth login --hostname github.com --git-protocol https --web --insecure-storage
 gh auth setup-git
 git config --global user.name "<Nombre del cliente>"
 git config --global user.email "<su correo>"
 ```
+
+> 🔴 **En Windows el `--insecure-storage` es obligatorio.** Sin él, `gh` guarda la llave en el
+> Administrador de credenciales de Windows, y ese almacén solo existe en una sesión iniciada con
+> contraseña. **El cierre de las sesiones del teléfono corre en la tarea programada de B3, sin
+> nadie conectado**, así que el respaldo se quedaría sin poder subir. Con la opción, la llave queda
+> en `%APPDATA%\GitHub CLI\hosts.yml`, dentro del perfil del cliente. Medido el 5 de octubre de
+> 2026 en una conexión sin contraseña: sin ella, la autorización en GitHub terminó bien y `gh`
+> nunca recibió la llave; con ella,
+> el respaldo subió desde el cierre de una sesión del lanzador.
+>
+> ⚠️ **Y se corre en la consola de la máquina**, en persona o por RustDesk. Lanzado por SSH, Windows
+> cierra `gh` en cuanto termina la conexión y el código deja de servir.
 
 `gh auth login` imprime un código y abre el navegador: **ahí entra el cliente con su cuenta**,
 y es otro de los puntos donde el asistente se detiene y espera a una persona.

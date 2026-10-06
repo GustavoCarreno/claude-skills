@@ -42,7 +42,7 @@ Invoke-WebRequest -UseBasicParsing `
 modo de fallar silencioso que este mecanismo no puede tener:
 
 ```powershell
-(Get-Item "$hooks\bitacora.py").Length   # debe rondar los 30 KB, no 0
+(Get-Item "$hooks\bitacora.py").Length   # debe rondar los 54 KB, no 0
 '' | python "$hooks\bitacora.py" pendiente
 "código de salida: $LASTEXITCODE"
 ```

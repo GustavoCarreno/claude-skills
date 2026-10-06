@@ -46,7 +46,7 @@ test -s ~/.claude/hooks/bitacora.py && echo "existe y no está vacío"
 python3 ~/.claude/hooks/bitacora.py pendiente < /dev/null; echo "código de salida: $?"
 ```
 
-El archivo completo pesa unos 30 KB. Si `test -s` no imprime nada, la descarga falló o
+El archivo completo pesa unos 54 KB. Si `test -s` no imprime nada, la descarga falló o
 quedó vacía; si `python3 ... pendiente` truena con una traza en vez de terminar
 limpio, el archivo llegó corrupto o incompleto.
 
