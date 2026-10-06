@@ -144,9 +144,12 @@ apagada. La batería del lanzador pasa completa en Windows (1187 pruebas).
    `transcripciones/`.
 3. **Compartir**, también con el dedo: el botón abre el menú de compartir del teléfono.
 
-> ⚠️ **El micrófono del teléfono contra una máquina con Windows está sin medir todavía.** Lo
-> medido es la sesión de escucha; la página es la misma que en Linux, pero falta probarla de
-> punta a punta con el teléfono.
+> ✅ **El micrófono del teléfono contra Windows, medido por Gustavo el 5 de octubre de 2026.**
+> La primera prueba cazó un defecto: la transcripción llamaba a `python3`, que en Windows es el
+> acceso directo de la tienda, y cada pedazo salía con *"Python was not found"*. Con el lanzador
+> corregido (ese mismo día), la pregunta dicha en voz alta llegó transcrita con sus signos y la
+> marca se contestó con una tarjeta. **Una copia del lanzador anterior a esa fecha transcribe cero
+> en Windows**, incluidos los recados dictados del teléfono: actualizarla con B2b.
 
 ### B9f. Lo que cuesta, y lo que hay que decirle
 
