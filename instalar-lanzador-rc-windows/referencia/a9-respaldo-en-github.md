@@ -49,7 +49,7 @@ aviso borrado.
 > ✅ **Medido en Windows el 5 de octubre de 2026, en `win11-dogfood`**, contra GitHub real:
 > el respaldo directo creó el repositorio privado y subió el proyecto, y **una sesión lanzada y
 > cerrada desde el lanzador subió sola el archivo nuevo**. Ese cierre corre en la tarea programada
-> de B3, sin nadie conectado, que es justo el caso del cliente.
+> de B3, con la sesión de Windows cerrada, que es justo el caso del cliente.
 
 ### A9a. La cuenta de GitHub, que es del cliente
 
