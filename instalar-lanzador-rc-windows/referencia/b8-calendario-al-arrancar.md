@@ -171,10 +171,11 @@ Y la prueba completa, con el cliente enfrente:
    además del lanzador (ver el aviso de abajo).
 5. Borrar el evento de prueba.
 
-> ⚠️ **Sin medir todavía en Windows, y es lo que decide el paso 4:** el lanzador le pasa la marca
-> al supervisor por el entorno, y falta comprobar en `win11-dogfood` que `claude.exe` la hereda a
-> través de winpty. Si se pierde, el costo es un aviso repetido, sin daño; el arreglo es del
-> lado del lanzador.
+> ✅ **Medido el 5 de octubre de 2026 en `win11-dogfood`:** una sesión lanzada desde el
+> lanzador recibió el aviso una sola vez, como su mensaje de arranque, y el gancho se quedó
+> callado. O sea que `claude.exe` sí hereda la marca a través del supervisor. Ese mismo día los dos
+> primeros bloques de B8c imprimieron justo lo esperado, y el gancho también habló bien sin el
+> `-X utf8`.
 
 ### B8d. Lo que hay que decirle, y lo que cuesta
 
