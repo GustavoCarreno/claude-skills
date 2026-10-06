@@ -104,7 +104,7 @@ python3 -m venv .venv
 cd ~/rc-launcher && .venv/bin/python -m pytest -q
 ```
 
-Debe pasar **la suite completa, sin una sola falla**. Al 17 de agosto de 2026 son 622 pruebas
+Debe pasar **la suite completa, sin una sola falla**. Al 5 de octubre de 2026 son 1171 pruebas
 y corren en un segundo. **El número crece con cada versión, así que no lo trates como
 contraseña**: lo que importa es que no falle ninguna, en la máquina del cliente, sin tocar
 una línea. Eso es lo que demuestra que el código no depende de la máquina donde nació.
@@ -136,6 +136,20 @@ curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8765/salud
 > ⚠️ **El `--delete` es a propósito:** sin él, un archivo que la versión nueva ya eliminó se
 > queda en la máquina y puede seguir importándose. Los excluidos están a salvo, así que el
 > `.venv` sobrevive.
+
+> 📌 **Lo que una máquina ya instalada recibe con solo este paso**, sin configuración, porque
+> es código del lanzador. Al 5 de octubre de 2026:
+>
+> | Mejora | Qué cambia para el cliente |
+> |---|---|
+> | El menú abre al primer toque | Antes, tocar una tarjeta del mosaico a veces se quedaba sin abrir el menú: el mosaico se redibuja cada 8 segundos y la orden de abrir se perdía con él. Le pasa sobre todo a un teléfono que llega a la máquina por relevo de Tailscale, que es lo normal fuera de la casa |
+> | El menú pesa una fracción | Las respuestas viajan comprimidas y la sección de tareas hechas se pide solo al desplegarla. Un menú de 1.8 MB bajó a 87 KB |
+> | Pendientes en cinco grupos | Ver A7b. Lo que urge sale arriba y abierto |
+> | Lo urgente, numerado al abrir sesión | La sesión lista lo vencido o lo que vence en 7 días y pregunta por números cuáles ya se hicieron |
+> | Sesiones previas con su título real | Antes todas se llamaban igual, porque Claude Code titula con el primer mensaje y el lanzador abre muchas con una instrucción de revisión. Ahora se ve el primer encargo del usuario, y las sesiones de fondo (la bitácora que se escribe sola) dejan de llenar la lista |
+>
+> **Las sesiones que ya estaban abiertas conservan el aviso de arranque viejo.** El nuevo sale
+> en la siguiente que se abra.
 
 > 🔴 **La pestaña que el teléfono ya tenía abierta sigue corriendo el código anterior.** El
 > HTML y su script viajan juntos en la respuesta de la raíz, y una pestaña abierta conserva el

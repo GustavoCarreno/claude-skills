@@ -4,6 +4,11 @@
 > en qué archivo vive cada una están en `SKILL.md`. Cuando aquí se cite otra sección (A3, B2b…),
 > búscala en esa tabla.
 
+## Contenido de este archivo
+
+- A3. La bitácora automática
+  - A3b. Los contactos que salen de cada sesión
+
 <!-- fin del encabezado agregado al partir -->
 
 ## A3. La bitácora automática
@@ -91,3 +96,38 @@ sustituyendo `<python>` y `<usuario>`:
 
 > ⚠️ **Si `settings.json` ya existe, fusionar, no sobrescribir.** El primer arranque del paso
 > 1b ya escribió cosas ahí.
+
+### A3b. Los contactos que salen de cada sesión
+
+Al cerrar, la bitácora revisa también si en la sesión apareció una persona con un dato para
+localizarla (correo o teléfono), o un dato nuevo de alguien ya conocido (empresa, puesto, otro
+teléfono). Con eso hace una de dos cosas:
+
+| En la máquina | Qué pasa |
+|---|---|
+| Hay `gws` funcionando, que es el caso raro | Busca a la persona en Google Contacts, la crea si falta y le agrega solo los datos nuevos |
+| Lo normal en un cliente | Escribe los contactos en `salida/contactos-AAAA-MM-DD.vcf` dentro del proyecto, agregando al final si ese archivo ya existe |
+
+**Cero pasos de instalación:** viene dentro de `bitacora.py` desde el 5 de octubre de 2026.
+Lo que sí toca es enseñarle al cliente a importar el archivo, que es un minuto en la
+computadora:
+
+1. Abrir `contacts.google.com`.
+2. En el menú de la izquierda, **Importar**, escoger el `.vcf` y aceptar.
+3. Revisar **Combinar y corregir**, donde Google junta los que ya existían.
+
+> 📌 **Por qué un archivo y no directo a sus contactos.** Escribir en Google Contacts desde una
+> sesión exige un cliente de Google Cloud por cuenta, que es justo la barrera que esta guía
+> evita desde A5. Composio lo pide igual (medido el 5 de octubre de 2026), y los conectores de
+> claude.ai cubren correo, calendario y Drive, sin contactos.
+
+> ⚠️ **El archivo se queda fuera del repositorio**, porque `salida/` está en el gitignore de
+> A6, y es lo correcto: trae datos de terceros. Y el lanzador sirve desde `salida/` solo
+> audio, así que el `.vcf` se importa desde la computadora y no desde el teléfono.
+
+Comprobar que el `bitacora.py` instalado ya lo trae (una copia vieja da `0`):
+
+```powershell
+@(Select-String -Path "$env:USERPROFILE\.claude\hooks\bitacora.py" -Pattern "contactos-").Count
+```
+

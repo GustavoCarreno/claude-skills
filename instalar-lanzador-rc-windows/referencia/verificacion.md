@@ -40,6 +40,37 @@
 | 11b | Composio (opcional, A5e) | `claude mcp list` | `composio` en `Connected`; si el cliente no lo contrató, se salta |
 | 16 | Las transcripciones de Drive (opcional, B7) | los tres pasos de B7c | la sesión ofrece la de prueba al arrancar, y al procesarla queda en `transcripciones/` y en `Procesadas` |
 | 17 | El bloque de calendario (opcional, B8) | los tres bloques de B8c | la instrucción imprime `True` y `False`, el gancho habla y se calla con la marca, y la sesión ofrece el evento de prueba desde el teléfono y desde `claude` directo |
+| 18 | El menú viaja comprimido | `curl.exe -s -o /dev/null -w "%{size_download}" -H "Accept-Encoding: gzip" https://<máquina>.<tailnet>.ts.net/menu/<proyecto>`, y lo mismo sin el `-H` | con compresión, una fracción del otro. Medido el 5 de octubre de 2026: 21 KB contra 129 KB |
+| 19 | El menú abre al primer toque | con el dedo, tocar una tarjeta del mosaico varias veces seguidas, también justo después de que se redibuje | abre cada vez, al primer toque |
+| 20 | La matriz y los contratos en la convención | `@(Select-String -Path "$env:USERPROFILE\.claude\CLAUDE.md" -Pattern "^## La matriz de los pendientes|^## Contratos y oportunidades").Count` | **`2`** |
+| 21 | Pendientes en cinco grupos, y lo urgente al abrir | ver el recuadro de abajo | en el menú, la tarea sembrada sale en *Hacer ya*, abierta; y la sesión nueva la dice numerada y pregunta cuáles ya están hechas |
+| 22 | Sesiones previas con su título real | dictar un recado desde el teléfono en un proyecto, abrir sesión desde ahí, contestarle con un encargo y cerrarla | en *Sesiones previas* aparece el encargo, y la instrucción de revisión con que arrancó queda oculta |
+| 23 | Los contactos de la sesión (A3b) | cerrar una sesión con trabajo donde se haya mencionado a alguien con su correo, y esperar a la bitácora | `dir <proyecto>\salida\contactos-*.vcf` existe y trae a esa persona |
+| 24 | La pantalla de contratos (A7c) | abrir `/contratos` en la URL de la tailnet | carga, aunque ningún proyecto tenga todavía su `contratos.md` |
+
+> 📌 **Cómo se comprueba el renglón 21, con un proyecto de prueba.** En un proyecto
+> desechable (`prueba-urgentes`), un `pendientes.md` con una sola tarea:
+>
+> ```markdown
+> # Pendientes
+>
+> ## Me toca a mí
+>
+> - [ ] Llamar al proveedor de prueba
+>       · teléfono · minutos · trámite · importante · vence <mañana, AAAA-MM-DD>
+> ```
+>
+> Desde el teléfono, el menú de ese proyecto la enseña en *Hacer ya*, ya desplegada. Luego se
+> abre una sesión desde el lanzador: antes de otra cosa dice "1." con la tarea y su fecha, y
+> pregunta "¿Cuáles ya están hechas?". Al contestar `1`, la tarea queda `[x]` con su sello
+> ` ✓ AAAA-MM-DD HH:MM` y una nota de que se confirmó en sesión. Al terminar, se borra el
+> proyecto.
+>
+> ⚠️ **La instrucción de ese aviso nombra a "Gustavo"**, igual que la del calendario de B8
+> (ver B8c), porque el texto está escrito en el código para su máquina. En la de un cliente la
+> sesión puede llamarlo así al preguntar. El arreglo está pedido en el lanzador; **mientras no
+> llegue, conviene probar el renglón con el cliente presente** y explicarle el nombre.
+
 
 
 > 📌 **Por qué el renglón del calendario mira el archivo y no el comportamiento.** Comprobar

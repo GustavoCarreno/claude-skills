@@ -8,6 +8,8 @@
 
 - A6. Configurar el gitignore global
 - A7. Sus pendientes por proyecto, el si-ya-se-hizo
+  - A7b. La matriz: importancia y fechas
+  - A7c. Contratos y lo que deja de cobrar
 
 <!-- fin del encabezado agregado al partir -->
 
@@ -255,10 +257,181 @@ en vez de preguntar o suponer.
 > sigue con el contrato del día que se instaló, y nada avisa. Al actualizar una instalación
 > vieja hay que **agregar a mano lo que le falte**, comparando contra el bloque de aquí.
 
-Verificación: crear un `pendientes.md` de prueba con una tarea, abrir una sesión nueva en
+Verificación de A7: crear un `pendientes.md` de prueba con una tarea, abrir una sesión nueva en
 ese proyecto y pedirle que revise sus pendientes. Debe encontrar la tarea sin que se la
 describas. Rápido y sin abrir sesión:
 `Select-String -Path "$env:USERPROFILE\.claude\CLAUDE.md" -Pattern "pendientes.md" -Quiet`.
 
 Con eso basta para que el asistente cree, redacte, edite y palomee pendientes con sus
 herramientas de siempre, sin esperar al lanzador.
+
+### A7b. La matriz: importancia y fechas
+
+Agrega dos cosas al renglón de indicadores de cada pendiente: si importa (`importante` o
+`menor`) y, cuando las hay, la fecha límite y el día del bloque reservado. Con eso el lanzador
+reparte los pendientes en cinco grupos según urgencia e importancia, y al abrir una sesión
+le lista al cliente, numerado, lo que urge (ver B2b).
+
+**Lo que el cliente gana, dicho como él lo vería:** el mosaico dice "2 urgentes", y en el
+menú del proyecto esas dos tareas salen arriba y abiertas, con el resto plegado en sus grupos.
+Medido en un proyecto de 29 tareas: las 2 urgentes a la vista, las otras 27 plegadas, y los
+encabezados de todos los grupos caben en la pantalla del teléfono.
+
+**Las esperas van en un grupo aparte**, ordenadas de la más vieja a la más nueva, y al pie
+sale un grupo con lo que quedó fuera de las dos secciones, para que una tarea escrita bajo
+otro encabezado se vea. Conviene explicárselo así al cliente, porque meter las esperas en la
+matriz las mandaría todas a *Por clasificar*.
+
+La convención va en un bloque propio, con su propia guarda, para que una máquina que ya tenía
+A7 la reciba con solo correr esto:
+
+```powershell
+$claudeMd = "$env:USERPROFILE\.claude\CLAUDE.md"
+if (-not (Select-String -Path $claudeMd -Pattern '^## La matriz de los pendientes' -Quiet)) {
+@'
+
+## La matriz de los pendientes: urgencia e importancia
+
+Las tareas de `## Me toca a mí` llevan un cuarto indicador en su renglón de indicadores,
+**Importancia**, con dos valores cerrados: `importante` · `menor`. Sin esa palabra la tarea
+cae en *Por clasificar*. Las de `## Esperando a alguien` la omiten, porque dependen de otra
+persona.
+
+Dos fechas opcionales en el mismo renglón. Son datos, así que quedan fuera del vocabulario
+cerrado:
+
+- `vence AAAA-MM-DD`: la fecha límite. La escribo en cuanto me entero del plazo.
+- `bloque AAAA-MM-DD`: el día del bloque reservado en el calendario. La escribo en el mismo
+  acto en que creo el evento.
+
+Así queda un renglón completo: `· computadora · una hora · trámite · importante · vence 2026-11-03`
+
+**La urgencia se calcula contra el día de hoy y nunca se guarda.** Es urgente lo vencido, lo
+que vence en los próximos 7 días y lo que tiene su bloque hoy o mañana. Ninguna palabra del
+archivo dice "urgente": lo decide el lanzador al leer las fechas, así que una fecha puesta
+hace meses sigue diciendo lo correcto hoy.
+
+Los cinco grupos que salen de cruzar urgencia e importancia:
+
+| Grupo | Cruce |
+|---|---|
+| Hacer ya | urgente e importante |
+| Apartarle hora | importante, sin prisa |
+| Quitárselo de encima | urgente y menor |
+| Hacerlo si sobra tiempo | menor y sin prisa |
+| Por clasificar | le falta la palabra de importancia |
+
+El verbo *descartar* se reserva para marcar `[-]` una tarea que se decidió no hacer, y por eso
+ningún grupo se llama así.
+
+**El año va escrito en las fechas**, también en la prosa de las notas y en el "desde cuándo"
+de las esperas (`· desde el 23 de abril de 2026`): una fecha sin año se vuelve ambigua en un
+mes.
+'@ | Add-Content -Path $claudeMd -Encoding utf8
+}
+```
+
+> 📌 **El formato de A7 se queda igual.** Esto agrega una palabra y dos fechas opcionales al
+> mismo renglón; un `pendientes.md` sin ellas sigue funcionando, con sus tareas en *Por
+> clasificar*.
+
+### A7c. Contratos y lo que deja de cobrar
+
+Cada proyecto puede llevar un `contratos.md` con el dinero y las fechas de cada trato, y la
+pantalla **Contratos** del lanzador (fase B) suma lo que vence y avisa cuándo buscar al
+siguiente cliente. Funciona sin acceso al correo: la fecha del último contacto la escribe la
+sesión, así que un buzón corporativo bloqueado es indiferente.
+
+```powershell
+$claudeMd = "$env:USERPROFILE\.claude\CLAUDE.md"
+if (-not (Select-String -Path $claudeMd -Pattern '^## Contratos y oportunidades' -Quiet)) {
+@'
+
+## Contratos y oportunidades: `contratos.md`
+
+Cada proyecto puede llevar en su raíz un `contratos.md` con el dinero y las fechas de cada
+trato. Lo escribo yo; la pantalla Contratos del lanzador solo lo lee, y calcula al pintar lo
+que se deja de cobrar.
+
+```markdown
+# Contratos
+
+## Renta de la nave 12
+cliente: Nombre del cliente
+etapa: firmado
+contacto: Nombre de la persona
+cobro: 55000 MXN al mes · del 2026-08-14 al 2027-08-13
+último contacto: 2026-09-15
+```
+
+1. **Un contrato empieza con `## Título`.** Sus datos son los renglones `clave: valor` hasta el
+   primer renglón en blanco; lo que sigue es relato.
+2. **Ocho claves:** `cliente` y `etapa` siempre; `probabilidad` (0 a 100) en las etapas
+   abiertas; `cobro` una o varias veces; y opcionales `contacto`, `último contacto`, `aviso`
+   (días) y `sobre`.
+3. **Seis etapas, vocabulario cerrado:** `prospecto · propuesta · negociación · firmado ·
+   pausado · perdido`. **Terminado se calcula** a partir de las fechas y nunca se escribe.
+4. **`cobro` tiene cuatro formas:** `<monto> <MXN|USD> al mes · del A al B`,
+   `al mes · desde A`, `una vez · A` y `una vez · contra entrega`, con una nota opcional tras
+   otro `·`. Fechas siempre `AAAA-MM-DD`. Un `desde` o un `contra entrega` le quitan al
+   contrato su fecha de fin: si el trato tiene fin, esos cobros van en un contrato aparte.
+5. **Se escribe el subtotal antes de impuestos**, y solo la parte propia cuando hay socio.
+6. **Un bono o una orden de cambio con criterio propio es un contrato aparte**, con su etapa.
+7. **Un cobro ya hecho se deja con su fecha pasada** y se conserva: es registro, igual que
+   los renglones `[x]` de `pendientes.md`.
+8. **Al hablar con un cliente o prospecto, actualizo `último contacto`.** La pantalla nunca
+   lee el correo: esa fecha la escribe la sesión.
+9. **Las esperas siguen en `## Esperando a alguien` de `pendientes.md`**, fuera de la ficha.
+10. **Una oportunidad sin carpeta propia vive en la carpeta `prospectos`**, con su propio
+    `contratos.md`.
+11. **Antes de confirmar un `contratos.md` en git, compruebo que el repositorio sea privado**,
+    porque lleva montos de clientes.
+'@ | Add-Content -Path $claudeMd -Encoding utf8
+}
+```
+
+**La configuración de la pantalla**, en un archivo aparte. Si falta, la pantalla usa los
+valores de fábrica (pesos, 90 días de aviso, 12 meses a la vista, 30 días sin contacto y la
+palabra "cliente"), sin avisar:
+
+```powershell
+$cfg = "$env:USERPROFILE\.config\rc-launcher\contratos.json"
+New-Item -ItemType Directory -Force -Path (Split-Path $cfg) | Out-Null
+if (-not (Test-Path $cfg)) {
+@'
+{
+  "moneda": "MXN",
+  "tipo_de_cambio": {"valor": 17.1277, "fecha": "2026-09-15"},
+  "aviso_dias": 90,
+  "meses": 12,
+  "dias_contacto": 30,
+  "palabra_cliente": "cliente"
+}
+'@ | Set-Content -Path $cfg -Encoding utf8
+}
+```
+
+**Antes de escribirla, cuatro preguntas al cliente**, porque los valores de fábrica son los de
+un consultor y el cliente puede ser otra cosa:
+
+| Pregunta | Clave |
+|---|---|
+| ¿En qué moneda cobra casi todo? La renta industrial suele ir en dólares | `moneda` |
+| ¿Cuántos días antes del fin de un contrato empieza a buscar el siguiente? | `aviso_dias` |
+| ¿Cuántos meses quiere ver hacia adelante? (máximo 36) | `meses` |
+| ¿Cómo le dice a quien le paga: cliente, inquilino? | `palabra_cliente` |
+
+> ⚠️ **El tipo de cambio va siempre con su fecha.** La pantalla enseña cuántos días tiene, y un
+> valor sin fecha se ignora. Al actualizarlo, se cambian los dos juntos.
+
+> 📌 **En un negocio de rentas, la carpeta es el inmueble y cada inquilino es un contrato
+> adentro.** Los prospectos sin inmueble van en la carpeta `prospectos`.
+
+**Verificación de A7b y A7c:**
+
+```powershell
+@(Select-String -Path "$env:USERPROFILE\.claude\CLAUDE.md" -Pattern "^## La matriz de los pendientes|^## Contratos y oportunidades").Count   # debe dar 2
+```
+
+Y con el lanzador ya montado, la pantalla `/contratos` de la tailnet contesta `200` aunque
+ningún proyecto tenga todavía su `contratos.md`.

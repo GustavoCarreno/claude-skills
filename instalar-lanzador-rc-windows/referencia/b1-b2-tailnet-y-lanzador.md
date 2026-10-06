@@ -123,7 +123,7 @@ python -m pytest -q        # deben pasar todas, sin una sola falla
 python app.py              # debe quedarse escuchando; Ctrl+C para salir
 ```
 
-Al 17 de agosto de 2026 son 622 pruebas. **El número crece con cada versión, así que no lo
+Al 5 de octubre de 2026 son 1171 pruebas (medidas en Linux). **El número crece con cada versión, así que no lo
 trates como contraseña**: lo que importa es que no falle ninguna.
 
 > ⚠️ **Si fallan por rutas demasiado largas, no es defecto del lanzador.** Windows corta en
@@ -165,6 +165,22 @@ python -m pytest -q                            # todas en verde ANTES de reinici
 > 13 de agosto de 2026 con una carpeta sembrada a propósito: sobrevivió al `/PURGE` mientras el
 > archivo obsoleto sí desapareció. (En Windows la instalación va sin entorno virtual, con el
 > Python del sistema, así que ahí `.venv` solo aparece si alguien lo creó a mano.)
+
+> 📌 **Lo que una máquina ya instalada recibe con solo este paso**, sin configuración, porque
+> es código del lanzador. Al 5 de octubre de 2026:
+>
+> | Mejora | Qué cambia para el cliente |
+> |---|---|
+> | El menú abre al primer toque | Antes, tocar una tarjeta del mosaico a veces se quedaba sin abrir el menú: el mosaico se redibuja cada 8 segundos y la orden de abrir se perdía con él. Le pasa sobre todo a un teléfono que llega a la máquina por relevo de Tailscale, que es lo normal fuera de la casa |
+> | El menú pesa una fracción | Las respuestas viajan comprimidas y la sección de tareas hechas se pide solo al desplegarla. Un menú de 1.8 MB bajó a 87 KB |
+> | Pendientes en cinco grupos | Ver A7b. Lo que urge sale arriba y abierto |
+> | Lo urgente, numerado al abrir sesión | La sesión lista lo vencido o lo que vence en 7 días y pregunta por números cuáles ya se hicieron |
+> | Sesiones previas con su título real | Antes todas se llamaban igual, porque Claude Code titula con el primer mensaje y el lanzador abre muchas con una instrucción de revisión. Ahora se ve el primer encargo del usuario, y las sesiones de fondo (la bitácora que se escribe sola) dejan de llenar la lista |
+>
+> **Las sesiones que ya estaban abiertas conservan el aviso de arranque viejo.** El nuevo sale
+> en la siguiente que se abra.
+> 
+> ⚠️ **Sin medir en Windows todavía:** los títulos de sesiones previas y la compresión. Las dos son biblioteca estándar de Python y la misma lógica que en Linux, pero las 1171 pruebas corrieron solo ahí. Correrlas aquí con B2 y revisar los renglones 18 y 22 de la verificación.
 
 > 🔴 **La pestaña que el teléfono ya tenía abierta sigue corriendo el código anterior.** El
 > HTML y su script viajan juntos en la respuesta de la raíz, y una pestaña abierta conserva el
