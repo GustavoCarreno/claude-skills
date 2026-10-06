@@ -55,8 +55,8 @@ pregunta, el compromiso y la marca se contestaron sin que la sesión pidiera un 
 > tarjetas con los presentes (B9d), un dato que la sesión saca de los archivos del proyecto
 > puede llegar a ellos, aunque sea interno. Lo del correo y el calendario se queda privado
 > siempre. Hasta que eso cambie, **compartir con los presentes conviene solo en juntas donde
-> todo lo escrito en el proyecto se puede saber**; en las demás, la escucha se usa sin compartir,
-> y cada tarjeta se manda a mano con su botón cuando haga falta.
+> todo lo escrito en el proyecto se puede saber**; en las demás, la escucha se usa sin compartir
+> y las tarjetas se quedan en el teléfono del cliente.
 
 ### B9b. Lo que tiene que existir antes
 
