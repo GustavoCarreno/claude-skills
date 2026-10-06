@@ -71,8 +71,8 @@ git config --global user.email "<su correo>"
 
 > 🔴 **En Windows el `--insecure-storage` es obligatorio.** Sin él, `gh` guarda la llave en el
 > Administrador de credenciales de Windows, y ese almacén solo existe en una sesión iniciada con
-> contraseña. **El cierre de las sesiones del teléfono corre en la tarea programada de B3, sin
-> nadie conectado**, así que el respaldo se quedaría sin poder subir. Con la opción, la llave queda
+> contraseña. **El cierre de las sesiones del teléfono corre en la tarea programada de B3, con la sesión
+> de Windows cerrada**, así que el respaldo se quedaría sin poder subir. Con la opción, la llave queda
 > en `%APPDATA%\GitHub CLI\hosts.yml`, dentro del perfil del cliente. Medido el 5 de octubre de
 > 2026 en una conexión sin contraseña: sin ella, la autorización en GitHub terminó bien y `gh`
 > nunca recibió la llave; con ella,
