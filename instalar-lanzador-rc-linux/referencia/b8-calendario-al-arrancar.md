@@ -118,16 +118,17 @@ lee `settings.json` al abrir cada sesión. Para apagar la revisión basta con bo
 ### B8c. Verificar
 
 Primero que la configuración se lee y que la instrucción habla del cliente (deben imprimir
-`True` y luego `False`):
+`True`, luego `False`, y luego el nombre del cliente que se escribió en B2):
 
 ```bash
-cd ~/rc-launcher && .venv/bin/python -c "import calendario_sesion as c; t = c.instruccion_para_la_sesion('prueba'); print(t is not None); print('Gustavo' in t)"
+cd ~/rc-launcher && .venv/bin/python -c "import calendario_sesion as c; t = c.instruccion_para_la_sesion('prueba'); print(t is not None); print('Gustavo' in t); import usuario; print(usuario.quien())"
 ```
 
-> 🔴 **Si el segundo renglón imprime `True`, la copia del lanzador todavía le dice a la sesión
-> que espere el sí de "Gustavo"**, que es el nombre de quien la construyó. En la máquina de otra
-> persona eso confunde a la sesión y al cliente. Llevarle una copia corregida con B2b antes de
-> entregar.
+> 🔴 **Si el segundo renglón imprime `True`, la copia del lanzador es anterior al 5 de octubre
+> de 2026** y le dice a la sesión que espere el sí de "Gustavo", el nombre de quien la construyó.
+> Llevarle una copia nueva con B2b antes de entregar. **Si el tercero imprime `el usuario`**,
+> falta el `usuario.json` de B2: funciona igual, pero la sesión le habla al cliente sin su
+> nombre.
 
 Luego que el gancho habla y que se calla con la marca del lanzador (el primero imprime un
 renglón que empieza con `{"hookSpecificOutput"`, el segundo nada):

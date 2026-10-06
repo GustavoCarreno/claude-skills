@@ -138,6 +138,15 @@ configurable sin tocar código.
 > 📌 **Si el proyecto ya tiene `pendientes.md` (A7), el lanzador ya lo pinta y lo palomea
 > con el dedo, sin configuración adicional.** No hay ningún paso extra que hacer aquí.
 
+**El nombre de quien usa la máquina**, para que los avisos de arranque le hablen por su nombre
+y esperen su respuesta. Sin este archivo dicen "el usuario", que funciona igual:
+
+```powershell
+$u = "$env:USERPROFILE\.config\rc-launcher\usuario.json"
+New-Item -ItemType Directory -Force -Path (Split-Path $u) | Out-Null
+'{"nombre": "<Nombre del cliente>"}' | Set-Content -Path $u -Encoding utf8
+```
+
 ### B2b. Llevarle una versión nueva a una máquina que ya lo tiene
 
 **Esto es para las actualizaciones, no para la instalación inicial.** El lanzador se mejora
@@ -176,6 +185,7 @@ python -m pytest -q                            # todas en verde ANTES de reinici
 > | Pendientes en cinco grupos | Ver A7b. Lo que urge sale arriba y abierto |
 > | Lo urgente, numerado al abrir sesión | La sesión lista lo vencido o lo que vence en 7 días y pregunta por números cuáles ya se hicieron |
 > | Sesiones previas con su título real | Antes todas se llamaban igual, porque Claude Code titula con el primer mensaje y el lanzador abre muchas con una instrucción de revisión. Ahora se ve el primer encargo del usuario, y las sesiones de fondo (la bitácora que se escribe sola) dejan de llenar la lista |
+> | Los avisos le hablan al cliente por su nombre | Antes decían "Gustavo", escrito fijo. Ahora sale de `usuario.json`, que hay que escribir una vez (ver arriba, en B2). Y en Windows el aviso de arranque ya llega aunque la consola esté en cp1252 |
 >
 > **Las sesiones que ya estaban abiertas conservan el aviso de arranque viejo.** El nuevo sale
 > en la siguiente que se abra.

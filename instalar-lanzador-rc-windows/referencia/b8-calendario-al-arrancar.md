@@ -118,6 +118,11 @@ python "$env:TEMP\registrar_gancho.py"
 > aviso lleva acentos y comillas `«»`, así que llega ilegible y **la sesión arranca sin él, sin
 > mostrar error**. Medido el 25 de septiembre de 2026 simulando esa codificación: la salida deja
 > de ser UTF-8 válido en el byte 137, justo en la primera `«`.
+>
+> 📌 **Desde el 5 de octubre de 2026 el gancho escribe en ASCII puro**, así que con una copia
+> nueva del lanzador el aviso llega bien aun sin el `-X utf8` (medido simulando cp1252: 2,568
+> bytes, todos ASCII, y se lee completo). **Se conserva igual**, porque protege a una máquina
+> que todavía tenga una copia vieja.
 
 > 📌 **Basta cualquier Python de la máquina**, porque el gancho usa solo la biblioteca
 > estándar. Y queda junto al gancho `pendiente` de la bitácora (A3); los dos corren al
@@ -130,16 +135,17 @@ lee `settings.json` al abrir cada sesión. Para apagar la revisión basta con bo
 ### B8c. Verificar
 
 Primero que la configuración se lee y que la instrucción habla del cliente (deben imprimir
-`True` y luego `False`):
+`True`, luego `False`, y luego el nombre del cliente que se escribió en B2):
 
 ```powershell
-cd "$env:USERPROFILE\rc-launcher"; python -c "import calendario_sesion as c; t = c.instruccion_para_la_sesion('prueba'); print(t is not None); print('Gustavo' in t)"
+cd "$env:USERPROFILE\rc-launcher"; python -c "import calendario_sesion as c; t = c.instruccion_para_la_sesion('prueba'); print(t is not None); print('Gustavo' in t); import usuario; print(usuario.quien())"
 ```
 
-> 🔴 **Si el segundo renglón imprime `True`, la copia del lanzador todavía le dice a la sesión
-> que espere el sí de "Gustavo"**, que es el nombre de quien la construyó. En la máquina de otra
-> persona eso confunde a la sesión y al cliente. Llevarle una copia corregida con B2b antes de
-> entregar.
+> 🔴 **Si el segundo renglón imprime `True`, la copia del lanzador es anterior al 5 de octubre
+> de 2026** y le dice a la sesión que espere el sí de "Gustavo", el nombre de quien la construyó.
+> Llevarle una copia nueva con B2b antes de entregar. **Si el tercero imprime `el usuario`**,
+> falta el `usuario.json` de B2: funciona igual, pero la sesión le habla al cliente sin su
+> nombre.
 
 Luego que el gancho habla y que se calla con la marca del lanzador (el primero imprime un
 renglón que empieza con `{"hookSpecificOutput"`, el segundo nada):

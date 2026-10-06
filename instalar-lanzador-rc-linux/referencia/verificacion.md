@@ -71,10 +71,9 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 > ` ✓ AAAA-MM-DD HH:MM` y una nota de que se confirmó en sesión. Al terminar, se borra el
 > proyecto.
 >
-> ⚠️ **La instrucción de ese aviso nombra a "Gustavo"**, igual que la del calendario de B8
-> (ver B8c), porque el texto está escrito en el código para su máquina. En la de un cliente la
-> sesión puede llamarlo así al preguntar. El arreglo está pedido en el lanzador; **mientras no
-> llegue, conviene probar el renglón con el cliente presente** y explicarle el nombre.
+> 📌 **La sesión espera la respuesta de quien dice `usuario.json` (B2)**, por su nombre. Sin
+> ese archivo dice "el usuario". Una copia del lanzador anterior al 5 de octubre de 2026 decía
+> "Gustavo" escrito fijo; si eso aparece, falta actualizar con B2b.
 
 
 
