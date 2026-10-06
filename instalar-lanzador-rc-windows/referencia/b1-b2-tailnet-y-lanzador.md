@@ -123,7 +123,7 @@ python -m pytest -q        # deben pasar todas, sin una sola falla
 python app.py              # debe quedarse escuchando; Ctrl+C para salir
 ```
 
-Al 5 de octubre de 2026 son 1187 pruebas, y pasan igual en Linux y en Windows. **El número crece con cada versión, así que no lo
+Al 5 de octubre de 2026 son 1188 pruebas, y pasan igual en Linux y en Windows. **El número crece con cada versión, así que no lo
 trates como contraseña**: lo que importa es que no falle ninguna.
 
 > ⚠️ **Si fallan por rutas demasiado largas, no es defecto del lanzador.** Windows corta en
@@ -186,11 +186,13 @@ python -m pytest -q                            # todas en verde ANTES de reinici
 > | Lo urgente, numerado al abrir sesión | La sesión lista lo vencido o lo que vence en 7 días y pregunta por números cuáles ya se hicieron |
 > | Sesiones previas con su título real | Antes todas se llamaban igual, porque Claude Code titula con el primer mensaje y el lanzador abre muchas con una instrucción de revisión. Ahora se ve el primer encargo del usuario, y las sesiones de fondo (la bitácora que se escribe sola) dejan de llenar la lista |
 > | Los avisos le hablan al cliente por su nombre | Antes decían "Gustavo", escrito fijo. Ahora sale de `usuario.json`, que hay que escribir una vez (ver arriba, en B2). Y en Windows el aviso de arranque ya llega aunque la consola esté en cp1252 |
+> | La escucha con permisos cerrados, y en Windows también | La sesión de escucha deja de correr con todos los permisos (ver B9), y en Windows ya existe: antes el cuadro Escuchar aparecía y no arrancaba |
+> | La transcripción en Windows | Antes fallaba siempre con «Python was not found», también la de los recados dictados del teléfono. Desde el 5 de octubre de 2026 transcribe |
 >
 > **Las sesiones que ya estaban abiertas conservan el aviso de arranque viejo.** El nuevo sale
 > en la siguiente que se abra.
 > 
-> ✅ **Medido en Windows el 5 de octubre de 2026, en `win11-dogfood`:** la batería completa pasa (1187 pruebas), incluidas las de los títulos de sesiones previas, y el menú viaja comprimido por la tailnet (2,820 bytes contra 1,061 en un proyecto chico; la diferencia crece con el tamaño del menú).
+> ✅ **Medido en Windows el 5 de octubre de 2026, en `win11-dogfood`:** la batería completa pasa (1188 pruebas), incluidas las de los títulos de sesiones previas, y el menú viaja comprimido por la tailnet (2,820 bytes contra 1,061 en un proyecto chico; la diferencia crece con el tamaño del menú).
 
 > 🔴 **La pestaña que el teléfono ya tenía abierta sigue corriendo el código anterior.** El
 > HTML y su script viajan juntos en la respuesta de la raíz, y una pestaña abierta conserva el
