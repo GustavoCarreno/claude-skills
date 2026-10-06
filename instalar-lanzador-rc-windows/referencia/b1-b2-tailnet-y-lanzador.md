@@ -123,7 +123,7 @@ python -m pytest -q        # deben pasar todas, sin una sola falla
 python app.py              # debe quedarse escuchando; Ctrl+C para salir
 ```
 
-Al 5 de octubre de 2026 son 1171 pruebas (medidas en Linux). **El número crece con cada versión, así que no lo
+Al 5 de octubre de 2026 son 1187 pruebas, y pasan igual en Linux y en Windows. **El número crece con cada versión, así que no lo
 trates como contraseña**: lo que importa es que no falle ninguna.
 
 > ⚠️ **Si fallan por rutas demasiado largas, no es defecto del lanzador.** Windows corta en
@@ -190,7 +190,7 @@ python -m pytest -q                            # todas en verde ANTES de reinici
 > **Las sesiones que ya estaban abiertas conservan el aviso de arranque viejo.** El nuevo sale
 > en la siguiente que se abra.
 > 
-> ⚠️ **Sin medir en Windows todavía:** los títulos de sesiones previas y la compresión. Las dos son biblioteca estándar de Python y la misma lógica que en Linux, pero las 1171 pruebas corrieron solo ahí. Correrlas aquí con B2 y revisar los renglones 18 y 22 de la verificación.
+> ✅ **Medido en Windows el 5 de octubre de 2026, en `win11-dogfood`:** la batería completa pasa (1187 pruebas), incluidas las de los títulos de sesiones previas, y el menú viaja comprimido por la tailnet (2,820 bytes contra 1,061 en un proyecto chico; la diferencia crece con el tamaño del menú).
 
 > 🔴 **La pestaña que el teléfono ya tenía abierta sigue corriendo el código anterior.** El
 > HTML y su script viajan juntos en la respuesta de la raíz, y una pestaña abierta conserva el

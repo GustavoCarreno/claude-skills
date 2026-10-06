@@ -104,7 +104,7 @@ python3 -m venv .venv
 cd ~/rc-launcher && .venv/bin/python -m pytest -q
 ```
 
-Debe pasar **la suite completa, sin una sola falla**. Al 5 de octubre de 2026 son 1171 pruebas
+Debe pasar **la suite completa, sin una sola falla**. Al 5 de octubre de 2026 son 1187 pruebas
 y corren en un segundo. **El número crece con cada versión, así que no lo trates como
 contraseña**: lo que importa es que no falle ninguna, en la máquina del cliente, sin tocar
 una línea. Eso es lo que demuestra que el código no depende de la máquina donde nació.
