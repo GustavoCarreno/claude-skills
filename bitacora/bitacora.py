@@ -215,6 +215,9 @@ def _config():
         ),
         "instruccion": datos.get("instruccion") or INSTRUCCION_POR_DEFECTO,
         "herramientas": _lista_config(datos, "herramientas", HERRAMIENTAS_CIERRE),
+        "respaldo": datos.get("respaldo") is True,
+        "gh_bin": datos.get("gh_bin") or _ejecutable("gh", _CANDIDATOS_GH),
+        "git_bin": datos.get("git_bin") or _ejecutable("git", _CANDIDATOS_GIT),
     }
 
 
@@ -809,6 +812,11 @@ def escribir(argv):
                 marca_proy.unlink()
             except OSError:
                 pass
+        if cfg["respaldo"] and _proyecto_valido(proy, cfg["raiz"]):
+            try:
+                respaldar_proyecto(proy, cfg)
+            except Exception as error:
+                _apuntar(f"respaldo fallo  {error!r}  proy={proy}")
 
 
 def cerrar(argv):
@@ -828,26 +836,33 @@ def cerrar(argv):
         slug = _slug(proy, cfg["raiz"])
         if not _dir_marcas().is_dir():
             return 0
+        escritor = False
         for marca in _dir_marcas().glob(f"*__{slug}.trabajo"):
             base = Path(str(marca)[: -len(".trabajo")])
             if not _hay_pendiente(base, proy, cfg["umbral"]):
                 continue
             sid = base.name.split("__", 1)[0]
-            _cerrar_uno(sid, proy, cfg)
+            escritor = _cerrar_uno(sid, proy, cfg) or escritor
+        if cfg["respaldo"] and not escritor:
+            _lanzar_respaldo(proy)
         return 0
 
     datos = _payload()
     sid, proy = _contexto(datos, cfg)
     if not sid:
         return 0
-    _cerrar_uno(sid, proy, cfg)
+    # Sin escritor de bitacora, el respaldo sale ya; con escritor, lo corre
+    # el propio escritor al terminar, para que suba tambien lo que escribio.
+    if not _cerrar_uno(sid, proy, cfg) and cfg["respaldo"]:
+        _lanzar_respaldo(proy)
     return 0
 
 
 def _cerrar_uno(sid, proy, cfg):
+    """Lanza el escritor si hace falta. Verdadero si hay uno en camino."""
     base = _base(sid, proy, cfg["raiz"])
     if not _hay_pendiente(base, proy, cfg["umbral"]):
-        return
+        return False
 
     # Idempotencia POR SESION: el cierre puede dispararse por dos rutas casi
     # a la vez (la llamada del lanzador y el hook SessionEnd) para la MISMA
@@ -858,7 +873,7 @@ def _cerrar_uno(sid, proy, cfg):
         edad = int(time.time() - anterior)
         if edad < VENTANA_CIERRE:
             _apuntar(f"cierre omitido  ya se intento hace {edad}s  sid={sid}")
-            return
+            return True
 
     # Idempotencia POR PROYECTO: protege el recurso real (el CLAUDE.md), no
     # solo la sesion que dispara el cierre. "cerrar --proyecto" itera TODAS
@@ -876,7 +891,7 @@ def _cerrar_uno(sid, proy, cfg):
                 f"cierre no lanzado  ya hay un escritor corriendo en el "
                 f"proyecto hace {edad_proy}s  sid={sid}"
             )
-            return
+            return True
         _apuntar(
             f"marca de proyecto vencida hace {edad_proy}s, se ignora  sid={sid}"
         )
@@ -895,10 +910,229 @@ def _cerrar_uno(sid, proy, cfg):
             marca_proy.unlink()
         except OSError:
             pass
-        return
+        return False
 
     _apuntar(f"cierre disparado  sid={sid}  proy={proy}")
     _tocar(intento)
+    return True
+
+
+# --------------------------------------------------------------------------
+# Respaldo: cada proyecto en su propio repositorio privado de GitHub
+#
+# Nace del 28 de agosto de 2026: a un cliente le trono el disco de la laptop y
+# perdio su carpeta de proyectos entera, sin copia. Corre en codigo y sin
+# modelo, al cerrar cada sesion, asi que cuesta cero uso de Claude. Se enciende
+# con "respaldo": true en bitacora.json; apagado se queda quieto.
+
+_CANDIDATOS_GH = ("/usr/bin/gh", "/usr/local/bin/gh", "/opt/homebrew/bin/gh",
+                  r"C:\Program Files\GitHub CLI\gh.exe")
+_CANDIDATOS_GIT = ("/usr/bin/git", "/usr/local/bin/git", "/opt/homebrew/bin/git",
+                   r"C:\Program Files\Git\cmd\git.exe")
+VENTANA_RESPALDO = 300
+TIEMPO_GIT = 180
+
+
+def _ejecutable(nombre, candidatos):
+    """Como _ejecutable_claude: los hooks no heredan el PATH interactivo."""
+    hallado = shutil.which(nombre)
+    if hallado:
+        return hallado
+    for candidato in candidatos:
+        if Path(candidato).is_file():
+            return candidato
+    return nombre
+
+
+def _sin_ventana():
+    if os.name == "nt":
+        return {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0)}
+    return {}
+
+
+def _correr_en(proy, argumentos):
+    """(codigo, salida) de una orden corrida en el proyecto. Nunca lanza."""
+    try:
+        r = subprocess.run(argumentos, cwd=str(proy), capture_output=True,
+                           text=True, encoding="utf-8", errors="replace",
+                           timeout=TIEMPO_GIT, stdin=subprocess.DEVNULL,
+                           **_sin_ventana())
+        return r.returncode, ((r.stdout or "") + (r.stderr or "")).strip()
+    except Exception as error:
+        return 1, repr(error)
+
+
+def _git(proy, cfg, *args):
+    return _correr_en(proy, [cfg["git_bin"], *args])
+
+
+def _remoto_es_privado(proy, cfg):
+    """True, False, o None si no se pudo saber (sin gh, sin red, otro sitio)."""
+    codigo, salida = _correr_en(
+        proy, [cfg["gh_bin"], "repo", "view", "--json", "visibility",
+               "-q", ".visibility"])
+    if codigo != 0:
+        return None
+    valor = salida.strip().splitlines()[-1].upper() if salida.strip() else ""
+    if valor == "PRIVATE":
+        return True
+    if valor in ("PUBLIC", "INTERNAL"):
+        return False
+    return None
+
+
+def _crear_remoto(proy, cfg):
+    """Crea el repositorio privado en la cuenta de gh y lo deja como origin.
+
+    Devuelve None si salio bien, o el texto del error.
+    """
+    codigo, salida = _correr_en(
+        proy, [cfg["gh_bin"], "repo", "create", proy.name, "--private",
+               "--source", str(proy), "--remote", "origin"])
+    if codigo != 0:
+        return f"no se pudo crear el repositorio privado {proy.name}: {salida[-300:]}"
+    return None
+
+
+def _ruta_estado_respaldo(proy, cfg):
+    return _dir_marcas() / f"respaldo__{_slug(proy, cfg['raiz'])}.json"
+
+
+def _guardar_estado_respaldo(proy, cfg, ok, detalle):
+    estado = {"ok": ok, "detalle": detalle,
+              "cuando": time.strftime("%Y-%m-%d %H:%M")}
+    try:
+        _dir_marcas().mkdir(parents=True, exist_ok=True)
+        _ruta_estado_respaldo(proy, cfg).write_text(
+            json.dumps(estado, ensure_ascii=False), encoding="utf-8")
+    except OSError:
+        pass
+    _apuntar(f"respaldo {'listo' if ok else 'fallo'}  {detalle}  proy={proy}")
+    return estado
+
+
+def respaldar_proyecto(proy, cfg):
+    """Confirma lo que haya cambiado y lo sube al repositorio privado.
+
+    Devuelve un dict con "estado"; cuando hubo intento, tambien "ok" y
+    "detalle", y ese resultado queda guardado para el aviso de arranque.
+    """
+    if not cfg["respaldo"]:
+        return {"estado": "apagado"}
+
+    if not (proy / ".git").exists():
+        codigo, salida = _git(proy, cfg, "rev-parse", "--show-toplevel")
+        if codigo == 0 and salida:
+            # El proyecto vive dentro del repositorio de otra carpeta: ese
+            # repositorio es de alguien mas y aqui no se toca.
+            return {"estado": "dentro de otro repositorio"}
+        codigo, salida = _git(proy, cfg, "init", "-q", "-b", "main")
+        if codigo != 0:
+            codigo, salida = _git(proy, cfg, "init", "-q")
+        if codigo != 0:
+            return dict(estado="intentado", **_guardar_estado_respaldo(
+                proy, cfg, False, f"no se pudo iniciar git: {salida[-200:]}"))
+
+    codigo, origen = _git(proy, cfg, "remote", "get-url", "origin")
+    tiene_origen = codigo == 0 and bool(origen)
+    privado = _remoto_es_privado(proy, cfg) if tiene_origen else True
+    if privado is False:
+        # Un repositorio publico jamas recibe un respaldo automatico: lo que
+        # hay en un proyecto de cliente (contratos, montos) no se publica.
+        return dict(estado="intentado", **_guardar_estado_respaldo(
+            proy, cfg, False,
+            "el repositorio remoto es público; el respaldo automático se salta"))
+
+    _git(proy, cfg, "add", "-A")
+    cambios, _ = _git(proy, cfg, "diff", "--cached", "--quiet")
+    if cambios != 0:
+        identidad = []
+        codigo, correo = _git(proy, cfg, "config", "user.email")
+        if codigo != 0 or not correo:
+            identidad = ["-c", "user.name=Respaldo automatico",
+                         "-c", "user.email=respaldo@localhost"]
+        mensaje = "Respaldo automático " + time.strftime("%Y-%m-%d %H:%M")
+        codigo, salida = _git(proy, cfg, *identidad, "commit", "-q", "-m", mensaje)
+        if codigo != 0:
+            return dict(estado="intentado", **_guardar_estado_respaldo(
+                proy, cfg, False, f"no se pudo confirmar: {salida[-200:]}"))
+
+    if not tiene_origen:
+        error = _crear_remoto(proy, cfg)
+        if error:
+            return dict(estado="intentado", **_guardar_estado_respaldo(
+                proy, cfg, False, error))
+    elif privado is None:
+        return dict(estado="intentado", **_guardar_estado_respaldo(
+            proy, cfg, False,
+            "los cambios quedaron confirmados en la máquina, pero no se pudo "
+            "comprobar que el repositorio remoto sea privado, así que no se subieron"))
+
+    codigo, _ = _git(proy, cfg, "rev-parse", "--verify", "-q", "HEAD")
+    if codigo != 0:
+        return dict(estado="intentado", **_guardar_estado_respaldo(
+            proy, cfg, True, "proyecto vacío, todavía sin archivos que subir"))
+    codigo, salida = _git(proy, cfg, "push", "-q", "-u", "origin", "HEAD")
+    if codigo != 0:
+        return dict(estado="intentado", **_guardar_estado_respaldo(
+            proy, cfg, False, f"no se pudo subir: {salida[-300:]}"))
+    return dict(estado="intentado", **_guardar_estado_respaldo(
+        proy, cfg, True, "subido"))
+
+
+def _aviso_de_respaldo(proy, cfg):
+    try:
+        estado = json.loads(_ruta_estado_respaldo(proy, cfg).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(estado, dict) or estado.get("ok") is not False:
+        return None
+    return (
+        "AVISO DE RESPALDO.\n\n"
+        f"El ultimo respaldo de este proyecto en GitHub fallo ({estado.get('cuando')}): "
+        f"{estado.get('detalle')}.\n\n"
+        "Antes de arrancar con lo que el usuario pida, diselo en una linea, en "
+        "palabras simples: mientras esto falle, su trabajo de este proyecto vive "
+        "solo en esta computadora. Ofrece revisarlo; el respaldo se vuelve a "
+        "intentar solo al cerrar cada sesion."
+    )
+
+
+def _lanzar_respaldo(proy):
+    """Corre el respaldo en un proceso desprendido: git push puede tardar."""
+    marca = _dir_marcas() / f"respaldando__{_slug(proy, _config()['raiz'])}"
+    anterior = _mtime(marca)
+    if anterior is not None and time.time() - anterior < VENTANA_RESPALDO:
+        return
+    try:
+        _dir_marcas().mkdir(parents=True, exist_ok=True)
+        _tocar(marca)
+        subprocess.Popen(
+            [sys.executable, str(Path(__file__).resolve()), "respaldar", str(proy)],
+            cwd=str(proy), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL, close_fds=True, **_extras_de_lanzamiento())
+    except Exception as error:
+        _apuntar(f"respaldo no lanzado  {error!r}  proy={proy}")
+
+
+def respaldar(argv):
+    """bitacora.py respaldar <ruta-proyecto>: tambien sirve a mano."""
+    if not argv:
+        return 1
+    cfg = _config()
+    proy = _resolver(argv[0])
+    if not _proyecto_valido(proy, cfg["raiz"]):
+        return 0
+    try:
+        resultado = respaldar_proyecto(proy, cfg)
+    finally:
+        try:
+            (_dir_marcas() / f"respaldando__{_slug(proy, cfg['raiz'])}").unlink()
+        except OSError:
+            pass
+    if sys.stdout and sys.stdout.isatty():
+        print(json.dumps(resultado, ensure_ascii=False))
+    return 0
 
 
 def pendiente():
@@ -921,6 +1155,8 @@ def pendiente():
     if not _dir_marcas().is_dir():
         return 0
 
+    aviso_respaldo = _aviso_de_respaldo(proy, cfg) if cfg["respaldo"] else None
+
     slug = _slug(proy, cfg["raiz"])
     sesion_actual = datos.get("session_id")
     huerfanas = []
@@ -933,6 +1169,9 @@ def pendiente():
             huerfanas.append(sid)
 
     if not huerfanas:
+        if aviso_respaldo:
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "SessionStart", "additionalContext": aviso_respaldo}}))
         return 0
 
     instruccion = cfg["instruccion"].format(
@@ -950,6 +1189,8 @@ def pendiente():
         f"{instruccion}\n\n"
         "No lo hagas sin avisarle: puede que prefiera atender primero lo suyo."
     )
+    if aviso_respaldo:
+        aviso = aviso_respaldo + "\n\n" + aviso
     # ensure_ascii por defecto (True): la salida queda pura ASCII con \uXXXX
     # para lo que no lo sea. sys.stdout en Windows es la codepage local del
     # sistema (cp1252), no UTF-8, porque el stdout del hook es un pipe. Sin
@@ -980,6 +1221,8 @@ def main():
         return pendiente()
     if orden == "escribir":
         return escribir(resto)
+    if orden == "respaldar":
+        return respaldar(resto)
     print(f"orden no reconocida: {orden}", file=sys.stderr)
     return 1
 

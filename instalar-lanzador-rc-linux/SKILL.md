@@ -39,6 +39,7 @@ orden. Para Windows existe el equivalente en `instalar-lanzador-rc-windows`.
 | **Sus pendientes, ordenados por lo que urge** (requiere la fase B) | En el menú de cada proyecto los pendientes salen en cinco grupos según urgencia e importancia, cada uno plegable y con su cuenta. Lo que urge queda arriba y abierto, a un toque |
 | **Al abrir una sesión, lo que urge sale numerado** (requiere la fase B) | Si hay pendientes vencidos o que vencen en la semana, la sesión los lista con número y pregunta cuáles ya están hechos. Se contesta con los números y ella palomea los demás |
 | **Sus contactos, al día** | Las personas que aparecieron en la sesión, con su correo o su teléfono, quedan al cerrar en un archivo de contactos listo para importar a Google Contacts |
+| **Su trabajo, respaldado solo** | Al cerrar cada sesión, el proyecto se sube a su propio repositorio privado de GitHub. Si la computadora se descompone, en una nueva se recupera todo con un comando |
 | **Lo que deja de cobrar, a la vista** (opcional, requiere la fase B) | Cada proyecto lleva sus contratos en un archivo, y la pantalla Contratos del lanzador suma lo que vence y avisa cuándo buscar al siguiente cliente |
 | **Datos a la mano durante una junta** (opcional, requiere la fase B, todavía en prueba) | El teléfono escucha la conversación y en la misma pantalla van saliendo tarjetas con respuestas, datos y compromisos. Ver B9 antes de ofrecerlo |
 | **Transcribir juntas y escuchar documentos** (opcional, con cuenta propia) | Sube la grabación de una junta y pide la minuta, o pide que le lean un documento para el camino |
@@ -80,7 +81,7 @@ frente a un navegador. Planear la sesión de instalación con esa persona presen
 # FASE A · La base
 
 **Lo que deja instalado:** Claude Code funcionando, la carpeta de proyectos, la bitácora
-automática, el runtime que necesitan las skills de documentos, y el acceso a su correo,
+automática con el respaldo en GitHub, el runtime que necesitan las skills de documentos, y el acceso a su correo,
 calendario y Drive. **Corresponde al módulo 1 del programa.**
 
 Es entregable completa por sí sola: si el área de sistemas del cliente bloquea Tailscale,
@@ -103,6 +104,7 @@ archivo cite otra sección (A3, B2b…), aquí está dónde vive.
 | A5 | [`referencia/a5-correo-calendario-drive.md`](referencia/a5-correo-calendario-drive.md) | Conectores de correo, calendario y Drive, y Composio |
 | A6 y A7 | [`referencia/a6-a7-gitignore-y-pendientes.md`](referencia/a6-a7-gitignore-y-pendientes.md) | El gitignore global y la convención de pendientes.md |
 | A8 | [`referencia/a8-deepinfra.md`](referencia/a8-deepinfra.md) | Transcripción y voz con la cuenta propia de DeepInfra |
+| A9 | [`referencia/a9-respaldo-en-github.md`](referencia/a9-respaldo-en-github.md) | El respaldo de cada proyecto en su propio repositorio privado de GitHub, y cómo se recupera todo en una máquina nueva. **Obligatoria** |
 
 ---
 

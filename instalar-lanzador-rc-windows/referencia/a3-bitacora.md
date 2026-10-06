@@ -62,6 +62,8 @@ Configuración en `%USERPROFILE%\.claude\bitacora.json`:
 - **`instruccion`** (opcional): el texto que se le pide al asistente. **Para un cliente
   conviene reescribirlo en su vocabulario**; el de fábrica habla de "Session Log" y
   "pipeline", que no son palabras suyas.
+- **`respaldo`**: `true` sube cada proyecto a su repositorio privado de GitHub al cerrar
+  cada sesión. De fábrica viene apagado; se enciende en A9.
 - **`herramientas`** (opcional): la lista cerrada con la que corre la sesión que escribe.
   De fábrica trae las de archivo más las de Google Calendar. **Se toca solo para un cliente
   en Microsoft 365**, agregando las suyas. Una lista mal escrita se ignora con aviso, en vez

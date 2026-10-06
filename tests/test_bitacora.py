@@ -1684,3 +1684,140 @@ class HerramientasDelEscritor(Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(shutil.which("git"), "requiere git")
+class Respaldo(Base):
+    """El respaldo de cada proyecto en un repositorio privado de GitHub.
+
+    Nace del 28 de agosto de 2026: a un cliente le trono el disco de la laptop
+    y perdio todo su trabajo. gh se sustituye por un repositorio desnudo local,
+    asi que estas pruebas corren sin red y sin cuenta de GitHub.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.remotos = self.casa / "remotos"
+        self.remotos.mkdir()
+        self.encender()
+
+    def encender(self, valor=True):
+        (self.casa / ".claude" / "bitacora.json").write_text(
+            json.dumps({"raiz_proyectos": str(self.raiz), "respaldo": valor}),
+            encoding="utf-8",
+        )
+
+    def git(self, ruta, *args):
+        return subprocess.run(["git", "-C", str(ruta), *args],
+                              capture_output=True, text=True).stdout.strip()
+
+    def crear_remoto_falso(self, proy, cfg):
+        desnudo = self.remotos / (proy.name + ".git")
+        subprocess.run(["git", "init", "--bare", "-q", str(desnudo)], check=True)
+        subprocess.run(["git", "-C", str(proy), "remote", "add", "origin", str(desnudo)],
+                       check=True)
+        return None
+
+    def respaldar(self, proy, privado=True):
+        with mock.patch.object(bitacora, "_crear_remoto", side_effect=self.crear_remoto_falso), \
+             mock.patch.object(bitacora, "_remoto_es_privado", return_value=privado):
+            return bitacora.respaldar_proyecto(proy, bitacora._config())
+
+    def test_apagado_por_defecto(self):
+        (self.casa / ".claude" / "bitacora.json").write_text(
+            json.dumps({"raiz_proyectos": str(self.raiz)}), encoding="utf-8")
+        proy = self.proyecto("nave-12")
+        self.assertEqual(self.respaldar(proy)["estado"], "apagado")
+        self.assertFalse((proy / ".git").exists())
+
+    def test_proyecto_nuevo_queda_con_repo_commit_y_remoto(self):
+        proy = self.proyecto("nave-12")
+        (proy / "contrato.md").write_text("renta\n", encoding="utf-8")
+        r = self.respaldar(proy)
+        self.assertTrue(r["ok"], r)
+        desnudo = self.remotos / "nave-12.git"
+        archivos = self.git(desnudo, "ls-tree", "-r", "--name-only", "main")
+        self.assertIn("contrato.md", archivos)
+        self.assertIn("CLAUDE.md", archivos)
+
+    def test_la_segunda_vez_sube_solo_lo_nuevo(self):
+        proy = self.proyecto("nave-12")
+        self.respaldar(proy)
+        (proy / "pendientes.md").write_text("# Pendientes\n", encoding="utf-8")
+        r = self.respaldar(proy)
+        self.assertTrue(r["ok"], r)
+        desnudo = self.remotos / "nave-12.git"
+        self.assertEqual(self.git(desnudo, "rev-list", "--count", "main"), "2")
+        r = self.respaldar(proy)          # sin cambios: cero commits nuevos
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(self.git(desnudo, "rev-list", "--count", "main"), "2")
+
+    def test_respeta_el_gitignore(self):
+        proy = self.proyecto("nave-12")
+        (proy / ".gitignore").write_text("bandeja/\n", encoding="utf-8")
+        (proy / "bandeja").mkdir()
+        (proy / "bandeja" / "foto.jpg").write_text("x", encoding="utf-8")
+        self.respaldar(proy)
+        archivos = self.git(self.remotos / "nave-12.git", "ls-tree", "-r", "--name-only", "main")
+        self.assertNotIn("bandeja/foto.jpg", archivos)
+
+    def test_remoto_publico_ni_commitea_ni_sube(self):
+        proy = self.proyecto("abierto")
+        subprocess.run(["git", "init", "-q", str(proy)], check=True)
+        self.crear_remoto_falso(proy, None)
+        (proy / "nuevo.md").write_text("x\n", encoding="utf-8")
+        r = self.respaldar(proy, privado=False)
+        self.assertFalse(r["ok"])
+        self.assertIn("público", r["detalle"])
+        self.assertEqual(self.git(proy, "rev-list", "--all", "--count"), "0")
+
+    def test_privacidad_desconocida_commitea_pero_no_sube(self):
+        proy = self.proyecto("dudoso")
+        subprocess.run(["git", "init", "-q", str(proy)], check=True)
+        self.crear_remoto_falso(proy, None)
+        r = self.respaldar(proy, privado=None)
+        self.assertFalse(r["ok"])
+        self.assertEqual(self.git(proy, "rev-list", "--all", "--count"), "1")
+        self.assertEqual(self.git(self.remotos / "dudoso.git", "rev-list", "--all", "--count"), "0")
+
+    def test_dentro_de_otro_repositorio_se_salta(self):
+        subprocess.run(["git", "init", "-q", str(self.raiz)], check=True)
+        proy = self.proyecto("hijo")
+        r = self.respaldar(proy)
+        self.assertEqual(r["estado"], "dentro de otro repositorio")
+        self.assertFalse((proy / ".git").exists())
+
+    def test_una_falla_avisa_al_arrancar_y_un_exito_la_borra(self):
+        proy = self.proyecto("nave-7")
+        subprocess.run(["git", "init", "-q", str(proy)], check=True)
+        subprocess.run(["git", "-C", str(proy), "remote", "add", "origin",
+                        str(self.remotos / "no-existe.git")], check=True)
+        r = self.respaldar(proy)
+        self.assertFalse(r["ok"])
+        _, salida = self.pendiente_con({"session_id": "s1", "cwd": str(proy)})
+        self.assertIn("RESPALDO", salida)
+        subprocess.run(["git", "-C", str(proy), "remote", "remove", "origin"], check=True)
+        r = self.respaldar(proy)
+        self.assertTrue(r["ok"], r)
+        _, salida = self.pendiente_con({"session_id": "s1", "cwd": str(proy)})
+        self.assertNotIn("RESPALDO", salida)
+
+    def test_cerrar_sin_bitacora_que_escribir_lanza_el_respaldo(self):
+        proy = self.proyecto("nave-12")
+        with mock.patch.object(bitacora, "_lanzar_respaldo") as lanzar:
+            self._correr(bitacora.cerrar, {"session_id": "s9", "cwd": str(proy)}, argv=[])
+        lanzar.assert_called_once_with(proy)
+
+    def test_cerrar_con_respaldo_apagado_no_lanza_nada(self):
+        self.encender(False)
+        proy = self.proyecto("nave-12")
+        with mock.patch.object(bitacora, "_lanzar_respaldo") as lanzar:
+            self._correr(bitacora.cerrar, {"session_id": "s9", "cwd": str(proy)}, argv=[])
+        lanzar.assert_not_called()
+
+    def test_main_conoce_la_orden_respaldar(self):
+        proy = self.proyecto("nave-12")
+        with mock.patch.object(bitacora, "respaldar_proyecto", return_value={"ok": True}) as f, \
+             mock.patch.object(sys, "argv", ["bitacora.py", "respaldar", str(proy)]):
+            self.assertEqual(bitacora.main(), 0)
+        f.assert_called_once()

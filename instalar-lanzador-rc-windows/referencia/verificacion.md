@@ -47,6 +47,7 @@
 | 22 | Sesiones previas con su título real | dictar un recado desde el teléfono en un proyecto, abrir sesión desde ahí, contestarle con un encargo y cerrarla | en *Sesiones previas* aparece el encargo, y la instrucción de revisión con que arrancó queda oculta |
 | 23 | Los contactos de la sesión (A3b) | cerrar una sesión con trabajo donde se haya mencionado a alguien con su correo, y esperar a la bitácora | `dir <proyecto>\salida\contactos-*.vcf` existe y trae a esa persona |
 | 24 | La pantalla de contratos (A7c) | abrir `/contratos` en la URL de la tailnet | carga, aunque ningún proyecto tenga todavía su `contratos.md` |
+| 25 | El respaldo en GitHub (A9) | `gh repo list --visibility private --limit 100`, y un archivo de prueba que aparezca en GitHub tras cerrar una sesión | un repositorio privado por proyecto, y el archivo arriba |
 
 > 📌 **Cómo se comprueba el renglón 21, con un proyecto de prueba.** En un proyecto
 > desechable (`prueba-urgentes`), un `pendientes.md` con una sola tarea:
