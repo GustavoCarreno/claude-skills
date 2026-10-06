@@ -1,4 +1,4 @@
-# B9 · La escucha en vivo durante una junta (opcional, en prueba)
+# B9 · La escucha en vivo durante una junta (opcional)
 
 > Parte de la skill `instalar-lanzador-rc-linux`. El orden de todas las secciones y la tabla que dice
 > en qué archivo vive cada una están en `SKILL.md`. Cuando aquí se cite otra sección (A3, B2b…),
@@ -7,7 +7,7 @@
 ## Contenido de este archivo
 
 - B9. La escucha en vivo
-  - B9a. Antes de ofrecerla: lo que falta endurecer
+  - B9a. Lo que la sesión de escucha puede hacer, y lo que no
   - B9b. Lo que tiene que existir antes
   - B9c. El teléfono, que es donde se cae
   - B9d. Compartir las tarjetas con los presentes (opcional)
@@ -35,17 +35,28 @@ Dos botones cambian cómo se usa:
 
 **Cero pasos de instalación del lado del lanzador:** llega con el código de B2 o de B2b.
 
-### B9a. Antes de ofrecerla: lo que falta endurecer
+### B9a. Lo que la sesión de escucha puede hacer, y lo que no
 
-> 🔴 **La sesión de escucha corre con todos los permisos, y lo único que entra es el audio.**
-> O sea que cualquiera en la sala puede dictarle una instrucción en voz alta, y la sesión la
-> lee como texto. Acotar sus herramientas está pedido en el lanzador desde el 26 de septiembre
-> de 2026 y sigue abierto. **Mientras siga así, la escucha se enseña en juntas propias o con
-> gente de confianza, y se deja fuera de lo que se le entrega a un cliente para juntas con
-> terceros.**
->
-> ⚠️ **Cada junta deja una entrada de confianza en `~/.claude.json`**, y se acumulan. Es
-> inofensivo, y también está pedido.
+Lo único que entra a la sesión de escucha es el audio, así que cualquiera en la sala puede
+dictarle una instrucción en voz alta. **Desde el 5 de octubre de 2026 corre con permisos
+cerrados**: lo que está fuera de su lista se le niega en silencio, sin preguntar.
+
+| Puede | Queda negado |
+|---|---|
+| Leer la junta y los archivos del proyecto | Leer cualquier otro archivo de la máquina |
+| Escribir su libreta y las tarjetas | Escribir o borrar en el proyecto |
+| Buscar en internet | Abrir conexiones por su cuenta (`curl` y parecidos) |
+| Leer el correo y el calendario del cliente | Mandar correos, crear o mover eventos |
+
+Medido ese día con una sesión real: lo negado quedó negado, y en un ensayo en tmux la
+pregunta, el compromiso y la marca se contestaron sin que la sesión pidiera un solo permiso.
+
+> ⚠️ **Lo que sigue abierto, y conviene decírselo al cliente:** cuando la junta comparte sus
+> tarjetas con los presentes (B9d), un dato que la sesión saca de los archivos del proyecto
+> puede llegar a ellos, aunque sea interno. Lo del correo y el calendario se queda privado
+> siempre. Hasta que eso cambie, **compartir con los presentes conviene solo en juntas donde
+> todo lo escrito en el proyecto se puede saber**; en las demás, la escucha se usa sin compartir,
+> y cada tarjeta se manda a mano con su botón cuando haga falta.
 
 ### B9b. Lo que tiene que existir antes
 

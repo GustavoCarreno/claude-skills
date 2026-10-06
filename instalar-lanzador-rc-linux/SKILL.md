@@ -41,7 +41,7 @@ orden. Para Windows existe el equivalente en `instalar-lanzador-rc-windows`.
 | **Sus contactos, al día** | Las personas que aparecieron en la sesión, con su correo o su teléfono, quedan al cerrar en un archivo de contactos listo para importar a Google Contacts |
 | **Su trabajo, respaldado solo** | Al cerrar cada sesión, el proyecto se sube a su propio repositorio privado de GitHub. Si la computadora se descompone, en una nueva se recupera todo con un comando |
 | **Lo que deja de cobrar, a la vista** (opcional, requiere la fase B) | Cada proyecto lleva sus contratos en un archivo, y la pantalla Contratos del lanzador suma lo que vence y avisa cuándo buscar al siguiente cliente |
-| **Datos a la mano durante una junta** (opcional, requiere la fase B, todavía en prueba) | El teléfono escucha la conversación y en la misma pantalla van saliendo tarjetas con respuestas, datos y compromisos. Ver B9 antes de ofrecerlo |
+| **Datos a la mano durante una junta** (opcional, requiere la fase B) | El teléfono escucha la conversación y en la misma pantalla van saliendo tarjetas con respuestas, datos y compromisos. Ver B9 antes de ofrecerlo |
 | **Transcribir juntas y escuchar documentos** (opcional, con cuenta propia) | Sube la grabación de una junta y pide la minuta, o pide que le lean un documento para el camino |
 | **El audio se escucha con un clic** (requiere la fase B) | Lo que pidió que le leyeran llega como liga: le pica desde el teléfono y suena, sin descargarlo ni buscarlo en el navegador de archivos |
 | **Le avisa cuando una tarea termina** (requiere la fase B) | El teléfono suena cuando Claude Code deja de trabajar y se queda esperando, con el nombre del proyecto, qué hizo, y una liga que abre esa misma sesión de un toque. Cubre el hueco que deja la aplicación de Claude, que avisa cuando hay algo que contestar y se calla cuando el trabajo simplemente terminó |
@@ -124,7 +124,7 @@ la primera sesión justamente para no descubrirlo aquí.
 | B4, B5 y B6 | [`referencia/b4-b6-publicar-bandeja-rc.md`](referencia/b4-b6-publicar-bandeja-rc.md) | Publicarlo en la tailnet, la bandeja y el comando rc |
 | B7 | [`referencia/b7-transcripciones-de-drive.md`](referencia/b7-transcripciones-de-drive.md) | Las transcripciones que llegan a Drive (opcional) |
 | B8 | [`referencia/b8-calendario-al-arrancar.md`](referencia/b8-calendario-al-arrancar.md) | El bloque de calendario al arrancar (opcional) |
-| B9 | [`referencia/b9-escucha-en-vivo.md`](referencia/b9-escucha-en-vivo.md) | La escucha en vivo durante una junta (opcional, en prueba) |
+| B9 | [`referencia/b9-escucha-en-vivo.md`](referencia/b9-escucha-en-vivo.md) | La escucha en vivo durante una junta (opcional) |
 
 ---
 
