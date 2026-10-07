@@ -1494,7 +1494,7 @@ class FormatoDeMarcaDeTiempo(Base):
 class InstruccionConPendientes(Base):
     def test_la_instruccion_de_fabrica_nombra_los_dos_archivos(self):
         cfg = bitacora._config()
-        texto = cfg["instruccion"].format(
+        texto = cfg["instruccion"].format(revisado="REVISADO", 
             archivo="/x/CLAUDE.md", pendientes="/x/pendientes.md"
         )
         self.assertIn("/x/CLAUDE.md", texto)
@@ -1512,7 +1512,7 @@ class InstruccionConPendientes(Base):
             encoding="utf-8",
         )
         cfg = bitacora._config()
-        texto = cfg["instruccion"].format(
+        texto = cfg["instruccion"].format(revisado="REVISADO", 
             archivo="/x/CLAUDE.md", pendientes="/x/pendientes.md"
         )
         self.assertEqual(texto, "Escribe la bitacora en /x/CLAUDE.md.")
@@ -1622,7 +1622,7 @@ class HerramientasDelEscritor(Base):
         parametro de update_event y no una herramienta aparte. De fabrica es
         ALL, o sea que actualizar un bloque con invitados les manda correo."""
         cfg = bitacora._config()
-        texto = cfg["instruccion"].format(archivo="/x/CLAUDE.md",
+        texto = cfg["instruccion"].format(revisado="REVISADO", archivo="/x/CLAUDE.md",
                                           pendientes="/x/pendientes.md")
         self.assertIn("notificationLevel NONE", texto)
 
@@ -1631,7 +1631,7 @@ class HerramientasDelEscritor(Base):
         escribe, asi que sin salida de emergencia el punto 6 no dispara nunca.
         La salida es buscar, pero acotada: una sola coincidencia clara."""
         cfg = bitacora._config()
-        texto = cfg["instruccion"].format(archivo="/x/CLAUDE.md",
+        texto = cfg["instruccion"].format(revisado="REVISADO", archivo="/x/CLAUDE.md",
                                           pendientes="/x/pendientes.md")
         self.assertIn("search_events", texto)
         self.assertIn("UNA COINCIDENCIA CLARA", texto)
@@ -1641,7 +1641,7 @@ class HerramientasDelEscritor(Base):
         cuida es que actualizar un campo reemplaza su lista entera, que es
         como se perderia en silencio un correo que el contacto ya tenia."""
         cfg = bitacora._config()
-        texto = cfg["instruccion"].format(archivo="/x/CLAUDE.md",
+        texto = cfg["instruccion"].format(revisado="REVISADO", archivo="/x/CLAUDE.md",
                                           pendientes="/x/pendientes.md")
         self.assertIn("searchContacts", texto)
         self.assertIn("REEMPLAZA su lista entera", texto)
@@ -1651,7 +1651,7 @@ class HerramientasDelEscritor(Base):
         """Lo que hace que la convencion se sostenga sola: identificado el
         bloque una vez, queda anotado y la proxima no adivina."""
         cfg = bitacora._config()
-        texto = cfg["instruccion"].format(archivo="/x/CLAUDE.md",
+        texto = cfg["instruccion"].format(revisado="REVISADO", archivo="/x/CLAUDE.md",
                                           pendientes="/x/pendientes.md")
         self.assertIn("DEJA LA CITA ESCRITA", texto)
 
@@ -1821,3 +1821,189 @@ class Respaldo(Base):
              mock.patch.object(sys, "argv", ["bitacora.py", "respaldar", str(proy)]):
             self.assertEqual(bitacora.main(), 0)
         f.assert_called_once()
+
+
+class PendientesRevisadoAProposito(Base):
+    """Un pendientes.md revisado y dejado igual cuenta como atendido.
+
+    Medido el 21 sep, el 27 y el 28 sep y el 6 oct 2026 (leanergy, sesion
+    240b47fc): la sesion escribio y confirmo su bitacora, dejo pendientes.md
+    intacto con razon (el trabajo era de otro proyecto) y el cierre la siguio
+    pidiendo. Sin una senal de "lo revise", un archivo quieto se lee siempre
+    como "sin atender" y la alarma suena con el trabajo hecho.
+    """
+
+    def preparar(self):
+        proy = self.proyecto("devops")
+        (proy / "pendientes.md").write_text("# Pendientes\n\n- [ ] algo\n",
+                                            encoding="utf-8")
+        self.fechar(proy / "pendientes.md", 600)
+        self.fechar(proy / "CLAUDE.md", 600)
+        return self.base_de("s1", proy), proy
+
+    def trabajar(self, proy, veces=6):
+        for i in range(veces):
+            (proy / "notas.md").write_text(f"trabajo {i}\n", encoding="utf-8")
+            self.marcar_con(self.pago("s1", proy, "Write",
+                                      archivo=proy / "notas.md"))
+
+    def bitacora_escrita(self, proy):
+        (proy / "CLAUDE.md").write_text("# devops\n\nentrada\n", encoding="utf-8")
+        self.marcar_con(self.pago("s1", proy, "Edit", archivo=proy / "CLAUDE.md"))
+
+    def revisar(self, proy):
+        """Como pasa de verdad: el comando corre y despues llega su PostToolUse."""
+        # Entre la llamada anterior y esta pasan segundos; el reloj de archivos
+        # es grueso y sin esto las dos marcas pueden caer en el mismo tick.
+        for marca in bitacora._dir_marcas().glob("*.trabajo"):
+            self.fechar(marca, 2)
+        self.assertEqual(bitacora.revisado([str(proy)]), 0)
+        self.marcar_con(self.pago("s1", proy, "Bash",
+                                  comando=f"python3 bitacora.py revisado {proy}"))
+
+    def test_sin_revisar_la_alarma_sigue_encendida(self):
+        base, proy = self.preparar()
+        self.trabajar(proy)
+        self.bitacora_escrita(proy)
+        self.assertTrue(bitacora._hay_pendiente(base, proy, 6))
+
+    def test_revisado_apaga_la_alarma(self):
+        base, proy = self.preparar()
+        self.trabajar(proy)
+        self.bitacora_escrita(proy)
+        self.revisar(proy)
+        self.assertFalse(bitacora._hay_pendiente(base, proy, 6))
+
+    def test_revisado_deja_el_archivo_intacto(self):
+        _, proy = self.preparar()
+        antes = (proy / "pendientes.md").stat()
+        bitacora.revisado([str(proy)])
+        despues = (proy / "pendientes.md").stat()
+        self.assertEqual(antes.st_mtime, despues.st_mtime)
+
+    def test_el_trabajo_posterior_vuelve_a_encender_la_alarma(self):
+        base, proy = self.preparar()
+        self.trabajar(proy)
+        self.bitacora_escrita(proy)
+        self.revisar(proy)
+        self.trabajar(proy)
+        self.assertTrue(bitacora._hay_pendiente(base, proy, 6))
+
+    def test_revisar_antes_que_la_bitacora_tambien_sirve(self):
+        base, proy = self.preparar()
+        self.trabajar(proy)
+        self.revisar(proy)
+        self.bitacora_escrita(proy)
+        self.assertFalse(bitacora._hay_pendiente(base, proy, 6))
+
+    def test_revisado_no_suple_al_claude_md(self):
+        base, proy = self.preparar()
+        self.trabajar(proy)
+        self.revisar(proy)
+        self.assertTrue(bitacora._hay_pendiente(base, proy, 6))
+
+    def test_revisado_desde_un_worktree_cuenta_para_el_principal(self):
+        proy = self.repo("devops")
+        (proy / "pendientes.md").write_text("# P\n", encoding="utf-8")
+        self.fechar(proy / "pendientes.md", 600)
+        arbol = self.worktree(proy)
+        base = self.base_de("s1", proy)
+        self.trabajar(proy)
+        self.bitacora_escrita(proy)
+        bitacora.revisado([str(arbol)])
+        self.assertFalse(bitacora._hay_pendiente(base, proy, 6))
+
+    def test_revisado_fuera_de_la_raiz_no_hace_nada(self):
+        fuera = self.casa / "otro"
+        fuera.mkdir()
+        (fuera / "CLAUDE.md").write_text("x", encoding="utf-8")
+        self.assertEqual(bitacora.revisado([str(fuera)]), 0)
+        self.assertEqual(list(bitacora._dir_marcas().glob("*revisado*"))
+                         if bitacora._dir_marcas().is_dir() else [], [])
+
+    def test_la_instruccion_de_fabrica_ensena_el_comando(self):
+        proy = self.proyecto("devops")
+        texto = bitacora._instruccion(bitacora._config(), proy)
+        self.assertIn("revisado", texto)
+        self.assertIn(str(proy), texto)
+
+    def test_una_instruccion_propia_sin_el_comando_sigue_funcionando(self):
+        proy = self.proyecto("devops")
+        cfg = dict(bitacora._config(), instruccion="bitacora en {archivo}")
+        self.assertEqual(bitacora._instruccion(cfg, proy),
+                         f"bitacora en {proy / 'CLAUDE.md'}")
+
+    def test_el_aviso_nombra_al_pendientes_md_cuando_es_el_que_falta(self):
+        _, proy = self.preparar()
+        self.trabajar(proy)
+        self.bitacora_escrita(proy)
+        self.trabajar(proy)
+        (proy / "CLAUDE.md").write_text("# devops\n\notra\n", encoding="utf-8")
+        _, salida = self.verificar_con({"session_id": "s1", "cwd": str(proy)})
+        razon = json.loads(salida)["reason"]
+        self.assertIn("pendientes.md", razon.split("\n\n")[0])
+        self.assertIn("revisado", razon.split("\n\n")[0])
+
+
+class CierreHecho(Base):
+    """Un escritor que termino bien no deja la sesion por muerta.
+
+    Medido el 6 oct 2026 en leanergy, sesion ead758bc: cerro con el boton,
+    el escritor salio con rc=0 a los 18 s y confirmo la entrada (aeb74d4),
+    pero dejo pendientes.md igual con razon. pendiente() la dio por muerta
+    sin registrar en la sesion siguiente.
+    """
+
+    def preparar(self, rc=0):
+        proy = self.proyecto("devops")
+        (proy / "pendientes.md").write_text("# P\n", encoding="utf-8")
+        base = self.base_de("s1", proy)
+        bitacora._dir_marcas().mkdir(parents=True, exist_ok=True)
+        Path(str(base) + ".conteo").write_text("9", encoding="utf-8")
+        Path(str(base) + ".trabajo").write_text("", encoding="utf-8")
+        self.fechar(Path(str(base) + ".trabajo"), 300)
+        self.fechar(proy / "pendientes.md", 600)
+        self.fechar(proy / "CLAUDE.md", 600)
+
+        class ProcesoFalso:
+            returncode = rc
+
+            def communicate(self, entrada=None, timeout=None):
+                return b"", b""
+
+        with mock.patch.object(bitacora.subprocess, "Popen",
+                               lambda *a, **k: ProcesoFalso()):
+            bitacora.escribir(["s1", str(proy)])
+        return base, proy
+
+    def huerfanas(self, proy):
+        _, salida = self.pendiente_con({"session_id": "s2", "cwd": str(proy)})
+        return salida
+
+    def test_rc_cero_deja_la_marca_y_calla_el_aviso(self):
+        base, proy = self.preparar(rc=0)
+        self.assertTrue(Path(str(base) + ".cierre-hecho").exists())
+        self.assertNotIn("s1", self.huerfanas(proy))
+
+    def test_rc_distinto_de_cero_sigue_avisando(self):
+        base, proy = self.preparar(rc=1)
+        self.assertFalse(Path(str(base) + ".cierre-hecho").exists())
+        self.assertIn("s1", self.huerfanas(proy))
+
+    def test_trabajo_posterior_al_cierre_vuelve_a_avisar(self):
+        base, proy = self.preparar(rc=0)
+        self.fechar(Path(str(base) + ".cierre-hecho"), 200)
+        self.fechar(Path(str(base) + ".trabajo"), 100)
+        self.assertIn("s1", self.huerfanas(proy))
+
+    def test_cerrar_por_proyecto_no_relanza_un_cierre_ya_hecho(self):
+        base, proy = self.preparar(rc=0)
+        lanzado = {"si": False}
+
+        def lanzar(*a, **k):
+            lanzado["si"] = True
+
+        with mock.patch.object(bitacora, "_lanzar_escritura", lanzar), \
+             mock.patch.object(bitacora, "_lanzar_respaldo", lambda p: None):
+            bitacora.cerrar(["--proyecto", str(proy)])
+        self.assertFalse(lanzado["si"])

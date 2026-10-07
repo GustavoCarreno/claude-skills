@@ -86,6 +86,7 @@ INSTRUCCION_POR_DEFECTO ="""Escribe la bitacora de la sesion en {archivo}, sin q
 4. Si algo de esta sesion cambia el pipeline, el estado del proyecto o los proximos pasos, actualiza tambien esa parte.
 5. Atiende tambien {pendientes}, la lista de pendientes del proyecto:
    - Si ese archivo YA EXISTE: palomea las tareas que esta sesion hizo y verifico, y tambien las del usuario de las que en la sesion quedo constancia de que ya se hicieron (te lo dijo con todas sus letras, o lo comprobaste por tu cuenta). ANTE LA DUDA NO PALOMEES: anota en la nota de la tarea lo que se supo y dejasela a el. Al palomear agrega " ✓ AAAA-MM-DD HH:MM" con hora local al final del texto de la tarea, y si fue por constancia di en la nota de donde salio. Agrega las tareas nuevas que salieron de esta sesion, en la seccion que corresponda segun quien deba mover, con sus indicadores. NO descartes, NO reordenes, y NUNCA borres un renglon [x] ni [-]: son un registro que el usuario creo con el dedo. Conserva el fin de linea y la marca de orden de bytes que el archivo ya traiga.
+   - Si lo revisaste y queda igual porque esta sesion no movio nada de el, corre {revisado} para dejar constancia. Sin eso, un archivo quieto se lee como sin atender y el cierre lo sigue pidiendo.
    - Si NO EXISTE: crealo solo si de esta sesion salio trabajo abierto de verdad, con el formato de la convencion. Si el proyecto quedo quieto, no crees nada y no lo menciones.
 6. Atiende tambien el calendario, porque es la otra mitad de la convencion: el calendario dice CUANDO y pendientes.md dice SI YA SE HIZO. Toca unicamente los bloques que esta sesion movio de verdad. Cual es suele estar citado en CLAUDE.md o en la nota del pendiente.
    - COMO ENCUENTRAS EL BLOQUE, en este orden: primero la cita en la nota del pendiente o en CLAUDE.md; si no hay cita, buscalo con search_events por el nombre del pendiente o del proyecto. ACTUA SOLO SI HAY UNA COINCIDENCIA CLARA. Con dos plausibles o con ninguna, no toques nada y dilo en una linea: equivocarse de bloque es peor que no hacer nada.
@@ -410,6 +411,35 @@ def _mtime_reciente(nombre, arboles):
     return max(fechas) if fechas else None
 
 
+def _marca_revisado(proy, raiz):
+    """Marca de PROYECTO: pendientes.md se reviso y se dejo igual a proposito.
+
+    Nace del 6 oct 2026 en leanergy, y antes del 21, 27 y 28 sep: una sesion
+    cuyo trabajo era de otro proyecto escribia y confirmaba su bitacora, dejaba
+    pendientes.md intacto con razon, y el cierre la seguia pidiendo, porque un
+    archivo quieto se leia siempre como "sin atender". La marca la deja el
+    subcomando revisado, y cuenta como si pendientes.md se hubiera escrito a
+    esa hora. Es por proyecto y no por sesion porque lo revisado es el archivo.
+    """
+    return _dir_marcas() / f"pendientes-revisado__{_slug(proy, raiz)}"
+
+
+def _pendientes_atendido(proy, arboles):
+    """La hora mas nueva en que pendientes.md se escribio o se dio por revisado.
+
+    None si el archivo no existe: donde no hay lista no hay nada que atender,
+    y una marca de revisado sola no la inventa.
+    """
+    escrito = _mtime_reciente("pendientes.md", arboles)
+    if escrito is None:
+        return None
+    try:
+        revisado = _mtime(_marca_revisado(proy, _config()["raiz"]))
+    except (ValueError, OSError):
+        revisado = None
+    return max(escrito, revisado) if revisado is not None else escrito
+
+
 def _sin_atender(proy, trabajo):
     """Los archivos del cierre que quedaron mas viejos que el trabajo.
 
@@ -425,8 +455,21 @@ def _sin_atender(proy, trabajo):
     escrito = _mtime_reciente("CLAUDE.md", arboles)
     if escrito is None or trabajo > escrito:
         return True
-    pendientes = _mtime_reciente("pendientes.md", arboles)
+    pendientes = _pendientes_atendido(proy, arboles)
     return pendientes is not None and trabajo > pendientes
+
+
+def _que_falta(proy, trabajo):
+    """Cual de los dos archivos del cierre quedo mas viejo que el trabajo."""
+    arboles = _checkouts(proy)
+    falta = []
+    escrito = _mtime_reciente("CLAUDE.md", arboles)
+    if escrito is None or trabajo > escrito:
+        falta.append("CLAUDE.md")
+    pendientes = _pendientes_atendido(proy, arboles)
+    if pendientes is not None and trabajo > pendientes:
+        falta.append("pendientes.md")
+    return falta
 
 
 def _acaba_de_atender(proy, trabajo):
@@ -437,8 +480,8 @@ def _acaba_de_atender(proy, trabajo):
     ni por Edit y quedaria contada al reves.
     """
     arboles = _checkouts(proy)
-    for nombre in ("CLAUDE.md", "pendientes.md"):
-        cuando = _mtime_reciente(nombre, arboles)
+    for cuando in (_mtime_reciente("CLAUDE.md", arboles),
+                   _pendientes_atendido(proy, arboles)):
         if cuando is not None and cuando > trabajo:
             return True
     return False
@@ -466,7 +509,27 @@ def _hay_pendiente(base, proy, umbral):
     trabajo = _mtime(Path(str(base) + ".trabajo"))
     if trabajo is None:
         return False
+    # Un escritor de cierre que termino con rc=0 despues del ultimo trabajo ya
+    # registro esta sesion, aunque haya dejado pendientes.md igual con razon.
+    # Sin esto pendiente() la daba por muerta sin registrar en la sesion
+    # siguiente. Medido el 6 oct 2026 en leanergy, sesion ead758bc.
+    hecho = _mtime(Path(str(base) + ".cierre-hecho"))
+    if hecho is not None and hecho >= trabajo:
+        return False
     return _sin_atender(proy, trabajo)
+
+
+def _comando_revisado(proy):
+    return f'"{sys.executable}" "{Path(__file__).resolve()}" revisado "{proy}"'
+
+
+def _instruccion(cfg, proy):
+    """La instruccion del cierre ya llenada. Una plantilla propia en
+    bitacora.json puede omitir {revisado}: format ignora lo que sobra."""
+    return cfg["instruccion"].format(
+        archivo=proy / "CLAUDE.md", pendientes=proy / "pendientes.md",
+        revisado=_comando_revisado(proy),
+    )
 
 
 def _payload():
@@ -610,13 +673,23 @@ def verificar():
     # bloqueo queda mudo el resto de la sesion aunque el usuario corrija su
     # plantilla, que es el mismo modo de fallar en silencio que este
     # mecanismo entero intenta evitar.
-    razon = (
-        "Antes de cerrar la sesion: esta sesion tuvo trabajo real y todavia no se "
-        f"escribe su bitacora en {proy / 'CLAUDE.md'}.\n\n"
-        + cfg["instruccion"].format(
-            archivo=proy / "CLAUDE.md", pendientes=proy / "pendientes.md"
+    falta = _que_falta(proy, _mtime(Path(str(base) + ".trabajo")) or 0)
+    if falta == ["pendientes.md"]:
+        # La bitacora ya esta. Decir "todavia no se escribe" aqui hacia que la
+        # sesion la reescribiera para callar el aviso, sin tocar lo que de
+        # verdad faltaba.
+        encabezado = (
+            "Antes de cerrar la sesion: la bitacora en CLAUDE.md ya esta, pero "
+            f"{proy / 'pendientes.md'} quedo sin revisar despues del trabajo. "
+            "Atiendelo con el punto 5. Si lo revisaste y queda igual, corre "
+            f"{_comando_revisado(proy)} para dejar constancia."
         )
-    )
+    else:
+        encabezado = (
+            "Antes de cerrar la sesion: esta sesion tuvo trabajo real y todavia "
+            f"no se escribe su bitacora en {proy / 'CLAUDE.md'}."
+        )
+    razon = encabezado + "\n\n" + _instruccion(cfg, proy)
     _dir_marcas().mkdir(parents=True, exist_ok=True)
     recordatorios.write_text(str(_leer_entero(recordatorios) + 1), encoding="utf-8")
     print(json.dumps({"decision": "block", "reason": razon}))
@@ -756,9 +829,7 @@ def escribir(argv):
             return 0
 
         try:
-            instruccion = cfg["instruccion"].format(
-                archivo=proy / "CLAUDE.md", pendientes=proy / "pendientes.md"
-            )
+            instruccion = _instruccion(cfg, proy)
         except Exception as error:
             # Separado del try de abajo a proposito: si esto revienta, el
             # proceso nunca llega a abrir Claude Code, asi que el registro
@@ -790,6 +861,8 @@ def escribir(argv):
                 f"cierre terminado  rc={proceso.returncode}  sid={sid}  "
                 f"transcripcion={transcripcion}"
             )
+            if proceso.returncode == 0:
+                _tocar(Path(str(_base(sid, proy, cfg["raiz"])) + ".cierre-hecho"))
         except subprocess.TimeoutExpired:
             # communicate NO mata el proceso al vencer el plazo, solo deja de
             # esperarlo. Sin este kill queda una sesion de Claude Code colgada.
@@ -1174,9 +1247,7 @@ def pendiente():
                 "hookEventName": "SessionStart", "additionalContext": aviso_respaldo}}))
         return 0
 
-    instruccion = cfg["instruccion"].format(
-        archivo=proy / "CLAUDE.md", pendientes=proy / "pendientes.md"
-    )
+    instruccion = _instruccion(cfg, proy)
     aviso = (
         "AVISO DE BITACORA PENDIENTE.\n\n"
         f"{len(huerfanas)} sesion(es) anterior(es) de este proyecto terminaron "
@@ -1206,6 +1277,23 @@ def pendiente():
     return 0
 
 
+def revisado(argv):
+    """La sesion reviso pendientes.md y lo dejo igual a proposito.
+
+    Uso:  bitacora.py revisado <ruta-proyecto>
+    Lo corre la sesion, o el escritor del cierre, por indicacion del punto 5.
+    """
+    if not argv:
+        return 0
+    cfg = _config()
+    proy = _resolver(argv[0])
+    if not _proyecto_valido(proy, cfg["raiz"]):
+        return 0
+    _tocar(_marca_revisado(proy, cfg["raiz"]))
+    print(f"pendientes.md de {_slug(proy, cfg['raiz'])} quedo como revisado")
+    return 0
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
@@ -1223,6 +1311,8 @@ def main():
         return escribir(resto)
     if orden == "respaldar":
         return respaldar(resto)
+    if orden == "revisado":
+        return revisado(resto)
     print(f"orden no reconocida: {orden}", file=sys.stderr)
     return 1
 
