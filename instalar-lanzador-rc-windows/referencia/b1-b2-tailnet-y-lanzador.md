@@ -123,7 +123,7 @@ python -m pytest -q        # deben pasar todas, sin una sola falla
 python app.py              # debe quedarse escuchando; Ctrl+C para salir
 ```
 
-Al 5 de octubre de 2026 son 1188 pruebas, y pasan igual en Linux y en Windows. **El número crece con cada versión, así que no lo
+Al 6 de octubre de 2026 son 1242 pruebas en Linux; en Windows se midieron 1239 ese mismo día, con la versión anterior a la tarjeta Hoy. **El número crece con cada versión, así que no lo
 trates como contraseña**: lo que importa es que no falle ninguna.
 
 > ⚠️ **Si fallan por rutas demasiado largas, no es defecto del lanzador.** Windows corta en
@@ -176,7 +176,7 @@ python -m pytest -q                            # todas en verde ANTES de reinici
 > Python del sistema, así que ahí `.venv` solo aparece si alguien lo creó a mano.)
 
 > 📌 **Lo que una máquina ya instalada recibe con solo este paso**, sin configuración, porque
-> es código del lanzador. Al 5 de octubre de 2026:
+> es código del lanzador. Al 6 de octubre de 2026:
 >
 > | Mejora | Qué cambia para el cliente |
 > |---|---|
@@ -188,6 +188,11 @@ python -m pytest -q                            # todas en verde ANTES de reinici
 > | Los avisos le hablan al cliente por su nombre | Antes decían "Gustavo", escrito fijo. Ahora sale de `usuario.json`, que hay que escribir una vez (ver arriba, en B2). Y en Windows el aviso de arranque ya llega aunque la consola esté en cp1252 |
 > | La escucha con permisos cerrados, y en Windows también | La sesión de escucha deja de correr con todos los permisos (ver B9), y en Windows ya existe: antes el cuadro Escuchar aparecía y no arrancaba |
 > | La transcripción en Windows | Antes fallaba siempre con «Python was not found», también la de los recados dictados del teléfono. Desde el 5 de octubre de 2026 transcribe |
+> | El proyecto principal | Uno de sus proyectos, escogido con un clic en el menú (Hacer principal), va hasta arriba del mosaico. Ver B10a |
+> | La tarjeta Hoy | Junto al principal: las facturas por emitir, las tres primeras de *Hacer ya* y el estado de GES. Se enciende sola. Ver B10b |
+> | Las esperas en el principal | Las tres esperas más viejas de todos los proyectos, debajo del principal. Ver B10b |
+> | Las facturas por emitir | En rojo arriba de todo, con el botón Ya la emití. **Pide las claves `factura` y `última factura` en cada contrato mensual**, y la regla 12 de A7c en el `CLAUDE.md` global |
+> | El repaso diario de GES | **Queda apagado hasta escribir `barrido.json`**, que es el único paso de configuración de esta lista. Ver B10c |
 >
 > **Las sesiones que ya estaban abiertas conservan el aviso de arranque viejo.** El nuevo sale
 > en la siguiente que se abra.

@@ -12,11 +12,11 @@
 
 ## 7. Verificación, en orden
 
-> **Cómo se reparte por fases:** los renglones 1, 2, 3, 9, 9b, 10, 11, 11b y 12 cierran la **fase A**
+> **Cómo se reparte por fases:** los renglones 1, 2, 3, 9, 9b, 10, 11, 11b, 12 y 26 cierran la **fase A**
 > (gitignore, la convención de pendientes, el servicio local, la bitácora, el runtime de
-> documentos, los conectores, Composio y la cuenta de DeepInfra); del 4 al 8, más el 13, el 14, el 15, el 16 y el 17,
-> cierran la **fase B**, y necesitan el teléfono. Si solo se contrató la fase A, la verificación
-> termina en el 12 y eso es una entrega completa.
+> documentos, los conectores, Composio y la cuenta de DeepInfra); del 4 al 8, más el 13 al 17 y del 27 al 29,
+> cierran la **fase B**, y necesitan el teléfono. Si solo se contrató la fase A, se
+> recorren solo sus renglones, y eso es una entrega completa.
 
 
 | # | Qué | Cómo | Esperado |
@@ -48,6 +48,10 @@
 | 23 | Los contactos de la sesión (A3b) | cerrar una sesión con trabajo donde se haya mencionado a alguien con su correo, y esperar a la bitácora | `dir <proyecto>\salida\contactos-*.vcf` existe y trae a esa persona |
 | 24 | La pantalla de contratos (A7c) | abrir `/contratos` en la URL de la tailnet | carga, aunque ningún proyecto tenga todavía su `contratos.md` |
 | 25 | El respaldo en GitHub (A9) | `gh repo list --visibility private --limit 100`, y un archivo de prueba que aparezca en GitHub tras cerrar una sesión | un repositorio privado por proyecto, y el archivo arriba |
+| 26 | El comando revisado de la bitácora (A3c) | `python "$env:USERPROFILE\.claude\hooks\bitacora.py" revisado "$env:USERPROFILE\claude\<proyecto>"` | `pendientes.md de <proyecto> quedo como revisado` |
+| 27 | El proyecto principal y la tarjeta Hoy (B10a y B10b) | desde el teléfono, Hacer principal en el menú de un proyecto | ese proyecto sube hasta arriba, a todo lo ancho, con la tarjeta Hoy a su lado |
+| 28 | El repaso de GES (opcional, B10c) | con `barrido.json` escrito, abrir la raíz del lanzador | el renglón dice que corre, y al terminar cambia a `GES hace … · todo en orden hoy` o con sus cosas nuevas |
+| 29 | La factura por emitir (B10d) | el contrato de prueba de B10d | sale en rojo en la tarjeta Hoy, y Ya la emití lo quita y escribe `última factura` en la ficha |
 
 > 📌 **Cómo se comprueba el renglón 21, con un proyecto de prueba.** En un proyecto
 > desechable (`prueba-urgentes`), un `pendientes.md` con una sola tarea:

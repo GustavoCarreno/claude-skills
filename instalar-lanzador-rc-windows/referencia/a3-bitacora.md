@@ -8,6 +8,7 @@
 
 - A3. La bitácora automática
   - A3b. Los contactos que salen de cada sesión
+  - A3c. Cuando pendientes.md se revisa y se deja igual
 
 <!-- fin del encabezado agregado al partir -->
 
@@ -42,7 +43,7 @@ Invoke-WebRequest -UseBasicParsing `
 modo de fallar silencioso que este mecanismo no puede tener:
 
 ```powershell
-(Get-Item "$hooks\bitacora.py").Length   # debe rondar los 54 KB, no 0
+(Get-Item "$hooks\bitacora.py").Length   # debe rondar los 58 KB (57.7 KB el 6 oct 2026), no 0
 '' | python "$hooks\bitacora.py" pendiente
 "código de salida: $LASTEXITCODE"
 ```
@@ -68,6 +69,15 @@ Configuración en `%USERPROFILE%\.claude\bitacora.json`:
   De fábrica trae las de archivo más las de Google Calendar. **Se toca solo para un cliente
   en Microsoft 365**, agregando las suyas. Una lista mal escrita se ignora con aviso, en vez
   de dejar al mecanismo sin herramientas.
+
+> ⚠️ **Un `instruccion` propio se queda sin el comando de A3c hasta que se le agregue.** El texto
+> de fábrica trae en su punto de pendientes el comando `revisado` ya armado, con la ruta del
+> Python y del proyecto. Un texto reescrito para el cliente lo pierde, y el cierre vuelve a
+> pedir la bitácora cada vez que la sesión revisa `pendientes.md` y lo deja igual. **Se arregla
+> agregando `{revisado}` dentro del punto de pendientes**, en un renglón como este:
+> *"Si lo revisaste y queda igual porque esta sesión movió cero de él, corre {revisado} para
+> dejar constancia."* El mecanismo lo sustituye por el comando al escribir la instrucción, y
+> un texto que lo omite sigue funcionando, con la alarma de antes.
 
 > 📌 **Cómo se averiguan los nombres si el cliente está en Microsoft 365, sin adivinarlos.**
 > Los nombres reales dependen de cómo se llame su conector, así que se leen de su propia
@@ -133,3 +143,38 @@ Comprobar que el `bitacora.py` instalado ya lo trae (una copia vieja da `0`):
 @(Select-String -Path "$env:USERPROFILE\.claude\hooks\bitacora.py" -Pattern "contactos-").Count
 ```
 
+### A3c. Cuando `pendientes.md` se revisa y se deja igual
+
+Al cerrar, el mecanismo pide dos cosas escritas: el `CLAUDE.md` y el `pendientes.md`. Hasta
+el 6 de octubre de 2026, **un `pendientes.md` revisado y dejado igual a propósito se leía como
+sin atender**, y eso producía dos avisos falsos: el cierre pedía la bitácora ya escrita, y la
+sesión siguiente avisaba de "sesiones que murieron sin registrar" que sí habían registrado.
+
+Desde esa fecha `bitacora.py` trae tres cosas, y llegan solas al bajar el archivo de A3:
+
+- **El comando `revisado`**, que deja constancia de que el archivo se revisó y queda igual
+  con razón. Lo corre la sesión cuando lo necesita, porque la instrucción de fábrica se lo
+  pide en su punto de pendientes, con la ruta del Python y del proyecto ya armadas.
+- **Una marca de cierre terminado**, que el aviso de arranque respeta mientras haya cero
+  trabajo posterior.
+- **El aviso de cierre dice cuál de los dos archivos falta.**
+
+**Comprobarlo**, con un proyecto cualquiera de la raíz:
+
+```powershell
+python "$env:USERPROFILE\.claude\hooks\bitacora.py" revisado "$env:USERPROFILE\claude\<proyecto>"
+```
+
+Esperado: `pendientes.md de <proyecto> quedo como revisado`. **Si termina sin imprimir
+algo**, la ruta queda fuera de `raiz_proyectos` o el `bitacora.py` instalado es anterior al 6
+de octubre de 2026.
+
+> 📌 **En una máquina ya instalada basta volver a bajar `bitacora.py`** con el
+> `Invoke-WebRequest` de A3. Cada máquina se queda con la versión del día en que se instaló,
+> así que este paso es el que le lleva la corrección. Los ganchos y `bitacora.json` se quedan
+> como estaban.
+
+> ⚠️ **Sin medir en Windows todavía:** que el comando que la instrucción arma, con la ruta de
+> `python.exe` entre comillas y contrabarras, corra tal cual desde la terminal de Claude Code.
+> Al instalar, abrir una sesión, pedirle que corra el comando de su punto de pendientes, y ver
+> el renglón de arriba.

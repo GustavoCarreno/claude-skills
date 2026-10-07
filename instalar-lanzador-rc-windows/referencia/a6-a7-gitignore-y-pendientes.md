@@ -366,9 +366,9 @@ cobro: 55000 MXN al mes · del 2026-08-14 al 2027-08-13
 
 1. **Un contrato empieza con `## Título`.** Sus datos son los renglones `clave: valor` hasta el
    primer renglón en blanco; lo que sigue es relato.
-2. **Ocho claves:** `cliente` y `etapa` siempre; `probabilidad` (0 a 100) en las etapas
+2. **Diez claves:** `cliente` y `etapa` siempre; `probabilidad` (0 a 100) en las etapas
    abiertas; `cobro` una o varias veces; y opcionales `contacto`, `último contacto`, `aviso`
-   (días) y `sobre`.
+   (días), `sobre`, `factura` y `última factura`.
 3. **Seis etapas, vocabulario cerrado:** `prospecto · propuesta · negociación · firmado ·
    pausado · perdido`. **Terminado se calcula** a partir de las fechas y nunca se escribe.
 4. **`cobro` tiene cuatro formas:** `<monto> <MXN|USD> al mes · del A al B`,
@@ -386,9 +386,45 @@ cobro: 55000 MXN al mes · del 2026-08-14 al 2027-08-13
     `contratos.md`.
 11. **Antes de confirmar un `contratos.md` en git, compruebo que el repositorio sea privado**,
     porque lleva montos de clientes.
+12. **`factura` dice cuándo se emite cada mensualidad**, con una de dos formas: `día N del
+    mes` (del 1 al 31) o `primer <día de la semana> del mes`, como `primer lunes del mes`. **`última
+    factura` es la fecha AAAA-MM-DD de la más reciente emitida.** Con las dos, el lanzador pinta en
+    rojo, arriba de todo, la factura que toca o ya venció. Al emitir una en sesión, actualizo
+    `última factura`; el botón Ya la emití del lanzador también la escribe, y es la única clave
+    que el lanzador escribe en este archivo.
 '@ | Add-Content -Path $claudeMd -Encoding utf8
 }
 ```
+
+**Las facturas por emitir, en una máquina que ya tenía esta sección.** El bloque de arriba se
+salta entero cuando la sección ya existe, así que la regla 12 llega aparte, con su propia
+guarda:
+
+```powershell
+$claudeMd = "$env:USERPROFILE\.claude\CLAUDE.md"
+if (-not (Select-String -Path $claudeMd -Pattern 'ltima factura' -Quiet)) {
+@'
+12. **`factura` dice cuándo se emite cada mensualidad**, con una de dos formas: `día N del
+    mes` (del 1 al 31) o `primer <día de la semana> del mes`, como `primer lunes del mes`. **`última
+    factura` es la fecha AAAA-MM-DD de la más reciente emitida.** Con las dos, el lanzador pinta en
+    rojo, arriba de todo, la factura que toca o ya venció. Al emitir una en sesión, actualizo
+    `última factura`; el botón Ya la emití del lanzador también la escribe, y es la única clave
+    que el lanzador escribe en este archivo.
+'@ | Add-Content -Path $claudeMd -Encoding utf8
+}
+```
+
+**Al armar las fichas del cliente, cada contrato mensual lleva sus dos claves**, porque sin
+`factura` el lanzador carece de fecha contra la cual avisar:
+
+```markdown
+cobro: 55000 MXN al mes · del 2026-08-14 al 2027-08-13
+factura: día 1 del mes
+última factura: 2026-10-01
+```
+
+> 📌 **De dónde sale:** el 5 de octubre de 2026 una mensualidad se pasó sin facturar, y la
+> pantalla lo pasó por alto. El renglón rojo y el botón viven en la tarjeta Hoy (B10b).
 
 **La configuración de la pantalla**, en un archivo aparte. Si falta, la pantalla usa los
 valores de fábrica (pesos, 90 días de aviso, 12 meses a la vista, 30 días sin contacto y la

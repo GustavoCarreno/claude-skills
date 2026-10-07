@@ -58,6 +58,10 @@ está verificado más recientemente.
 | **Dejar dicho qué resultó, sin abrir sesión** (requiere la fase B) | Desde el teléfono, en cada pendiente hay un botón para dictar cómo quedó, y una sección aparte para los recados sueltos del proyecto, los que valen por sí mismos. Se dicta con el teclado del teléfono, así que cuesta cero llamadas al modelo, y la siguiente sesión se entera sola de que hay algo sin leer. **La lista se queda donde estaba al guardar**, para poder recorrerla de corrido |
 | **Las transcripciones de sus grabaciones llegan solas** (opcional, requiere la fase B) | Al abrir una sesión desde el teléfono, el asistente revisa la carpeta de Drive donde caen las transcripciones, le dice en un renglón cuáles son de ese proyecto y pregunta si las procesa. Con un sí, quedan guardadas en el proyecto y lo que salga de ellas llega a sus pendientes |
 | **La sesión le ofrece el bloque de su agenda** (opcional, requiere la fase B) | Si reservó en el calendario un bloque para ese proyecto y está en curso o empieza en media hora, la sesión se lo resume en dos renglones al abrir y pregunta si lo atienden. Pasa igual si abre la sesión desde el teléfono o en la computadora |
+| **Su proyecto principal, hasta arriba** (requiere la fase B) | Escoge con un clic el proyecto que agrupa a los demás. Va arriba del mosaico, y debajo trae las tres esperas más viejas de todos sus proyectos |
+| **Lo de hoy, en una tarjeta** (requiere la fase B) | Junto al principal, la tarjeta Hoy junta las facturas que toca emitir, las tres tareas más urgentes y el estado del repaso del día |
+| **Las facturas que toca emitir, en rojo** (requiere la fase B) | Cada contrato mensual dice qué día se factura. Cuando llega el día, sale en rojo arriba de todo, y un botón la da por emitida |
+| **Un repaso diario de sus promesas** (opcional, requiere la fase B) | La primera vez que abre el lanzador en el día, un repaso busca lo que prometió con fecha y quedó sin tarea, y lo anota en sus pendientes. Un botón lo vuelve a correr cuando quiera |
 
 ## Antes de empezar
 
@@ -146,6 +150,7 @@ la primera sesión justamente para no descubrirlo aquí.
 | B7 | [`referencia/b7-transcripciones-de-drive.md`](referencia/b7-transcripciones-de-drive.md) | Las transcripciones que llegan a Drive (opcional) |
 | B8 | [`referencia/b8-calendario-al-arrancar.md`](referencia/b8-calendario-al-arrancar.md) | El bloque de calendario al arrancar (opcional) |
 | B9 | [`referencia/b9-escucha-en-vivo.md`](referencia/b9-escucha-en-vivo.md) | La escucha en vivo durante una junta (opcional) |
+| B10 | [`referencia/b10-principal-hoy-y-ges.md`](referencia/b10-principal-hoy-y-ges.md) | El proyecto principal, la tarjeta Hoy y el repaso diario de GES |
 
 ---
 
@@ -209,6 +214,11 @@ Decirlo antes de instalarla en casa de un cliente:
 | Hay transcripciones en Drive y la sesión arranca sin mencionarlas | La sesión se abrió a mano y falta el gancho de B8b, falta `transcripciones.json`, o la copia del lanzador es anterior al 22 de septiembre de 2026. Ver B7 |
 | Hay un bloque en curso y la sesión arranca sin ofrecerlo | A la sesión le falta una vía al calendario (ver B8a), falta `calendario.json`, el título del evento no empieza con el nombre de la carpeta seguido de `·`, el evento es de día completo, o la copia del lanzador es anterior al 25 de septiembre de 2026. Ver B8 |
 | La sesión espera el sí de "Gustavo" | La copia del lanzador trae el nombre fijo en la instrucción. Llevarle una corregida con B2b. Ver B8c |
+| La factura sigue en rojo con la factura ya emitida | Falta `última factura` con la fecha de la emitida. Tocar Ya la emití, o escribirla en la ficha. Ver A7c |
+| Un contrato mensual sin aviso de factura | Le falta la clave `factura`, o trae una forma que el lanzador ignora. Las válidas son `día N del mes` y `primer <día> del mes`. Ver A7c |
+| El renglón de GES falta en la tarjeta Hoy | Falta `barrido.json`. Ver B10c |
+| GES se queda en "todavía sin correr" | Hoy todavía falta la primera apertura de la raíz del lanzador; recargar una pestaña vieja deja quieto el repaso. Tocar Repasar con GES. Ver B10c |
+| La sesión vuelve a pedir la bitácora ya escrita | El `bitacora.py` es anterior al 6 de octubre de 2026, o el `instruccion` propio de `bitacora.json` carece de `{revisado}`. Ver A3c |
 | La sesión abierta con `claude` directo arranca sin aviso, y desde el teléfono sí lo trae | Al gancho le falta el `-X utf8`: su salida llega en cp1252 y Claude Code la descarta en silencio. Ver B8b |
 | El aviso sale dos veces en la sesión del teléfono | La marca `RC_LANZADOR` se pierde entre el supervisor y `claude.exe`. Es inofensivo; reportarlo para arreglarlo en el lanzador. Ver B8c |
 | `Windows is not supported. Use WSL` al instalar Composio | Es lo esperado: en Windows va por el servidor MCP remoto. Ver A5e |
