@@ -38,7 +38,7 @@ Los botones de abajo cambian cómo se usa:
 |---|---|
 | **Atiende lo dicho** | Corta el pedazo en curso y le pide a la sesión atención sobre lo que se acaba de decir. Toda marca lleva tarjeta; medido el 2 de octubre de 2026, la tarjeta llega en una mediana de 9 segundos. Hasta el 11 de octubre de 2026 se llamaba «Atender lo dicho» |
 | **Atiende lo que diré** | **Se mantiene presionado** mientras el cliente le habla al asistente, y al soltar se envía. Mientras se sostiene, la grabación de la junta se pausa y el botón dice «Escuchando… suelta para enviar»; al soltar dice «Atendiendo…» hasta que llega la tarjeta. Lo que se dice ahí es una **orden**: una pregunta o un encargo (ver B9a). La respuesta sale siempre con el rótulo *Solo tú*, aunque la junta comparta tarjetas. Un toque de menos de medio segundo se descarta, y a los 60 segundos se envía solo |
-| **Voz para «Atiende lo que diré»** | Interruptor en la portada y en el menú ⋮, apagado de entrada. Prendido, la respuesta a cada orden **se oye** en el teléfono además de escribirse, y el botón dice «🔊 Atiende lo que diré». Las demás tarjetas siguen en silencio. Medido en Windows el 11 de octubre de 2026: la voz suena de 7 a 18 segundos después de la tarjeta (en Linux, unos 3.5) |
+| **Voz para «Atiende lo que diré»** | Interruptor en la portada y en el menú ⋮, apagado de entrada. Prendido, la respuesta a cada orden **se oye** en el teléfono además de escribirse, y el botón dice «🔊 Atiende lo que diré». Las demás tarjetas siguen en silencio. Medido en Windows el 11 de octubre de 2026: la voz suena de 7 a 18 segundos después de la tarjeta (en Linux, unos 3.5). La voz se salta las comillas y los símbolos: conserva acentos, ñ y los signos de pregunta y admiración, los guiones largos, los paréntesis y el punto medio se vuelven pausa, PO-26-002 se dice «PO 26 002» y % se dice «por ciento» |
 | **Compartir** y **Compartir todo** | Abren el menú de compartir del teléfono con una tarjeta o con todas. Corre en el navegador, sin pasar por el servidor |
 
 Las ligas que traiga una tarjeta (un documento de Drive, una paginita) se pueden tocar.
@@ -216,7 +216,7 @@ apagada. La batería del lanzador pasa completa en Windows (1187 pruebas).
 > un borrador **por el conector de Gmail** en 17 s, y un evento en el calendario principal en
 > 12 s. **Las cinco respuestas se oyeron**, o sea que el proceso de la voz sobrevive en Windows y
 > encuentra la skill de Kokoro en `%USERPROFILE%`. **En Windows la voz tarda más:** de 7 a 18
-> segundos después de la tarjeta, contra 3.5 en Linux. La batería pasa completa (1315 pruebas).
+> segundos después de la tarjeta, contra 3.5 en Linux. La batería pasa completa (1315 pruebas ese día, 1329 con la ficha de la tarde).
 
 > ✅ **El micrófono del teléfono contra Windows, medido por Gustavo el 5 de octubre de 2026.**
 > La primera prueba cazó un defecto: la transcripción llamaba a `python3`, que en Windows es el

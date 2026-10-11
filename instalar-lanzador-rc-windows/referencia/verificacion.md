@@ -55,6 +55,7 @@
 | 30 | Atiende lo que diré, con voz (opcional, B9) | en Escuchar, prender la voz, sostener el botón, preguntar algo del `CLAUDE.md` y soltar | «Atendiendo…», la tarjeta *Solo tú* y la respuesta se oye, de 7 a 18 s después |
 | 31 | Una orden que actúa (opcional, B9) | sostener el botón y pedir un recado al proyecto | aparece en «Dicho del proyecto» de su `pendientes.md` |
 | 32 | Retomar una sesión salta la revisión de arranque | en *Sesiones previas*, retomar una sesión de un proyecto con pendientes urgentes | arranca directo, sin listar urgentes ni revisar agenda |
+| 33 | La ficha de una tarea (B10b) | en un proyecto desechable `prueba-ficha` escogido como principal, con una tarea que venza mañana marcada `importante`: tocarla en la tarjeta Hoy y luego **✓ Hecha** | se abre su ficha, la ventana se cierra sola, la tarea desaparece de Hoy y `%USERPROFILE%\claude\prueba-ficha\pendientes.md` la trae en `[x]` |
 
 > 📌 **Cómo se comprueba el renglón 21, con un proyecto de prueba.** En un proyecto
 > desechable (`prueba-urgentes`), un `pendientes.md` con una sola tarea:

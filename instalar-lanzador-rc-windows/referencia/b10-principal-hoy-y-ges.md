@@ -48,10 +48,26 @@ aparece la tarjeta **Hoy**, también en el teléfono. Trae tres cosas:
 Con las tres en cero dice **Todo al día** y se queda chica.
 
 **Las esperas en la tarjeta del principal.** Debajo del principal salen las tres esperas más
-viejas de todos los proyectos, como **Esperando a alguien · N**. Cada una abre su proyecto en
-esa tarea, y la cuenta lleva a la lista completa de Enfoque. Salen de la sección `## Esperando
+viejas de todos los proyectos, como **Esperando a alguien · N**. Cada una abre su ficha (ver
+abajo), y la cuenta lleva a la lista completa de Enfoque. Salen de la sección `## Esperando
 a alguien` de cada `pendientes.md` (A7), así que en una máquina nueva aparecen en cuanto el
 cliente tenga esperas escritas.
+
+**La ficha de una tarea.** Desde el 11 de octubre de 2026, tocar una tarea en la tarjeta
+del principal, en la tarjeta Hoy o en la sección **Lo que encontró GES hoy** de Enfoque abre
+una ventana con esa tarea sola: su título, sus pastillas, la nota completa, lo dictado, y los
+botones **✓ Hecha**, **✕ Descartar**, **✎ Dejar retro** y **Abrir el proyecto**. Antes abría
+el menú del proyecto con toda su lista, y eso le hacía perder el enfoque a quien solo quería
+cerrar una cosa. Marcar hecha o descartar cierra la ventana sola y la tarea desaparece de la
+tarjeta en el acto. **Abrir el proyecto** lleva al menú con esa tarea a la vista, aunque esté
+dentro de una sección plegada.
+
+En la página de cada cuadrante de Enfoque los tres botones se ven siempre bajo cada tarea;
+tocar la tarea despliega solo su detalle, arriba hay **Expandir todo / Colapsar todo**, y una
+tarea hecha se queda tachada con **Deshacer** mientras las cuentas del grupo y del encabezado
+bajan en uno. **El formato de `pendientes.md` (A7) se queda igual:** la ficha usa las mismas
+escrituras que el menú, así que conserva la marca de orden de bytes y el fin de línea del
+archivo, y se niega a escribir si el archivo cambió por debajo.
 
 > ⚠️ **Al cliente, las esperas se le presentan como lo que hoy trae la tarjeta, sin
 > prometerlas como definitivas.** Su forma se escogió el 6 de octubre de 2026 para tener algo
@@ -124,7 +140,7 @@ en el nombre, en UTF-8.
 3. **GES:** con `barrido.json` ya escrito, abrir la raíz del lanzador. El renglón de GES dice
    **Barrido del día corriendo desde las …**, y al terminar cambia a **GES hace … · todo en
    orden hoy** o **· N cosas nuevas hoy**. Cuando encontró algo, Enfoque trae arriba la
-   sección **Lo que encontró GES hoy**, con cada tarea abriendo su proyecto. **GES falló** o
+   sección **Lo que encontró GES hoy**, con cada tarea abriendo su ficha. **GES falló** o
    **GES se cortó sin terminar** mandan a leer el registro de B10c.
 4. **La factura:** en un proyecto de prueba (`prueba-factura`), un `contratos.md` así, con el
    `desde` en un mes ya pasado y sin `última factura`:

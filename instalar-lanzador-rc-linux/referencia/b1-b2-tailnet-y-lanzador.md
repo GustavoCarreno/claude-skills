@@ -104,7 +104,7 @@ python3 -m venv .venv
 cd ~/rc-launcher && .venv/bin/python -m pytest -q
 ```
 
-Debe pasar **la suite completa, sin una sola falla**. Al 11 de octubre de 2026 son 1315 pruebas
+Debe pasar **la suite completa, sin una sola falla**. Al 11 de octubre de 2026 son 1329 pruebas
 y corren en unos dos minutos. **El número crece con cada versión, así que no lo trates como
 contraseña**: lo que importa es que no falle ninguna, en la máquina del cliente, sin tocar
 una línea. Eso es lo que demuestra que el código no depende de la máquina donde nació.
@@ -165,6 +165,8 @@ curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8765/salud
 > | El repaso diario de GES | **Queda apagado hasta escribir `barrido.json`**, que es el único paso de configuración de esta lista. Ver B10c |
 > | La escucha empieza en 18 segundos, y atiende órdenes | Al 11 de octubre de 2026: la sesión de escucha arranca sin esperar el resumen, gana el botón «Atiende lo que diré» (mantener presionado), la voz opcional para sus respuestas, y órdenes que crean y mueven eventos, dejan borradores, usan Drive y dejan recados. Ver B9. Viajan cuatro archivos nuevos (`escucha_voz.py`, `escucha_borrador.py`, `escucha_recado.py`, `escucha_paginita.py`), y el `--delete` del paso los trae junto con lo demás |
 > | La revisión de arranque, solo en sesiones nuevas | Al 7 de octubre de 2026: urgentes, transcripciones, agenda y retroalimentación se revisan al abrir una sesión nueva. Al retomar una anterior la sesión arranca directo, porque esa conversación ya lo vio |
+> | La ficha de una tarea | Al 11 de octubre de 2026: tocar una tarea en el principal, en Hoy o en Enfoque abre su ficha con Hecha, Descartar, Dejar retro y Abrir el proyecto, en vez del menú con toda la lista. En cada cuadrante de Enfoque los botones se ven siempre. Ver B10b. Viajan dos plantillas nuevas (`templates/_ficha.html` y `templates/_script_enfoque_cuadrante.html`); `templates/_script_abrir_y_bajar.html` se retiró, y si queda en una máquina vieja estorba en cero, porque ya nadie lo incluye |
+> | La voz sin comillas | La voz de «Atiende lo que diré» deja de leer comillas, guiones y símbolos: Kokoro decía «tilde» antes y después de lo citado. Ver B9 |
 >
 > **Las sesiones que ya estaban abiertas conservan el aviso de arranque viejo.** El nuevo sale
 > en la siguiente que se abra.
