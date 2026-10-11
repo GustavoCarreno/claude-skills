@@ -52,6 +52,9 @@
 | 27 | El proyecto principal y la tarjeta Hoy (B10a y B10b) | desde el teléfono, Hacer principal en el menú de un proyecto | ese proyecto sube hasta arriba, a todo lo ancho, con la tarjeta Hoy a su lado |
 | 28 | El repaso de GES (opcional, B10c) | con `barrido.json` escrito, abrir la raíz del lanzador | el renglón dice que corre, y al terminar cambia a `GES hace … · todo en orden hoy` o con sus cosas nuevas |
 | 29 | La factura por emitir (B10d) | el contrato de prueba de B10d | sale en rojo en la tarjeta Hoy, y Ya la emití lo quita y escribe `última factura` en la ficha |
+| 30 | Atiende lo que diré, con voz (opcional, B9) | en Escuchar, prender la voz, sostener el botón, preguntar algo del `CLAUDE.md` y soltar | «Atendiendo…», la tarjeta *Solo tú* y la respuesta se oye, de 7 a 18 s después |
+| 31 | Una orden que actúa (opcional, B9) | sostener el botón y pedir un recado al proyecto | aparece en «Dicho del proyecto» de su `pendientes.md` |
+| 32 | Retomar una sesión salta la revisión de arranque | en *Sesiones previas*, retomar una sesión de un proyecto con pendientes urgentes | arranca directo, sin listar urgentes ni revisar agenda |
 
 > 📌 **Cómo se comprueba el renglón 21, con un proyecto de prueba.** En un proyecto
 > desechable (`prueba-urgentes`), un `pendientes.md` con una sola tarea:

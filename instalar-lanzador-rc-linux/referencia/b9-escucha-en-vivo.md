@@ -133,6 +133,10 @@ Lo que salió midiendo, y conviene hacerlo con el cliente antes de su primera ju
 6. **La voz suena sola**, porque en esa página ya se tocaron Empezar y el botón. Si Chrome se
    niega, la tarjeta trae **▶ Oír** y la barra pide tocarlo. Para que se oiga, el volumen de
    medios del teléfono tiene que estar arriba.
+7. **Un correo se dicta mal.** Whisper pierde la palabra «arroba», así que «gustavo arroba
+   carreno punto com» llega como «gustavo.carreno.com». En una orden de borrador conviene nombrar
+   a la persona («déjale un borrador a Arturo Ledesma») para que la sesión busque su correo, o
+   revisar el destinatario en la tarjeta antes de mandar el borrador.
 
 > 📌 **Whisper inventa "Gracias." en el silencio** y devuelve texto vacío en un pedazo sin voz.
 > El lanzador ya descarta las dos cosas, así que en pantalla se ven como silencio y no como
