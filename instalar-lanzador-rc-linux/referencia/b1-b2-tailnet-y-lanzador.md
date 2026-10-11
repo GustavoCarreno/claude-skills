@@ -104,8 +104,8 @@ python3 -m venv .venv
 cd ~/rc-launcher && .venv/bin/python -m pytest -q
 ```
 
-Debe pasar **la suite completa, sin una sola falla**. Al 6 de octubre de 2026 son 1242 pruebas
-y corren en menos de dos minutos. **El número crece con cada versión, así que no lo trates como
+Debe pasar **la suite completa, sin una sola falla**. Al 11 de octubre de 2026 son 1315 pruebas
+y corren en unos dos minutos. **El número crece con cada versión, así que no lo trates como
 contraseña**: lo que importa es que no falle ninguna, en la máquina del cliente, sin tocar
 una línea. Eso es lo que demuestra que el código no depende de la máquina donde nació.
 
@@ -147,7 +147,7 @@ curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8765/salud
 > `.venv` sobrevive.
 
 > 📌 **Lo que una máquina ya instalada recibe con solo este paso**, sin configuración, porque
-> es código del lanzador. Al 6 de octubre de 2026:
+> es código del lanzador. Al 11 de octubre de 2026:
 >
 > | Mejora | Qué cambia para el cliente |
 > |---|---|
@@ -163,6 +163,8 @@ curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8765/salud
 > | Las esperas en el principal | Las tres esperas más viejas de todos los proyectos, debajo del principal. Ver B10b |
 > | Las facturas por emitir | En rojo arriba de todo, con el botón Ya la emití. **Pide las claves `factura` y `última factura` en cada contrato mensual**, y la regla 12 de A7c en el `CLAUDE.md` global |
 > | El repaso diario de GES | **Queda apagado hasta escribir `barrido.json`**, que es el único paso de configuración de esta lista. Ver B10c |
+> | La escucha empieza en 18 segundos, y atiende órdenes | Al 11 de octubre de 2026: la sesión de escucha arranca sin esperar el resumen, gana el botón «Atiende lo que diré» (mantener presionado), la voz opcional para sus respuestas, y órdenes que crean y mueven eventos, dejan borradores, usan Drive y dejan recados. Ver B9. Viajan cuatro archivos nuevos (`escucha_voz.py`, `escucha_borrador.py`, `escucha_recado.py`, `escucha_paginita.py`), y el `--delete` del paso los trae junto con lo demás |
+> | La revisión de arranque, solo en sesiones nuevas | Al 7 de octubre de 2026: urgentes, transcripciones, agenda y retroalimentación se revisan al abrir una sesión nueva. Al retomar una anterior la sesión arranca directo, porque esa conversación ya lo vio |
 >
 > **Las sesiones que ya estaban abiertas conservan el aviso de arranque viejo.** El nuevo sale
 > en la siguiente que se abra.
