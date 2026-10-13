@@ -51,6 +51,7 @@ está verificado más recientemente.
 | **Al abrir una sesión, lo que urge sale numerado** (requiere la fase B) | Si hay pendientes vencidos o que vencen en la semana, la sesión nueva los lista con número y pregunta cuáles ya están hechos. Se contesta con los números y ella palomea los demás. Al retomar una sesión anterior se omite, porque esa conversación ya lo vio |
 | **Sus contactos, al día** | Las personas que aparecieron en la sesión, con su correo o su teléfono, quedan al cerrar en un archivo de contactos listo para importar a Google Contacts |
 | **Su trabajo, respaldado solo** | Al cerrar cada sesión, el proyecto se sube a su propio repositorio privado de GitHub. Si la computadora se descompone, en una nueva se recupera todo con un comando |
+| **Un equipo completo, para quien trabaja sin equipo** | Le habla a Gestión, a Procesos o a Gabinete por su nombre, o entran solos cuando el tema es suyo. Cada uno revisa, pregunta y entrega lo que un área de empresa haría, en los términos de su propio negocio |
 | **Lo que deja de cobrar, a la vista** (opcional, requiere la fase B) | Cada proyecto lleva sus contratos en un archivo, y la pantalla Contratos del lanzador suma lo que vence y avisa cuándo buscar al siguiente cliente |
 | **Datos a la mano durante una junta** (opcional, requiere la fase B) | El teléfono escucha la conversación y en la misma pantalla van saliendo tarjetas con respuestas, datos y compromisos. Con el botón «Atiende lo que diré», que se mantiene presionado, le pregunta o le encarga algo: mover un evento, dejar un borrador, buscar un documento o dejarle un recado al proyecto, y si quiere oye la respuesta. Ver B9 antes de ofrecerlo |
 | **Transcribir juntas y escuchar documentos** (opcional, con cuenta propia) | Sube la grabación de una junta y pide la minuta, o pide que le lean un documento para el camino |
@@ -131,6 +132,7 @@ archivo cite otra sección (A3, B2b…), aquí está dónde vive.
 | A6 y A7 | [`referencia/a6-a7-gitignore-y-pendientes.md`](referencia/a6-a7-gitignore-y-pendientes.md) | El gitignore global y la convención de pendientes.md |
 | A8 | [`referencia/a8-deepinfra.md`](referencia/a8-deepinfra.md) | Transcripción y voz con la cuenta propia de DeepInfra |
 | A9 | [`referencia/a9-respaldo-en-github.md`](referencia/a9-respaldo-en-github.md) | El respaldo de cada proyecto en su propio repositorio privado de GitHub, y cómo se recupera todo en una máquina nueva. **Obligatoria** |
+| A10 | [`referencia/a10-perfiles-del-equipo.md`](referencia/a10-perfiles-del-equipo.md) | Los siete perfiles del equipo (GAB, GES, PAS, MID, ISI, DAS y TAO), con Gabinete como postura por defecto. El contenido lo trae quien instala, desde su repositorio privado |
 
 ---
 
