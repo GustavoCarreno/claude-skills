@@ -167,6 +167,8 @@ curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8765/salud
 > | La revisión de arranque, solo en sesiones nuevas | Al 7 de octubre de 2026: urgentes, transcripciones, agenda y retroalimentación se revisan al abrir una sesión nueva. Al retomar una anterior la sesión arranca directo, porque esa conversación ya lo vio |
 > | La ficha de una tarea | Al 11 de octubre de 2026: tocar una tarea en el principal, en Hoy o en Enfoque abre su ficha con Hecha, Descartar, Dejar retro y Abrir el proyecto, en vez del menú con toda la lista. En cada cuadrante de Enfoque los botones se ven siempre. Ver B10b. Viajan dos plantillas nuevas (`templates/_ficha.html` y `templates/_script_enfoque_cuadrante.html`); `templates/_script_abrir_y_bajar.html` se retiró, y si queda en una máquina vieja estorba en cero, porque ya nadie lo incluye |
 > | La voz sin comillas | La voz de «Atiende lo que diré» deja de leer comillas, guiones y símbolos: Kokoro decía «tilde» antes y después de lo citado. Ver B9 |
+> | Las casillas del arranque | Al 14 de octubre de 2026: lo urgente se contesta en una pantalla de casillas, «¿Cuáles ya están hechas?», y todo lo demás que encontró la revisión de arranque sale junto en una sola lista, «¿Qué atiendo ahora?». Ver B11d. **Pide el reinicio del final de este paso**, o las sesiones nuevas siguen con las preguntas sueltas de antes |
+> | El correo de su gente al arrancar | Viaja `correo_sesion.py`, pero **queda apagado hasta escribir `correo.json` y crear la etiqueta «Procesado» en Gmail**. Ver B11b |
 >
 > **Las sesiones que ya estaban abiertas conservan el aviso de arranque viejo.** El nuevo sale
 > en la siguiente que se abra.

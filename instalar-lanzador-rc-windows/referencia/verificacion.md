@@ -56,6 +56,8 @@
 | 31 | Una orden que actúa (opcional, B9) | sostener el botón y pedir un recado al proyecto | aparece en «Dicho del proyecto» de su `pendientes.md` |
 | 32 | Retomar una sesión salta la revisión de arranque | en *Sesiones previas*, retomar una sesión de un proyecto con pendientes urgentes | arranca directo, sin listar urgentes ni revisar agenda |
 | 33 | La ficha de una tarea (B10b) | en un proyecto desechable `prueba-ficha` escogido como principal, con una tarea que venza mañana marcada `importante`: tocarla en la tarjeta Hoy y luego **✓ Hecha** | se abre su ficha, la ventana se cierra sola, la tarea desaparece de Hoy y `%USERPROFILE%\claude\prueba-ficha\pendientes.md` la trae en `[x]` |
+| 34 | Las casillas del arranque (B11d) | lanzar una sesión nueva en un proyecto con una retroalimentación sin procesar | sale una pantalla «¿Qué atiendo ahora?» con una casilla que empieza con `Retro` |
+| 35 | El correo de su gente (opcional, B11c) | la prueba de B11c, con un correo real de alguien de fuera | el correo sale en la lista, queda con la etiqueta «Procesado» y la sesión siguiente ya no lo ofrece |
 
 > 📌 **Cómo se comprueba el renglón 21, con un proyecto de prueba.** En un proyecto
 > desechable (`prueba-urgentes`), un `pendientes.md` con una sola tarea:
