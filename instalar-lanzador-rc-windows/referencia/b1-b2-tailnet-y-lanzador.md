@@ -123,7 +123,7 @@ python -m pytest -q        # deben pasar todas, sin una sola falla
 python app.py              # debe quedarse escuchando; Ctrl+C para salir
 ```
 
-Al 11 de octubre de 2026 son 1329 pruebas, y pasan completas en Linux y en Windows (medido en `win11-dogfood` ese día, en poco más de tres minutos con `TMP` corto). **El número crece con cada versión, así que no lo
+Al 14 de octubre de 2026 son 1342 pruebas en Linux (1329 al 11 de octubre, cuando pasaron completas en Windows, medido en `win11-dogfood`, en poco más de tres minutos con `TMP` corto). **El número crece con cada versión, así que no lo
 trates como contraseña**: lo que importa es que no falle ninguna.
 
 > ⚠️ **Si fallan por rutas demasiado largas, no es defecto del lanzador.** Windows corta en
