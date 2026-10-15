@@ -186,6 +186,17 @@ Y la prueba completa, con el cliente enfrente:
 - **Conviene ofrecerle un calendario aparte para el trabajo**, que puede compartir con su equipo
   o con su asistente sin enseñar lo personal. Es lo que usa Gustavo desde el 25 de septiembre de
   2026.
+- **Que el « ✓» al final de un título lo pone la sesión** (desde el 14 de octubre de 2026,
+  lanzador `1af5655`). Cuando dice que sí a un bloque propio, la sesión agrega « ✓» al final del
+  título y un renglón «Atendido en sesión el AAAA-MM-DD HH:MM» al final de la descripción, con
+  las notificaciones apagadas y el color y los invitados como estaban. Así la siguiente sesión
+  deja de ofrecérselo. Quitarle la marca hace que se vuelva a ofrecer. **Propio** quiere decir
+  que él lo organiza (`organizer.self`): en una invitación el creador también sale con su nombre,
+  así que el creador sirve de poco para distinguirlo. Las invitaciones de un cliente se quedan
+  intactas: la que coincide en inicio y fin con un bloque propio se omite, porque el propio la
+  representa, y la que va sola se ofrece en cada arranque.
+  ⚠️ En Windows falta medir que el conector de Calendar cambie el título y la descripción sin
+  avisar a los invitados; se comprueba con un bloque de prueba que lleve a otra persona invitada.
 - **Los eventos de día completo se quedan fuera a propósito**: son cumpleaños, vacaciones y
   recordatorios, y ofrecerlos al arrancar estorbaría.
 - **Cada sesión arranca con una consulta al calendario**, aunque no haya bloque. Es uso de su

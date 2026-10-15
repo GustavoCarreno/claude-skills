@@ -120,7 +120,10 @@ por su lado, en texto, y el cliente contestaba varias preguntas seguidas. Ahora:
 2. **Si hay tareas urgentes, van solas y primero**, en una pantalla de casillas que pregunta
    «¿Cuáles ya están hechas?». Ahí marcar quiere decir *ya la hice*, y la sesión palomea las
    marcadas en `pendientes.md`. Por eso van en su propia pantalla: en la siguiente, marcar quiere
-   decir otra cosa.
+   decir otra cosa. **Desde el 14 de octubre de 2026 pregunta solo por las que ya llegaron**:
+   vencidas, que vencen hoy o con su bloque hoy. Las de fecha futura siguen contando en el
+   mosaico, y preguntar si ya se hicieron sobra porque casi seguro siguen abiertas. Medido ese día
+   en la máquina de Gustavo: un proyecto pasó de 12 preguntas a cero, y otro de 6 a una.
 3. **Las revisiones que salieron vacías se dicen en un renglón de texto**, sin pantalla.
 4. **Todo lo demás va en una sola lista, «¿Qué atiendo ahora?»**, con una casilla por hallazgo.
    Cada rótulo empieza con su clase (`Transcripción`, `Evento`, `Correo`, `Retro`) y la
