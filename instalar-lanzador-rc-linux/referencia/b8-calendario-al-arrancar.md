@@ -193,6 +193,13 @@ B8.
 compromiso sigue en pie. Un evento cuyo título carece del nombre de un proyecto se queda fuera de
 las tarjetas, porque marcaría una que nada tiene que ver.
 
+**Una tarjeta cuyo proyecto ya tiene sesión abierta pasa a fondo verde**, el mismo de *Activos*, y
+conserva la barra amarilla de la izquierda y la hora en amarillo: el fondo dice que ya se atiende y
+la barra que hay agenda hoy. Sin sesión se queda amarilla. Antes solo cambiaba el borde, y no se
+distinguía de un vistazo cuáles estaban abiertas (lanzador `2286864`, 16 de octubre de 2026, 1408
+pruebas). **Viaja con B2b** en un solo renglón de `templates/_estilos.css`, sin rutas, dependencias
+ni configuración nuevas.
+
 **Quien lee el calendario es Claude, con la suscripción del cliente**, igual que en B8: el
 lanzador nunca habla con Google. La lectura corre con `claude -p` en la primera apertura del día y
 con el botón *Actualizar*, y se guarda en `~/.local/state/rc-launcher/agenda/hoy.json`. Usa `gws`
@@ -276,6 +283,8 @@ Y con el cliente enfrente:
    tarjeta del proyecto debe subir en amarillo**, con la hora y el título.
 3. Pedirle en una sesión que le agregue la liga a ese evento. Tocar la liga desde el teléfono:
    **debe abrir el menú del proyecto con el evento nombrado.**
-4. *Nueva sesión*: la sesión debe ofrecer el evento aunque falten más de 30 minutos. Contestar que
+4. *Nueva sesión*: la sesión debe ofrecer el evento aunque falten más de 30 minutos.
+   Antes de contestar, recargar el lanzador con esa sesión abierta: **la tarjeta debe verse con
+   fondo verde y la barra amarilla a la izquierda.** Contestar que
    sí, y recargar el lanzador: **la tarjeta debe dejar la agenda.**
 5. Borrar el evento de prueba.

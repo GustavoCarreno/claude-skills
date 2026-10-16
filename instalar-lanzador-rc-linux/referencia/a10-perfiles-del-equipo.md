@@ -19,9 +19,9 @@
 
 ### A10a. Qué son, y por qué se entregan aparte
 
-Siete perfiles que el asistente se pone según el tema, cada uno con lo que un área de empresa sabe
+Ocho perfiles que el asistente se pone según el tema, cada uno con lo que un área de empresa sabe
 revisar, preguntar y entregar: **GAB** (Gabinete), **GES** (Gestión), **PAS** (Procesos), **MID**
-(Mercadotecnia), **ISI** (Infraestructura), **DAS** (Desarrollo) y **Tavo** (Tecnología Aplicada con Visión
+(Mercadotecnia), **ISI** (Infraestructura), **DAS** (Desarrollo), **CYF** (Finanzas, el criterio de dinero; se sumó el 16 de octubre de 2026) y **Tavo** (Tecnología Aplicada con Visión
 Organizacional, todos en mesa; se llamó TAO hasta el 16 de octubre de 2026). Gabinete queda como la postura por defecto en todos los proyectos.
 
 📌 **Los perfiles NO viven en este repositorio, que es público.** Son el método de trabajo de quien
@@ -53,13 +53,15 @@ porque los demás leen la ficha desde ahí.
 
 ### A10c. Dejar Gabinete como postura por defecto
 
-Se agrega un bloque al `CLAUDE.md` global del cliente, una sola vez. El bloque trae marcas de inicio
-y fin, así que correrlo dos veces lo deja igual:
+Se agrega un bloque al `CLAUDE.md` global del cliente. El bloque trae marcas de inicio y fin, y el
+fragmento **quita primero el bloque anterior y pone el nuevo**, así que correrlo dos veces deja uno
+solo, y una máquina que ya tenía los perfiles recibe la lista al día (con CYF, desde el 16 de
+octubre de 2026):
 
 ```bash
 touch ~/.claude/CLAUDE.md
-grep -q "perfiles-del-equipo: inicio" ~/.claude/CLAUDE.md \
-  || cat "$ORIGEN/base/postura-gabinete.md" >> ~/.claude/CLAUDE.md
+sed -i '/perfiles-del-equipo: inicio/,/perfiles-del-equipo: fin/d' ~/.claude/CLAUDE.md
+cat "$ORIGEN/base/postura-gabinete.md" >> ~/.claude/CLAUDE.md
 grep -c "perfiles-del-equipo" ~/.claude/CLAUDE.md   # debe dar 2
 ```
 

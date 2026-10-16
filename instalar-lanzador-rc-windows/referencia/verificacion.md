@@ -58,7 +58,7 @@
 | 33 | La ficha de una tarea (B10b) | en un proyecto desechable `prueba-ficha` escogido como principal, con una tarea que venza mañana marcada `importante`: tocarla en la tarjeta Hoy y luego **✓ Hecha** | se abre su ficha, la ventana se cierra sola, la tarea desaparece de Hoy y `%USERPROFILE%\claude\prueba-ficha\pendientes.md` la trae en `[x]` |
 | 34 | Las casillas del arranque (B11d) | lanzar una sesión nueva en un proyecto con una retroalimentación sin procesar | sale una pantalla «¿Qué atiendo ahora?» con una casilla que empieza con `Retro` |
 | 35 | El correo de su gente (opcional, B11c) | la prueba de B11c, con un correo real de alguien de fuera | el correo sale en la lista, queda con la etiqueta «Procesado» y la sesión siguiente ya no lo ofrece |
-| 36 | La agenda de hoy (opcional, B8e) | un evento de hoy titulado `<proyecto> · Prueba de la agenda`, y Actualizar en la portada | la tarjeta del proyecto sube en amarillo con la hora; tras decir que sí en la sesión, deja la agenda |
+| 36 | La agenda de hoy (opcional, B8e) | un evento de hoy titulado `<proyecto> · Prueba de la agenda`, y Actualizar en la portada | la tarjeta del proyecto sube en amarillo con la hora; con su sesión abierta pasa a fondo verde con la barra amarilla; tras decir que sí en la sesión, deja la agenda |
 | 37 | La liga de un evento (B8f) | pedir en una sesión que le agregue la liga a ese evento, y tocarla desde el teléfono | abre el menú del proyecto con el evento nombrado |
 | 38 | La junta completa (opcional, B12c) | Escuchar, dos frases, dos capturas y Terminar; luego una sesión nueva | sale una casilla `Junta` con la cuenta de capturas, y tras procesarla la junta queda en `transcripciones/procesadas.txt` |
 
