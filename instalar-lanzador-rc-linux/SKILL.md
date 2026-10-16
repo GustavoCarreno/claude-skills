@@ -50,6 +50,9 @@ orden. Para Windows existe el equivalente en `instalar-lanzador-rc-windows`.
 | **Las transcripciones de sus grabaciones llegan solas** (opcional, requiere la fase B) | Al abrir una sesión nueva desde el teléfono, el asistente revisa la carpeta de Drive donde caen las transcripciones, le dice en un renglón cuáles son de ese proyecto y pregunta si las procesa. Con un sí, quedan guardadas en el proyecto y lo que salga de ellas llega a sus pendientes. Al retomar una sesión anterior la revisión se omite |
 | **Los correos de su gente, al abrir el proyecto** (opcional, requiere la fase B) | Al abrir una sesión nueva, el asistente busca en su Gmail los correos recientes de la gente de ese proyecto que todavía no lleven la etiqueta «Procesado», y le dice en un renglón quién escribe y de qué. Con un sí, lleva lo que salga a sus pendientes, deja la respuesta en Borradores sin enviarla y lo etiqueta para no volver a ofrecerlo. Ver B11 |
 | **La sesión le ofrece el bloque de su agenda** (opcional, requiere la fase B) | Si reservó en el calendario un bloque para ese proyecto y está en curso o empieza en media hora, la sesión nueva se lo resume en dos renglones al abrir y pregunta si lo atienden. Pasa igual si abre la sesión desde el teléfono o en la computadora, y se omite al retomar una sesión anterior. Un bloque propio que ya se atendió en otra sesión lleva « ✓» al final del título y deja de ofrecerse |
+| **Sus compromisos de hoy, en amarillo** (opcional, requiere la fase B) | Debajo de Principal y Hoy, la sección «En la agenda de hoy» sube las tarjetas de los proyectos con un evento pendiente hoy, con la hora y el título. Un toque abre el proyecto con el evento nombrado, y la sesión nueva se lo ofrece aunque falten horas. Deja de contar al terminar, al traer la « ✓», o cuando dice que sí en la sesión. Ver B8e. |
+| **Del calendario a su proyecto, en un toque** (requiere la fase B) | Los eventos que la sesión crea llevan al final de la descripción una liga que abre el lanzador en ese proyecto con el evento nombrado. La toca desde la notificación del calendario. Ver B8f |
+| **La junta completa, al abrir el proyecto** (requiere la fase B y la escucha) | Al terminar una junta, la siguiente sesión le ofrece en una sola casilla la transcripción de la escucha, la de su grabadora en Drive si la hay, y las capturas de pantalla que tomó en ese rato. Con un sí la procesa completa, leyendo las capturas que cambian. Ver B12. |
 | **Su proyecto principal, hasta arriba** (requiere la fase B) | Escoge con un clic el proyecto que agrupa a los demás. Va arriba del mosaico, y debajo trae las tres esperas más viejas de todos sus proyectos |
 | **Lo de hoy, en una tarjeta** (requiere la fase B) | Junto al principal, la tarjeta Hoy junta las facturas que toca emitir, las tres tareas más urgentes y el estado del repaso del día |
 | **Una tarea se atiende sin salir de lo que está viendo** (requiere la fase B) | Tocar una tarea en el principal, en la tarjeta Hoy o en Enfoque abre su ficha: la nota completa, lo que dictó y los botones Hecha, Descartar y Dejar retro. Se resuelve ahí, sin abrir la lista entera del proyecto, y la tarea desaparece de la tarjeta en el acto |
@@ -131,10 +134,11 @@ la primera sesión justamente para no descubrirlo aquí.
 | B3 y B3b | [`referencia/b3-arranque-y-avisos.md`](referencia/b3-arranque-y-avisos.md) | Arranque automático, el vigilante y su canal de avisos |
 | B4, B5 y B6 | [`referencia/b4-b6-publicar-bandeja-rc.md`](referencia/b4-b6-publicar-bandeja-rc.md) | Publicarlo en la tailnet, la bandeja y el comando rc |
 | B7 | [`referencia/b7-transcripciones-de-drive.md`](referencia/b7-transcripciones-de-drive.md) | Las transcripciones que llegan a Drive (opcional) |
-| B8 | [`referencia/b8-calendario-al-arrancar.md`](referencia/b8-calendario-al-arrancar.md) | El bloque de calendario al arrancar (opcional) |
+| B8 | [`referencia/b8-calendario-al-arrancar.md`](referencia/b8-calendario-al-arrancar.md) | El bloque de calendario al arrancar, la agenda de hoy en el lanzador y la liga de cada evento (opcional) |
 | B9 | [`referencia/b9-escucha-en-vivo.md`](referencia/b9-escucha-en-vivo.md) | La escucha en vivo durante una junta (opcional) |
 | B10 | [`referencia/b10-principal-hoy-y-ges.md`](referencia/b10-principal-hoy-y-ges.md) | El proyecto principal, la tarjeta Hoy y el repaso diario de GES |
 | B11 | [`referencia/b11-correo-y-casillas-al-arrancar.md`](referencia/b11-correo-y-casillas-al-arrancar.md) | El correo de la gente del proyecto, y las casillas del arranque (el correo es opcional) |
+| B12 | [`referencia/b12-junta-completa-al-arrancar.md`](referencia/b12-junta-completa-al-arrancar.md) | La junta completa al arrancar: la escucha, Drive y las capturas de pantalla, en una casilla |
 
 ---
 
@@ -187,6 +191,12 @@ Decirlo antes de instalarla en casa de alguien más:
 | La misma transcripción se ofrece en cada sesión | No se movió a `Procesadas`: la subcarpeta falta, se llama distinto, o el conector no completó el movimiento. Ver B7c |
 | Hay transcripciones en Drive y la sesión arranca sin mencionarlas | La sesión se abrió a mano y falta el gancho de B8b, falta `transcripciones.json`, o la copia del lanzador es anterior al 22 de septiembre de 2026. Ver B7 |
 | Hay un bloque en curso y la sesión arranca sin ofrecerlo | A la sesión le falta una vía al calendario (ver B8a), falta `calendario.json`, el título del evento no empieza con el nombre de la carpeta seguido de `·`, el evento es de día completo, o la copia del lanzador es anterior al 25 de septiembre de 2026. Ver B8 |
+| «En la agenda de hoy» falta en la portada | Falta `calendario.json`, la copia del lanzador es anterior al 15 de octubre de 2026, o faltó el reinicio de B2b. Ver B8e |
+| Un evento de hoy sin tarjeta en la agenda | Su título carece del nombre de la carpeta del proyecto seguido de `·`, o la lectura del día es vieja: tocar Actualizar. Ver B8e |
+| La sesión crea eventos sin la liga | Falta la sección de B8f en el `CLAUDE.md` global, o el evento lleva invitados de otro dominio, que se queda sin liga a propósito |
+| Una junta de la escucha se ofrece en cada sesión | La sesión cerró sin correr el comando `procesada`. Ver B12 |
+| Al instalar, cada proyecto ofrece juntas de hace meses | Faltó `sembrar` en una máquina que ya usaba la escucha. Ver B12b |
+| La casilla de la junta dice cero capturas | Las capturas se guardan fuera de la carpeta de fábrica: escribir `capturas.json`. Ver B12b |
 | La sesión espera el sí de "Gustavo" | La copia del lanzador trae el nombre fijo en la instrucción. Llevarle una corregida con B2b. Ver B8c |
 | Un correo de su gente llega y la sesión arranca sin ofrecerlo | Falta `correo.json`, el `CLAUDE.md` del proyecto carece de esa persona o de su empresa, el correo vino del propio dominio del cliente (se deja fuera a propósito), ya trae la etiqueta «Procesado», o la copia del lanzador es anterior al 14 de octubre de 2026. Ver B11 |
 | El mismo correo se ofrece en cada sesión | Falta crear la etiqueta «Procesado» en Gmail, o su nombre difiere del de `correo.json`. Ver B11b |

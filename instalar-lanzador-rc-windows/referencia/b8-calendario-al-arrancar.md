@@ -11,6 +11,8 @@
   - B8b. La configuración y el gancho
   - B8c. Verificar
   - B8d. Lo que hay que decirle, y lo que cuesta
+  - B8e. La agenda de hoy en el lanzador
+  - B8f. La liga de cada evento a su proyecto
 
 <!-- fin del encabezado agregado al partir -->
 
@@ -201,3 +203,126 @@ Y la prueba completa, con el cliente enfrente:
   recordatorios, y ofrecerlos al arrancar estorbaría.
 - **Cada sesión arranca con una consulta al calendario**, aunque no haya bloque. Es uso de su
   suscripción, pequeño, y se paga en cada arranque, igual que la de Drive en B7.
+
+### B8e. La agenda de hoy en el lanzador
+
+**Lo que deja funcionando:** en la portada del lanzador, debajo de Principal y Hoy, una sección
+**«En la agenda de hoy»** sube en amarillo las tarjetas de los proyectos que tienen un compromiso
+pendiente hoy, ordenadas por la hora, con la hora y el título del evento en la tarjeta. Tocar una
+abre el menú de siempre de ese proyecto, con el evento nombrado arriba; un toque en *Nueva sesión*
+arranca la sesión, que le ofrece **ese** evento aunque caiga fuera de la ventana de 30 minutos de
+B8.
+
+| Un evento deja de contar cuando… | Por qué |
+|---|---|
+| Ya terminó | Su hora pasó |
+| Trae « ✓» al final del título | Se atendió en otra sesión (B8d) |
+| La sesión recibió el sí a «¿Lo atendemos?» | La sesión corre `agenda.py atendido <id>`, que la instrucción de B8 ya le pide |
+
+**Lanzar la sesión solo lo deja pendiente**, a propósito: hasta que el cliente diga que sí, el
+compromiso sigue en pie. Un evento cuyo título carece del nombre de un proyecto se queda fuera de
+las tarjetas, porque marcaría una que nada tiene que ver.
+
+**Quien lee el calendario es Claude, con la suscripción del cliente**, igual que en B8: el
+lanzador nunca habla con Google. La lectura corre con `claude -p` en la primera apertura del día y
+con el botón *Actualizar*, y se guarda en `%USERPROFILE%\.local\state\rc-launcher\agenda\hoy.json`. Usa `gws`
+si la máquina lo tiene y el conector de Google Calendar si no, que es el caso de casi todo cliente.
+**Medido en la máquina de Gustavo, en Linux: 33 segundos y 6 eventos.** En Windows falta medir la lectura con el conector, sin `gws`, que es justo el caso de un cliente. Una agenda que es de otro día se
+pinta vacía y avisa que está vieja, para que nunca parezca completa siendo de ayer.
+
+**Viaja sola con B2b** (lanzador `9e1f53f` a `75de62e`, 15 de octubre de 2026, 1406 pruebas):
+`agenda.py` es nuevo, y cambian `app.py`, `barrido.py`, `barrido_correr.py`,
+`calendario_sesion.py`, `pendientes.py`, `procesos_tmux.py`, `procesos_windows.py`, `sessions.py`
+y cuatro plantillas. **Depende de `calendario.json` (B8b): sin él la sección desaparece** y el
+lanzador queda como antes. **Pide el reinicio del final de B2b.**
+
+> 📌 **Cada lanzamiento queda anotado** en `%USERPROFILE%\.local\state\rc-launcher\lanzamientos.jsonl`, con su
+> origen (`mosaico`, `liga` o `agenda`). Sirve para saber en un par de semanas cuál de las entradas
+> usa el cliente de verdad.
+
+### B8f. La liga de cada evento a su proyecto
+
+**Lo que deja funcionando:** cada evento que la sesión crea para un proyecto lleva al final de su
+descripción un renglón *"Abrir en el lanzador: https://…"*. El cliente lo toca desde la
+notificación del calendario o desde el evento, y el lanzador le abre el menú de ese proyecto con el
+evento nombrado; un toque en *Nueva sesión* arranca la sesión, que le ofrece ese evento.
+
+> 📌 **La liga abre el menú y deja el lanzamiento en un toque**, a propósito. Lanzar es una orden
+> que cambia algo, y una liga que lanzara sola se dispararía con la vista previa del teléfono o con
+> dos toques seguidos.
+
+La sesión arma la liga con un comando que saca el nombre de la máquina de `tailscale status`:
+
+```powershell
+python "$env:USERPROFILE\rc-launcher\agenda.py" liga <proyecto> <nombre del calendario> <id del evento>
+```
+
+El nombre del calendario es el que lleva en `calendario.json` («Trabajo», «principal»). Imprime el
+renglón completo, listo para agregarse a la descripción.
+
+**Para que las sesiones lo hagan solas, la regla va en el `CLAUDE.md` global.** Va aquí y no en A7
+porque necesita el lanzador publicado en la tailnet, o sea la fase B. Sembrarla, de forma aditiva e
+idempotente:
+
+```powershell
+$claudeMd = "$env:USERPROFILE\.claude\CLAUDE.md"
+if (-not (Select-String -Path $claudeMd -Pattern '^### La liga al lanzador en cada evento' -Quiet)) {
+$texto = @'
+
+### La liga al lanzador en cada evento
+
+Al crear un evento de un proyecto, le agrego al final de la descripción la liga que abre el
+lanzador en ese proyecto. Se crea el evento, se toma el id que devuelve, y se corre
+`python "RUTA_LANZADOR\agenda.py" liga <proyecto> <calendario> <id>`, con el nombre del
+calendario como está en `%USERPROFILE%\.config\rc-launcher\calendario.json`. Imprime el renglón
+completo, que se agrega al final de la descripción sin avisar a los invitados (sendUpdates en
+none, o notificaciones en NONE con el conector).
+
+- Va solo en eventos propios sin invitados de otro dominio, porque la liga deja ver el nombre de la
+  máquina y de la red privada. Esas juntas suelen tener su propio evento de notas a la misma hora,
+  que sí la lleva.
+- En una serie se pone en cada instancia que se toque, y el evento principal de la serie se queda
+  como está: cambiar su descripción reescribe la de todas las instancias.
+'@
+$texto.Replace('RUTA_LANZADOR', "$env:USERPROFILE\rc-launcher") | Add-Content -Path $claudeMd -Encoding utf8
+}
+(Select-String -Path $claudeMd -Pattern '^### La liga al lanzador en cada evento').Count   # debe dar 1
+```
+
+> ⚠️ **El texto va en comillas sencillas (`@'...'@`) y la ruta se pone después con `.Replace`**,
+> porque en PowerShell la comilla invertida de los bloques de código es el carácter de escape: dentro
+> de comillas dobles se comería las comillas invertidas del texto.
+
+> 📌 **Medido el 15 de octubre de 2026 en `win11-dogfood`:** el bloque de arriba, corrido dos
+> veces, deja la sección una sola vez y con los acentos intactos; y `tailscale` queda en el PATH
+> (`C:\Program Files\Tailscale\tailscale.exe`), que es de donde el comando de la liga saca el
+> nombre de la máquina. Si aun así imprime *"No se pudo leer el nombre de esta máquina en la
+> tailnet"*, revisar eso primero.
+
+> 🔴 **El defecto de `python3` de B12 toca aquí también, medido el mismo día en esa VM:** la
+> instrucción de B8 le pide a la sesión correr `python3 …agenda.py atendido <id>` al recibir el sí,
+> y en Windows `python3` contesta *"Python was not found"*. Está pedido en el lanzador. Mientras
+> llega el arreglo, la tarjeta del evento se queda en la agenda hasta que el evento termina o trae
+> la « ✓», que la sesión sí pone.
+
+> 📌 **La sección de la agenda cuenta los eventos de hoy que se quedaron sin liga**, así que uno que
+> se olvidó se ve. La sesión de la escucha (B9) todavía crea eventos sin ella: lo hace con sus
+> propias instrucciones, y está pedido en el lanzador.
+
+### Verificar B8e y B8f
+
+```powershell
+python "$env:USERPROFILE\rc-launcher\agenda.py" liga <proyecto> principal prueba123   # imprime «Abrir en el lanzador: https://…/?abrir=…»
+```
+
+Y con el cliente enfrente:
+
+1. Crear en el calendario un evento de hoy, en un par de horas, titulado
+   `<proyecto> · Prueba de la agenda`.
+2. Abrir el lanzador y tocar *Actualizar* en «En la agenda de hoy». En menos de un minuto **la
+   tarjeta del proyecto debe subir en amarillo**, con la hora y el título.
+3. Pedirle en una sesión que le agregue la liga a ese evento. Tocar la liga desde el teléfono:
+   **debe abrir el menú del proyecto con el evento nombrado.**
+4. *Nueva sesión*: la sesión debe ofrecer el evento aunque falten más de 30 minutos. Contestar que
+   sí, y recargar el lanzador: **la tarjeta debe dejar la agenda.**
+5. Borrar el evento de prueba.

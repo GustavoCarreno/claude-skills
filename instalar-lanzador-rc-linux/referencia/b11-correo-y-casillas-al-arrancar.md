@@ -115,8 +115,8 @@ sesión todo lo que encontró al arrancar. Hasta el 14 de octubre de 2026 cada r
 por su lado, en texto, y el cliente contestaba varias preguntas seguidas. Ahora:
 
 1. **Primero hace todas las revisiones**: la retroalimentación dictada desde el teléfono, las
-   tareas urgentes, las transcripciones de Drive (B7), el bloque de calendario (B8) y el correo
-   (esta sección), las que estén encendidas en esa máquina.
+   tareas urgentes, las transcripciones de Drive (B7), el bloque de calendario (B8), el correo
+   (esta sección) y las juntas de la escucha (B12), las que estén encendidas en esa máquina.
 2. **Si hay tareas urgentes, van solas y primero**, en una pantalla de casillas que pregunta
    «¿Cuáles ya están hechas?». Ahí marcar quiere decir *ya la hice*, y la sesión palomea las
    marcadas en `pendientes.md`. Por eso van en su propia pantalla: en la siguiente, marcar quiere
@@ -126,7 +126,7 @@ por su lado, en texto, y el cliente contestaba varias preguntas seguidas. Ahora:
    en la máquina de Gustavo: un proyecto pasó de 12 preguntas a cero, y otro de 6 a una.
 3. **Las revisiones que salieron vacías se dicen en un renglón de texto**, sin pantalla.
 4. **Todo lo demás va en una sola lista, «¿Qué atiendo ahora?»**, con una casilla por hallazgo.
-   Cada rótulo empieza con su clase (`Transcripción`, `Evento`, `Correo`, `Retro`) y la
+   Cada rótulo empieza con su clase (`Junta`, `Transcripción`, `Evento`, `Correo`, `Retro`) y la
    descripción trae el contexto. **Marcar quiere decir atenderlo ahora**; lo que queda sin marcar
    se queda para después.
 
