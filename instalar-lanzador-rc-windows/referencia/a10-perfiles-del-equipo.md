@@ -21,8 +21,8 @@
 
 Siete perfiles que el asistente se pone según el tema, cada uno con lo que un área de empresa sabe
 revisar, preguntar y entregar: **GAB** (Gabinete), **GES** (Gestión), **PAS** (Procesos), **MID**
-(Mercadotecnia), **ISI** (Infraestructura), **DAS** (Desarrollo) y **TAO** (Tecnología, todos en
-mesa). Gabinete queda como la postura por defecto en todos los proyectos.
+(Mercadotecnia), **ISI** (Infraestructura), **DAS** (Desarrollo) y **Tavo** (Tecnología Aplicada con Visión
+Organizacional, todos en mesa; se llamó TAO hasta el 16 de octubre de 2026). Gabinete queda como la postura por defecto en todos los proyectos.
 
 📌 **Los perfiles NO viven en este repositorio, que es público.** Son el método de trabajo de quien
 instala, y los trae él en cada instalación: la carpeta `perfiles\` de su repositorio privado, con
@@ -46,15 +46,17 @@ $Origen  = "$HOME\perfiles"       # donde quedó la carpeta perfiles\ que trajo 
 $Cliente = "nombre-del-cliente"   # la carpeta de su ficha, dentro de perfiles\clientes\
 $Skills  = "$HOME\.claude\skills"
 New-Item -ItemType Directory -Force -Path $Skills | Out-Null
+# Una instalación anterior trae el equipo completo como equipo-tao: se aparta, con su ficha
+if (Test-Path "$Skills\equipo-tao") { Move-Item "$Skills\equipo-tao" "$HOME\.claude\equipo-tao-anterior" }
 Get-ChildItem "$Origen\base" -Directory -Filter "equipo-*" | ForEach-Object {
   Copy-Item $_.FullName -Destination $Skills -Recurse -Force
 }
-Copy-Item "$Origen\clientes\$Cliente\contexto.md" "$Skills\equipo-tao\contexto.md" -Force
+Copy-Item "$Origen\clientes\$Cliente\contexto.md" "$Skills\equipo-tavo\contexto.md" -Force
 Get-ChildItem $Skills -Directory -Filter "equipo-*" | Select-Object Name
 ```
 
 Para quitar un perfil que el cliente no quiso, se borra su carpeta (por ejemplo
-`Remove-Item -Recurse "$Skills\equipo-mid"`) y su renglón en la ficha. **TAO y su ficha se quedan
+`Remove-Item -Recurse "$Skills\equipo-mid"`) y su renglón en la ficha. **Tavo y su ficha se quedan
 siempre**, porque los demás leen la ficha desde ahí.
 
 ### A10c. Dejar Gabinete como postura por defecto
@@ -80,7 +82,7 @@ if ($Actual -notmatch "perfiles-del-equipo: inicio") {
 |---|---|
 | En una sesión nueva, escribir `¿qué opina Gestión de lo que tengo pendiente?` | El primer renglón dice «Responde Gestión (GES)» y la respuesta usa los términos de su ficha |
 | Escribir `¿en qué debo estar hoy?` | Contesta Gabinete, con recomendación, sin anunciarse |
-| Escribir `revísalo con TAO` sobre cualquier decisión | Una sección por área y cierra con preguntas para el cliente |
+| Escribir `revísalo con Tavo` sobre cualquier decisión | Una sección por área y cierra con preguntas para el cliente |
 | Abrir `$HOME\.claude\CLAUDE.md` en el Bloc de notas | Los acentos del bloque se ven bien |
 
 Si un perfil se queda callado, la causa casi siempre es la carpeta: tiene que ser

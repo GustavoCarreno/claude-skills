@@ -21,8 +21,8 @@
 
 Siete perfiles que el asistente se pone según el tema, cada uno con lo que un área de empresa sabe
 revisar, preguntar y entregar: **GAB** (Gabinete), **GES** (Gestión), **PAS** (Procesos), **MID**
-(Mercadotecnia), **ISI** (Infraestructura), **DAS** (Desarrollo) y **TAO** (Tecnología, todos en
-mesa). Gabinete queda como la postura por defecto en todos los proyectos.
+(Mercadotecnia), **ISI** (Infraestructura), **DAS** (Desarrollo) y **Tavo** (Tecnología Aplicada con Visión
+Organizacional, todos en mesa; se llamó TAO hasta el 16 de octubre de 2026). Gabinete queda como la postura por defecto en todos los proyectos.
 
 📌 **Los perfiles NO viven en este repositorio, que es público.** Son el método de trabajo de quien
 instala, y los trae él en cada instalación: la carpeta `perfiles/` de su repositorio privado, con
@@ -40,13 +40,15 @@ Con la carpeta de perfiles en la máquina del cliente (por `scp`, USB o como se 
 ORIGEN=~/perfiles          # donde quedó la carpeta perfiles/ que trajo quien instala
 CLIENTE=nombre-del-cliente # la carpeta de su ficha, dentro de perfiles/clientes/
 mkdir -p ~/.claude/skills
+# Una instalación anterior trae el equipo completo como equipo-tao: se aparta, con su ficha
+[ -d ~/.claude/skills/equipo-tao ] && mv ~/.claude/skills/equipo-tao ~/.claude/equipo-tao-anterior
 cp -r "$ORIGEN"/base/equipo-* ~/.claude/skills/
-cp "$ORIGEN/clientes/$CLIENTE/contexto.md" ~/.claude/skills/equipo-tao/contexto.md
+cp "$ORIGEN/clientes/$CLIENTE/contexto.md" ~/.claude/skills/equipo-tavo/contexto.md
 ls -d ~/.claude/skills/equipo-*
 ```
 
 Para quitar un perfil que el cliente no quiso, se borra su carpeta (por ejemplo
-`rm -r ~/.claude/skills/equipo-mid`) y su renglón en la ficha. **TAO y su ficha se quedan siempre**,
+`rm -r ~/.claude/skills/equipo-mid`) y su renglón en la ficha. **Tavo y su ficha se quedan siempre**,
 porque los demás leen la ficha desde ahí.
 
 ### A10c. Dejar Gabinete como postura por defecto
@@ -67,7 +69,7 @@ grep -c "perfiles-del-equipo" ~/.claude/CLAUDE.md   # debe dar 2
 |---|---|
 | En una sesión nueva, escribir `¿qué opina Gestión de lo que tengo pendiente?` | El primer renglón dice «Responde Gestión (GES)» y la respuesta usa los términos de su ficha |
 | Escribir `¿en qué debo estar hoy?` | Contesta Gabinete, con recomendación, sin anunciarse |
-| Escribir `revísalo con TAO` sobre cualquier decisión | Una sección por área y cierra con preguntas para el cliente |
+| Escribir `revísalo con Tavo` sobre cualquier decisión | Una sección por área y cierra con preguntas para el cliente |
 
 Si un perfil se queda callado, la causa casi siempre es la carpeta: tiene que ser
 `~/.claude/skills/equipo-ges/SKILL.md`, con el `SKILL.md` adentro de su carpeta.
