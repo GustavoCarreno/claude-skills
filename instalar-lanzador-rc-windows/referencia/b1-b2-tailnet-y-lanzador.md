@@ -123,7 +123,7 @@ python -m pytest -q        # deben pasar todas, sin una sola falla
 python app.py              # debe quedarse escuchando; Ctrl+C para salir
 ```
 
-Al 14 de octubre de 2026 son 1342 pruebas en Linux (1329 al 11 de octubre, cuando pasaron completas en Windows, medido en `win11-dogfood`, en poco más de tres minutos con `TMP` corto). **El número crece con cada versión, así que no lo
+Al 19 de octubre de 2026 son 1416 pruebas en Linux (1329 al 11 de octubre, cuando pasaron completas en Windows, medido en `win11-dogfood`, en poco más de tres minutos con `TMP` corto). **El número crece con cada versión, así que no lo
 trates como contraseña**: lo que importa es que no falle ninguna.
 
 > ⚠️ **Si fallan por rutas demasiado largas, no es defecto del lanzador.** Windows corta en
@@ -176,7 +176,7 @@ python -m pytest -q                            # todas en verde ANTES de reinici
 > Python del sistema, así que ahí `.venv` solo aparece si alguien lo creó a mano.)
 
 > 📌 **Lo que una máquina ya instalada recibe con solo este paso**, sin configuración, porque
-> es código del lanzador. Al 11 de octubre de 2026:
+> es código del lanzador. Al 19 de octubre de 2026:
 >
 > | Mejora | Qué cambia para el cliente |
 > |---|---|
@@ -202,6 +202,9 @@ python -m pytest -q                            # todas en verde ANTES de reinici
 > | El correo de su gente al arrancar | Viaja `correo_sesion.py`, pero **queda apagado hasta escribir `correo.json` y crear la etiqueta «Procesado» en Gmail**. Ver B11b |
 > | La agenda de hoy y la liga de cada evento | Al 15 de octubre de 2026 (lanzador `9e1f53f` a `75de62e`): «En la agenda de hoy» en la portada, con las tarjetas amarillas de los proyectos que tienen un evento pendiente hoy, y la liga que abre un proyecto con su evento. Viaja `agenda.py`, nuevo. **Queda apagada sin `calendario.json`**, y la liga pide además la sección de B8f en el `CLAUDE.md` global. Ver B8e y B8f. **Pide el reinicio** |
 > | La junta completa al arrancar | Al 15 de octubre de 2026 (fusión `b4fcc0f`): la sexta revisión del arranque ofrece cada junta de la escucha sin procesar, con su transcripción de Drive y sus capturas. Viaja `juntas_sesion.py`, nuevo. **En una máquina que ya usaba la escucha, correr `sembrar`** antes de la primera sesión. Ver B12. **Pide el reinicio** |
+> | La tarjeta del principal, en amarillo con su evento | Al 16 de octubre de 2026 (lanzador `b8e5b4f`): el proyecto principal también se pinta de amarillo cuando tiene un evento pendiente hoy, y de verde con la barra amarilla si ya tiene sesión. Antes se quedaba sin color, porque es una envoltura con el botón adentro. Viaja `templates/_tile_principal.html` con `templates/_estilos.css`. Ver B8e |
+> | Títulos de sesión sin «[Image: …]» | Al 16 de octubre de 2026 (lanzador `929daa4`): cuando una sesión leía una imagen, la tarjeta y las sesiones previas podían titularse «[Image: original 2040x1760…]», porque Claude Code guarda lo que regresa la herramienta como si fuera un mensaje del usuario. Ahora esas entradas se saltan y sale el encargo real. Viaja solo `sessions.py`, y se comporta igual en Windows porque lee el mismo formato de Claude Code |
+> | La sesión rápida | Al 19 de octubre de 2026 (lanzador `6825d44`): el botón «Sesión rápida · sin revisión de arranque» del menú abre una sesión nueva sin el aviso de arranque, y el gancho de arranque también se calla. El registro `lanzamientos.jsonl` lo anota con `"rapida": true`. Viajan `app.py`, `sessions.py`, `procesos_tmux.py`, `procesos_windows.py`, `agenda.py`, `templates/_menu.html` y `templates/_estilos.css`. **Pide el reinicio** |
 >
 > **Las sesiones que ya estaban abiertas conservan el aviso de arranque viejo.** El nuevo sale
 > en la siguiente que se abra.

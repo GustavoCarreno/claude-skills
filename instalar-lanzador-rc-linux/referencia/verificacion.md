@@ -65,6 +65,7 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 | 37 | La agenda de hoy (opcional, B8e) | un evento de hoy titulado `<proyecto> · Prueba de la agenda`, y Actualizar en la portada | la tarjeta del proyecto sube en amarillo con la hora; con su sesión abierta pasa a fondo verde con la barra amarilla; tras decir que sí en la sesión, deja la agenda |
 | 38 | La liga de un evento (B8f) | pedir en una sesión que le agregue la liga a ese evento, y tocarla desde el teléfono | abre el menú del proyecto con el evento nombrado |
 | 39 | La junta completa (opcional, B12c) | Escuchar, dos frases, dos capturas y Terminar; luego una sesión nueva | sale una casilla `Junta` con la cuenta de capturas, y tras procesarla la junta queda en `transcripciones/procesadas.txt` |
+| 40 | La sesión rápida (B2b) | en el menú de un proyecto sin sesión, «Sesión rápida · sin revisión de arranque»; y en la máquina, `cd ~/rc-launcher && .venv/bin/python -c "import procesos_tmux as P; print(len(P.orden_de_arranque('<proyecto>', '<raíz>', rapida=True)[1]))"` | la sesión entra directo, sin la lista «¿Qué atiendo ahora?»; la orden rápida mide unos 160 caracteres, contra más de 5 mil de la normal |
 
 > 📌 **Cómo se comprueba el renglón 22, con un proyecto de prueba.** En un proyecto
 > desechable (`prueba-urgentes`), un `pendientes.md` con una sola tarea:

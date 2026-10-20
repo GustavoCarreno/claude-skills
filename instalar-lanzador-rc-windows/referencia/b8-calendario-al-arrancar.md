@@ -231,6 +231,11 @@ pruebas). **Viaja con B2b** en un solo renglón de `templates/_estilos.css`, sin
 ni configuración nuevas. Medido en el iMac con capturas a 390 px, en claro y oscuro; en Windows falta
 verlo, junto con lo demás de la agenda.
 
+**La tarjeta del proyecto principal se pinta igual**: amarilla con su evento, y verde con la barra
+amarilla si ya tiene sesión. Antes se quedaba sin color, porque es una envoltura con el botón
+adentro (lanzador `b8e5b4f`, 16 de octubre de 2026). **Viaja con B2b** en
+`templates/_tile_principal.html` y `templates/_estilos.css`.
+
 **Quien lee el calendario es Claude, con la suscripción del cliente**, igual que en B8: el
 lanzador nunca habla con Google. La lectura corre con `claude -p` en la primera apertura del día y
 con el botón *Actualizar*, y se guarda en `%USERPROFILE%\.local\state\rc-launcher\agenda\hoy.json`. Usa `gws`

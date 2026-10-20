@@ -61,6 +61,7 @@
 | 36 | La agenda de hoy (opcional, B8e) | un evento de hoy titulado `<proyecto> · Prueba de la agenda`, y Actualizar en la portada | la tarjeta del proyecto sube en amarillo con la hora; con su sesión abierta pasa a fondo verde con la barra amarilla; tras decir que sí en la sesión, deja la agenda |
 | 37 | La liga de un evento (B8f) | pedir en una sesión que le agregue la liga a ese evento, y tocarla desde el teléfono | abre el menú del proyecto con el evento nombrado |
 | 38 | La junta completa (opcional, B12c) | Escuchar, dos frases, dos capturas y Terminar; luego una sesión nueva | sale una casilla `Junta` con la cuenta de capturas, y tras procesarla la junta queda en `transcripciones/procesadas.txt` |
+| 39 | La sesión rápida (B2b) | en el menú de un proyecto sin sesión, «Sesión rápida · sin revisión de arranque» | la sesión entra directo, sin la lista «¿Qué atiendo ahora?». **Falta medirlo en `win11-dogfood`** |
 
 > 📌 **Cómo se comprueba el renglón 21, con un proyecto de prueba.** En un proyecto
 > desechable (`prueba-urgentes`), un `pendientes.md` con una sola tarea:
