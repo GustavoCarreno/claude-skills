@@ -68,6 +68,7 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 | 40 | La sesión rápida (B2b) | en el menú de un proyecto sin sesión, «Sesión rápida · sin revisión de arranque»; y en la máquina, `cd ~/rc-launcher && .venv/bin/python -c "import procesos_tmux as P; print(len(P.orden_de_arranque('<proyecto>', '<raíz>', rapida=True)[1]))"` | la sesión entra directo, sin la lista «¿Qué atiendo ahora?»; la orden rápida mide unos 160 caracteres, contra más de 5 mil de la normal |
 | 41 | La cuenta de Claude (B13c) | `cd ~/rc-launcher && .venv/bin/python -c "import cuenta; print(cuenta.vencimiento())"` | una fecha unos 27 días después del último inicio de sesión; `claude auth status` sirve de cero para esto |
 | 42 | Varias personas (opcional, B14g) | la matriz: cada persona contra su proyecto, uno ajeno en Integra y uno en Propone | Abrir en la app, Retomar y el arranque funcionan en los tres; lo ajeno sin compartir se le niega |
+| 43 | El arranque con evidencia (B11d) | en `prueba-urgentes`, la tarea del recuadro de abajo con una nota «Ya la llamé, quedó en el correo enviado del AAAA-MM-DD», y una sesión nueva | sale «Ya estaban hechas y las palomeé:» con esa tarea, que queda `[x]` con la nota «palomeada por la sesión al arrancar»; la pantalla «¿Cuáles ya están hechas?» se omite |
 
 > 📌 **Cómo se comprueba el renglón 22, con un proyecto de prueba.** En un proyecto
 > desechable (`prueba-urgentes`), un `pendientes.md` con una sola tarea:

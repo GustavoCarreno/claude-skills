@@ -63,6 +63,7 @@
 | 38 | La junta completa (opcional, B12c) | Escuchar, dos frases, dos capturas y Terminar; luego una sesión nueva | sale una casilla `Junta` con la cuenta de capturas, y tras procesarla la junta queda en `transcripciones/procesadas.txt` |
 | 39 | La sesión rápida (B2b) | en el menú de un proyecto sin sesión, «Sesión rápida · sin revisión de arranque» | la sesión entra directo, sin la lista «¿Qué atiendo ahora?». **Falta medirlo en `win11-dogfood`** |
 | 40 | La cuenta de Claude (B13c) | `.venv\Scripts\python -c "import cuenta; print(cuenta.vencimiento())"` en `$HOME\rc-launcher` | una fecha unos 27 días después del último inicio de sesión; `claude auth status` sirve de cero para esto. **Falta medirlo en `win11-dogfood`** |
+| 41 | El arranque con evidencia (B11d) | en `prueba-urgentes`, la tarea del recuadro de abajo con una nota «Ya la llamé, quedó en el correo enviado del AAAA-MM-DD», y una sesión nueva | sale «Ya estaban hechas y las palomeé:» con esa tarea, que queda `[x]` con la nota «palomeada por la sesión al arrancar»; la pantalla «¿Cuáles ya están hechas?» se omite |
 
 > 📌 **Cómo se comprueba el renglón 21, con un proyecto de prueba.** En un proyecto
 > desechable (`prueba-urgentes`), un `pendientes.md` con una sola tarea:

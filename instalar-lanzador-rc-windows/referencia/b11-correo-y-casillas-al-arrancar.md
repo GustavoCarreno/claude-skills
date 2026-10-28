@@ -128,6 +128,13 @@ por su lado, en texto, y el cliente contestaba varias preguntas seguidas. Ahora:
    vencidas, que vencen hoy o con su bloque hoy. Las de fecha futura siguen contando en el
    mosaico, y preguntar si ya se hicieron sobra porque casi seguro siguen abiertas. Medido ese día
    en la máquina de Gustavo: un proyecto pasó de 12 preguntas a cero, y otro de 6 a una.
+   **Desde el 28 de octubre de 2026 busca evidencia antes de preguntar**: revisa los correos
+   enviados, el calendario, el historial de git, los archivos y las notas de cada tarea, palomea
+   sola la que pudo comprobar (con una nota que dice de dónde salió) y la nombra en un renglón
+   «Ya estaban hechas y las palomeé:». La pantalla trae solo las que quedaron en duda, y si
+   todas se comprobaron, se omite. Con la retroalimentación dictada pasa igual: la que ya quedó
+   atendida se sella sola, con lo dictado intacto, y se dice en «Ya estaban atendidas y las sellé:».
+   ⚠️ En Windows está sin medir: la búsqueda en Enviados va por el conector de Gmail.
 3. **Las revisiones que salieron vacías se dicen en un renglón de texto**, sin pantalla.
 4. **Todo lo demás va en una sola lista, «¿Qué atiendo ahora?»**, con una casilla por hallazgo.
    Cada rótulo empieza con su clase (`Junta`, `Transcripción`, `Evento`, `Correo`, `Retro`) y la
