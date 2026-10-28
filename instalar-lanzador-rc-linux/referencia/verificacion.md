@@ -66,6 +66,8 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 | 38 | La liga de un evento (B8f) | pedir en una sesión que le agregue la liga a ese evento, y tocarla desde el teléfono | abre el menú del proyecto con el evento nombrado |
 | 39 | La junta completa (opcional, B12c) | Escuchar, dos frases, dos capturas y Terminar; luego una sesión nueva | sale una casilla `Junta` con la cuenta de capturas, y tras procesarla la junta queda en `transcripciones/procesadas.txt` |
 | 40 | La sesión rápida (B2b) | en el menú de un proyecto sin sesión, «Sesión rápida · sin revisión de arranque»; y en la máquina, `cd ~/rc-launcher && .venv/bin/python -c "import procesos_tmux as P; print(len(P.orden_de_arranque('<proyecto>', '<raíz>', rapida=True)[1]))"` | la sesión entra directo, sin la lista «¿Qué atiendo ahora?»; la orden rápida mide unos 160 caracteres, contra más de 5 mil de la normal |
+| 41 | La cuenta de Claude (B13c) | `cd ~/rc-launcher && .venv/bin/python -c "import cuenta; print(cuenta.vencimiento())"` | una fecha unos 27 días después del último inicio de sesión; `claude auth status` sirve de cero para esto |
+| 42 | Varias personas (opcional, B14g) | la matriz: cada persona contra su proyecto, uno ajeno en Integra y uno en Propone | Abrir en la app, Retomar y el arranque funcionan en los tres; lo ajeno sin compartir se le niega |
 
 > 📌 **Cómo se comprueba el renglón 22, con un proyecto de prueba.** En un proyecto
 > desechable (`prueba-urgentes`), un `pendientes.md` con una sola tarea:

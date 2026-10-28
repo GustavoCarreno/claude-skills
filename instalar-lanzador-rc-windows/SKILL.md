@@ -161,6 +161,8 @@ la primera sesión justamente para no descubrirlo aquí.
 | B10 | [`referencia/b10-principal-hoy-y-ges.md`](referencia/b10-principal-hoy-y-ges.md) | El proyecto principal, la tarjeta Hoy y el repaso diario de GES |
 | B11 | [`referencia/b11-correo-y-casillas-al-arrancar.md`](referencia/b11-correo-y-casillas-al-arrancar.md) | El correo de la gente del proyecto, y las casillas del arranque (el correo es opcional) |
 | B12 | [`referencia/b12-junta-completa-al-arrancar.md`](referencia/b12-junta-completa-al-arrancar.md) | La junta completa al arrancar: la escucha, Drive y las capturas de pantalla, en una casilla |
+| B13 | [`referencia/b13-cuenta-de-claude.md`](referencia/b13-cuenta-de-claude.md) | Cuando la cuenta de Claude pide volver a entrar: el aviso 3 días antes (en Windows, solo el aviso) |
+| B14 | [`referencia/b14-varias-personas.md`](referencia/b14-varias-personas.md) | Varias personas en una máquina: lo que hay hoy en Windows y el estilo de partida a mano (opcional) |
 
 ---
 
