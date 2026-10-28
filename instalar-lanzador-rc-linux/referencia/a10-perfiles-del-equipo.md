@@ -12,6 +12,7 @@
   - A10c. Dejar Gabinete como postura por defecto
   - A10d. Verificar
   - A10e. Lo que hay que decirle
+  - A10f. Las reglas de redacción y sus barridos
 
 <!-- fin del encabezado agregado al partir -->
 
@@ -72,6 +73,7 @@ grep -c "perfiles-del-equipo" ~/.claude/CLAUDE.md   # debe dar 2
 | En una sesión nueva, escribir `¿qué opina Gestión de lo que tengo pendiente?` | El primer renglón dice «Responde Gestión (GES)» y la respuesta usa los términos de su ficha |
 | Escribir `¿en qué debo estar hoy?` | Contesta Gabinete, con recomendación, sin anunciarse |
 | Escribir `revísalo con Tavo` sobre cualquier decisión | Una sección por área y cierra con preguntas para el cliente |
+| En una sesión nueva, pedir un correo de prueba a un proveedor | Sale pidiendo con tacto, y la sesión corre `servicio.py` sobre el texto antes de dejarlo en Borradores |
 
 Si un perfil se queda callado, la causa casi siempre es la carpeta: tiene que ser
 `~/.claude/skills/equipo-ges/SKILL.md`, con el `SKILL.md` adentro de su carpeta.
@@ -83,3 +85,39 @@ Si un perfil se queda callado, la causa casi siempre es la carpeta: tiene que se
 - **La ficha es suya**: si cambia de puesto, de jefe o de forma de trabajar, se le pide al
   asistente que la ponga al día.
 - Todo lo que va a un tercero pasa antes por su visto bueno, y los correos quedan en Borradores.
+- **Cuando corrija cómo escribe su asistente**, la corrección se queda como regla con su fecha, y si
+  se repite entra a la lista del barrido. Puede pedirlo así: *«que no se vuelva a repetir»*.
+
+### A10f. Las reglas de redacción y sus barridos
+
+Al 28 de octubre de 2026. Tres piezas que viajan en la misma carpeta `perfiles/base/`:
+
+| Pieza | Qué es | Dónde queda |
+|---|---|---|
+| `reglas-redaccion.md` | Las reglas del método: se pide y no se ordena, preguntas con signos, sin jerga o definida, sin frases hechas, cero dobles negativos, guion con cada referencia ligada, cuándo correr los barridos y el ciclo de corrección | Al final del `CLAUDE.md` global, con marcas |
+| `reglas-regionales-norte.md` | «Si te acomoda» y el doble sentido, para quien escribe a gente del norte de México. **Se pregunta al cliente** si las quiere | Igual, con sus propias marcas |
+| `barridos/` | `servicio.py` (tono mandón) y `albures.py` (doble sentido), con sus listas de frases en `servicio-frases.txt` y `albures-frases.txt`, que el cliente puede ampliar | `~/.claude/barridos/` |
+| `reglas-catalogo.md` | Las reglas personales que se le ofrecen en la entrevista inicial (horas en am y pm, «buen día», sin rayas largas, la familia con mayúscula, estadounidense) | `~/.claude/reglas-catalogo.md` |
+
+El fragmento **quita primero los bloques anteriores y pone los nuevos**, así que correrlo dos veces
+deja uno de cada uno, y **conserva las listas de frases que el cliente ya amplió**. Con ``$ORIGEN`` de A10b:
+
+```bash
+NORTE=si                   # "si" agrega las reglas del norte de México; "no" las deja fuera
+mkdir -p ~/.claude/barridos
+cp "$ORIGEN"/base/barridos/*.py ~/.claude/barridos/
+for f in "$ORIGEN"/base/barridos/*-frases.txt; do   # las listas que el cliente ya amplió se conservan
+  [ -f ~/.claude/barridos/"$(basename "$f")" ] || cp "$f" ~/.claude/barridos/
+done
+cp "$ORIGEN/base/reglas-catalogo.md" ~/.claude/reglas-catalogo.md
+touch ~/.claude/CLAUDE.md
+sed -i '/reglas-de-redaccion: inicio/,/reglas-de-redaccion: fin/d;/reglas-regionales-norte: inicio/,/reglas-regionales-norte: fin/d' ~/.claude/CLAUDE.md
+cat "$ORIGEN/base/reglas-redaccion.md" >> ~/.claude/CLAUDE.md
+[ "$NORTE" = si ] && cat "$ORIGEN/base/reglas-regionales-norte.md" >> ~/.claude/CLAUDE.md
+grep -c "reglas-de-redaccion\|reglas-regionales-norte" ~/.claude/CLAUDE.md   # 4 con el norte, 2 sin él
+python3 ~/.claude/barridos/servicio.py --probar && python3 ~/.claude/barridos/albures.py --probar
+```
+
+✅ **Medido el 28 de octubre de 2026** con una carpeta personal desechable: dos corridas dejan un solo
+bloque de cada uno, una frase agregada a `servicio-frases.txt` sobrevive la segunda corrida, y los dos
+`--probar` contestan «sabe fallar: sí».

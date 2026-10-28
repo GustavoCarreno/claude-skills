@@ -12,6 +12,7 @@
   - A10c. Dejar Gabinete como postura por defecto
   - A10d. Verificar
   - A10e. Lo que hay que decirle
+  - A10f. Las reglas de redacción y sus barridos
 
 <!-- fin del encabezado agregado al partir -->
 
@@ -84,6 +85,7 @@ $Bloque = [IO.File]::ReadAllText("$Origen\base\postura-gabinete.md", $Utf8)
 | En una sesión nueva, escribir `¿qué opina Gestión de lo que tengo pendiente?` | El primer renglón dice «Responde Gestión (GES)» y la respuesta usa los términos de su ficha |
 | Escribir `¿en qué debo estar hoy?` | Contesta Gabinete, con recomendación, sin anunciarse |
 | Escribir `revísalo con Tavo` sobre cualquier decisión | Una sección por área y cierra con preguntas para el cliente |
+| En una sesión nueva, pedir un correo de prueba a un proveedor | Sale pidiendo con tacto, y la sesión corre `servicio.py` sobre el texto antes de dejarlo en Borradores |
 | Abrir `$HOME\.claude\CLAUDE.md` en el Bloc de notas | Los acentos del bloque se ven bien |
 
 Si un perfil se queda callado, la causa casi siempre es la carpeta: tiene que ser
@@ -96,3 +98,52 @@ Si un perfil se queda callado, la causa casi siempre es la carpeta: tiene que se
 - **La ficha es suya**: si cambia de puesto, de jefe o de forma de trabajar, se le pide al
   asistente que la ponga al día.
 - Todo lo que va a un tercero pasa antes por su visto bueno, y los correos quedan en Borradores.
+- **Cuando corrija cómo escribe su asistente**, la corrección se queda como regla con su fecha, y si
+  se repite entra a la lista del barrido. Puede pedirlo así: *«que no se vuelva a repetir»*.
+
+### A10f. Las reglas de redacción y sus barridos
+
+Al 28 de octubre de 2026. Tres piezas que viajan en la misma carpeta `perfiles/base/`:
+
+| Pieza | Qué es | Dónde queda |
+|---|---|---|
+| `reglas-redaccion.md` | Las reglas del método: se pide y no se ordena, preguntas con signos, sin jerga o definida, sin frases hechas, cero dobles negativos, guion con cada referencia ligada, cuándo correr los barridos y el ciclo de corrección | Al final del `CLAUDE.md` global, con marcas |
+| `reglas-regionales-norte.md` | «Si te acomoda» y el doble sentido, para quien escribe a gente del norte de México. **Se pregunta al cliente** si las quiere | Igual, con sus propias marcas |
+| `barridos/` | `servicio.py` (tono mandón) y `albures.py` (doble sentido), con sus listas de frases en `servicio-frases.txt` y `albures-frases.txt`, que el cliente puede ampliar | `~/.claude/barridos/` |
+| `reglas-catalogo.md` | Las reglas personales que se le ofrecen en la entrevista inicial (horas en am y pm, «buen día», sin rayas largas, la familia con mayúscula, estadounidense) | `~/.claude/reglas-catalogo.md` |
+
+El fragmento **quita primero los bloques anteriores y pone los nuevos**, así que correrlo dos veces
+deja uno de cada uno, y **conserva las listas de frases que el cliente ya amplió**. Con ``$Origen`` de A10b:
+
+```powershell
+$Norte    = $true                     # $true agrega las reglas del norte de México; $false las deja fuera
+$Barridos = "$HOME\.claude\barridos"
+New-Item -ItemType Directory -Force -Path $Barridos | Out-Null
+Copy-Item "$Origen\base\barridos\*.py" $Barridos -Force
+Get-ChildItem "$Origen\base\barridos\*-frases.txt" | ForEach-Object {   # las listas que el cliente ya amplió se conservan
+  if (-not (Test-Path "$Barridos\$($_.Name)")) { Copy-Item $_.FullName $Barridos }
+}
+Copy-Item "$Origen\base\reglas-catalogo.md" "$HOME\.claude\reglas-catalogo.md" -Force
+$Global = "$HOME\.claude\CLAUDE.md"
+$Utf8   = New-Object System.Text.UTF8Encoding($false)
+if (-not (Test-Path $Global)) { [IO.File]::WriteAllText($Global, "", $Utf8) }
+$Actual = [IO.File]::ReadAllText($Global, $Utf8)
+foreach ($m in "reglas-de-redaccion", "reglas-regionales-norte") {
+  $Actual = [regex]::Replace($Actual, "(?s)\r?\n?<!-- $m`: inicio -->.*?<!-- $m`: fin -->\r?\n?", "")
+}
+$Actual += [IO.File]::ReadAllText("$Origen\base\reglas-redaccion.md", $Utf8)
+if ($Norte) { $Actual += [IO.File]::ReadAllText("$Origen\base\reglas-regionales-norte.md", $Utf8) }
+[IO.File]::WriteAllText($Global, $Actual, $Utf8)
+(Select-String -Path $Global -Pattern "reglas-de-redaccion|reglas-regionales-norte").Count   # 4 con el norte, 2 sin él
+python "$Barridos\servicio.py" --probar; python "$Barridos\albures.py" --probar
+```
+
+✅ **Medido el 28 de octubre de 2026 en `win11-dogfood`:** dos corridas dejan un solo bloque de cada
+uno, el `CLAUDE.md` resultante es idéntico byte por byte a los dos bloques (los acentos quedan bien),
+y los dos `--probar` contestan «sabe fallar: sí».
+
+> 🔴 **En Windows el texto se barre desde un archivo, nunca por la entrada estándar desde PowerShell.**
+> Medido ese mismo día: `Get-Content ... | python servicio.py -` contestó «0 aciertos» sobre un texto
+> que trae dos, porque PowerShell 5.1 daña los acentos al pasarlos a Python. Es un falso verde. Por
+> archivo, y por la tubería de Git Bash (el shell que usa Claude Code), sale bien. El bloque de
+> reglas ya lo dice así.

@@ -116,7 +116,7 @@ archivo cite otra sección (A3, B2b…), aquí está dónde vive.
 | A6 y A7 | [`referencia/a6-a7-gitignore-y-pendientes.md`](referencia/a6-a7-gitignore-y-pendientes.md) | El gitignore global y la convención de pendientes.md |
 | A8 | [`referencia/a8-deepinfra.md`](referencia/a8-deepinfra.md) | Transcripción y voz con la cuenta propia de DeepInfra |
 | A9 | [`referencia/a9-respaldo-en-github.md`](referencia/a9-respaldo-en-github.md) | El respaldo de cada proyecto en su propio repositorio privado de GitHub, y cómo se recupera todo en una máquina nueva. **Obligatoria** |
-| A10 | [`referencia/a10-perfiles-del-equipo.md`](referencia/a10-perfiles-del-equipo.md) | Los ocho perfiles del equipo (GAB, GES, PAS, MID, ISI, DAS, CYF y Tavo), con Gabinete como postura por defecto. El contenido lo trae quien instala, desde su repositorio privado |
+| A10 | [`referencia/a10-perfiles-del-equipo.md`](referencia/a10-perfiles-del-equipo.md) | Los ocho perfiles del equipo (GAB, GES, PAS, MID, ISI, DAS, CYF y Tavo), con Gabinete como postura por defecto, y las reglas de redacción con sus barridos (A10f). El contenido lo trae quien instala, desde su repositorio privado |
 
 ---
 
