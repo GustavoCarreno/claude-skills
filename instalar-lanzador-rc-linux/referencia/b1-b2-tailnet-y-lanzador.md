@@ -62,12 +62,34 @@ no en la máquina, y sin ellos la instalación termina sin errores y no funciona
 
 > 🔴 **De dónde sale el código, porque este paso no se puede hacer sin traerlo.** A
 > diferencia de `bitacora.py` (A3), **el lanzador NO está en el repo público de skills** y no
-> hay URL de la que bajarlo. Vive en un repo privado, y **lo trae quien instala**: por `scp`
-> desde tu equipo, en una memoria USB, o clonando el repo privado si la máquina tiene acceso.
-> Consíguelo **antes** de empezar esta fase.
+> hay URL de la que bajarlo. Vive en un repo privado, y **lo trae quien instala**. Consíguelo
+> **antes** de empezar esta fase.
+>
+> 🔴 **Y la copia se arma con `exportar-para-cliente.sh`, nunca copiando la carpeta del
+> lanzador completa** (desde el 17 de noviembre de 2026). La carpeta de trabajo del lanzador
+> trae, junto al código, la bitácora y los pendientes de quien lo construye, sus diálogos
+> grabados, sus diseños con ligas y claves, y los archivos de otras personas. Copiarla entera
+> le entrega todo eso al cliente. El guion copia solo lo confirmado en git que el lanzador
+> necesita para correr y para pasar su batería, escribe `VERSION` con el commit y la fecha, y
+> avisa en rojo si algo de la cuenta de quien instala se coló:
+>
+> ```bash
+> # en la máquina de quien instala, dentro del repo del lanzador
+> ./exportar-para-cliente.sh /ruta/destino/rc-launcher
+> ```
+>
+> **Usarlo siempre con carpeta destino.** Sin ella intenta armar un `.zip` con `zip`, y en una
+> máquina que carece de `zip` deja un archivo de 0 bytes sin marcar error (medido el 17 de
+> noviembre de 2026; pedido el arreglo en lanzador). El aviso rojo nombra hoy tres archivos
+> que se quedan a sabiendas: el propio guion y dos del modo de varias personas
+> (`multiusuario/README.md` y `alta-usuario.sh`), que traen de ejemplo un correo de la casa.
+> Para una sola persona en la máquina, ese modo sobra. Medido: 166 archivos, commit `71b2e3d`.
+>
+> La copia ya armada viaja a la máquina del cliente por `scp`, en una memoria USB o como
+> `.tar`.
 
 ```bash
-# ORIGEN es la copia del lanzador que TRAJISTE. Ajusta la ruta a donde la dejaste.
+# ORIGEN es la copia que armó exportar-para-cliente.sh y TRAJISTE. Ajusta la ruta.
 ORIGEN=/ruta/a/tu/copia/de/rc-launcher
 
 # el código va al home, no a una ruta de sistema
@@ -86,6 +108,13 @@ for f in app.py sessions.py procesos.py requirements.txt templates tests; do
 done
 echo "revisión terminada (sin líneas FALTA arriba = completo)"
 ```
+
+**Y la versión que llegó**, que es lo primero que se pregunta cuando algo falla:
+
+```bash
+cat ~/rc-launcher/VERSION     # commit y fecha de la copia
+```
+
 
 Ya con la copia completa, el entorno:
 
@@ -178,9 +207,31 @@ curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8765/salud
 > | El menú regresa a su tarjeta | Al 27 de octubre de 2026 (lanzador `1bfd932`): cerrar el menú de un proyecto deja la página en la tarjeta donde se tocó. Antes, en Chrome de Android, abrir un proyecto desde Principal, Fijados o la agenda y lanzar la sesión mandaba la página hasta el fondo, a la copia del proyecto en Todos, porque el mosaico se redibuja cada 8 s y el navegador devolvía el foco a esa copia al cerrar la ventana. Medido con el salto provocado: antes de 838 a 5431 px, con el arreglo se queda en 838. Viaja solo `templates/_script_menu.html`, sin pasos nuevos, y **se ve hasta recargar la pestaña del teléfono** (ver el aviso de abajo) |
 > | La cuenta de Claude que vence | Al 27 de octubre de 2026 (lanzador `946d9af`): aviso en ámbar 3 días antes de que venza la cuenta, y en rojo con «Volver a entrar» desde el teléfono cuando una sesión se atora en «Login expired». Viajan `cuenta.py`, `templates/_cuenta.html` y `templates/_cuenta_entrar.html`. Ver B13. **Pide el reinicio** |
 > | El arranque busca evidencia antes de preguntar | Al 28 de octubre de 2026 (lanzador `caecbd0`): antes de «¿Cuáles ya están hechas?», la sesión revisa los correos enviados (con `gws` donde exista, y si no con el conector de Gmail), el calendario (eventos con « ✓» o con «Atendido en sesión»), el historial de git y los archivos del proyecto, y las notas de cada tarea. Palomea sola lo comprobado, con una nota «palomeada por la sesión al arrancar el AAAA-MM-DD: <evidencia>», lo dice en un renglón «Ya estaban hechas y las palomeé:» y pregunta solo por lo demás. Con la retroalimentación dictada hace lo mismo: sella la que ya quedó atendida, sin borrar lo dictado. Ante la duda, pregunta. Viaja solo `pendientes.py`, sin configuración nueva, y vale igual por el lanzador que por `claude` directo con el gancho de arranque. El arranque tarda entre medio minuto y un minuto más cuando hay urgentes, dentro de la suscripción. Ver B11d. **Pide el reinicio**. |
+> | La escucha lee el evento y su guion | Al 22 de octubre de 2026 (lanzador `d732236`): al empezar una junta, una lectura aparte busca el evento en curso y su guion. Viaja solo `escucha_sesion.py`. **Pide `calendario.json` de B8.** Ver B15a. |
+> | El resumen de Escuchar, guardado | Al 1 de noviembre de 2026: el resumen se guarda por proyecto y se pone al día por diferencias, con Compromisos armados por código. Viaja `resumen_proyecto.py`, nuevo. Ver B15b. |
+> | Dialogar | Al 1 y 2 de noviembre de 2026: botón junto a Escuchar, envío al callar y voz por partes. Viajan `dialogo_real.py`, `sesion_viva.py`, `vad.py`, la carpeta `vad/` y `templates/_escucha.html`. Ver B15c. **Pide el reinicio**. |
+> | El botón atrás y la tarjeta «Escuchando» | Al 2 de noviembre de 2026 (lanzador `17a880a`): atrás regresa a Proyectos sin reabrir Escuchar ni Dialogar, y la tarjeta dice cuánto lleva la junta. Solo de la página: **se ve hasta recargar la pestaña del teléfono**. Ver B15d. |
+> | «Abre» por voz | Al 8 de noviembre de 2026: micrófono en «Filtrar proyectos». Viajan `orden_voz.py` y `templates/_script_voz.html`. **Pide la llave de A8.** Ver B15e. |
+> | El mosaico ancho | Al 9 de noviembre de 2026: desde 1,024 px el mosaico usa las columnas que quepan. Solo CSS (`templates/_estilos.css`, `templates/index.html`). |
+> | El rescate del toque | Al 13 de noviembre de 2026: «Abriendo…», reintento a los 3 s y registro de toques lentos. Viaja `toques.py`, nuevo. Ver B15f. |
+> | Dictar al crear un proyecto | Al 14 de octubre de 2026 (lanzador `736c101`): botón Dictar bajo «¿De qué se trata?». **Pide la llave de A8.** Ver B15g. |
 >
 > **Las sesiones que ya estaban abiertas conservan el aviso de arranque viejo.** El nuevo sale
 > en la siguiente que se abra.
+
+> 🔴 **Actualizar y reiniciar van en el mismo paso, y nunca con una junta abierta** (2 de
+> noviembre de 2026). La voz, la bitácora y el repaso corren como procesos aparte y toman el código
+> nuevo en cuanto se copia, aunque el servicio siga con el viejo; entre la copia y el reinicio,
+> la página y la voz quedan desfasadas. Antes de reiniciar, comprobar que no haya Escuchar ni
+> Dialogar abiertos:
+>
+> ```bash
+> cd ~/rc-launcher && .venv/bin/python -c "import escucha; print(escucha.juntas_abiertas())"
+> ```
+>
+> Debe imprimir una lista vacía. Y después de la batería, `tmux ls` debe mostrar las mismas
+> sesiones que antes: una de más quiere decir que una prueba tocó sesiones reales.
+
 
 > 🔴 **La pestaña que el teléfono ya tenía abierta sigue corriendo el código anterior.** El
 > HTML y su script viajan juntos en la respuesta de la raíz, y una pestaña abierta conserva el

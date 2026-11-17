@@ -4,6 +4,9 @@
 > en qué archivo vive cada una están en `SKILL.md`. Cuando aquí se cite otra sección (A3, B2b…),
 > búscala en esa tabla.
 
+> 📌 **Lo que la escucha ganó del 22 de octubre al 13 de noviembre de 2026** (el evento y su guion
+> al empezar, el resumen guardado, Dialogar, el botón atrás y la voz local) está en B15.
+
 ## Contenido de este archivo
 
 - B9. La escucha en vivo

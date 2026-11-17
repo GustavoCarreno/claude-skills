@@ -69,6 +69,12 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 | 41 | La cuenta de Claude (B13c) | `cd ~/rc-launcher && .venv/bin/python -c "import cuenta; print(cuenta.vencimiento())"` | una fecha unos 27 días después del último inicio de sesión; `claude auth status` sirve de cero para esto |
 | 42 | Varias personas (opcional, B14g) | la matriz: cada persona contra su proyecto, uno ajeno en Integra y uno en Propone | Abrir en la app, Retomar y el arranque funcionan en los tres; lo ajeno sin compartir se le niega |
 | 43 | El arranque con evidencia (B11d) | en `prueba-urgentes`, la tarea del recuadro de abajo con una nota «Ya la llamé, quedó en el correo enviado del AAAA-MM-DD», y una sesión nueva | sale «Ya estaban hechas y las palomeé:» con esa tarea, que queda `[x]` con la nota «palomeada por la sesión al arrancar»; la pantalla «¿Cuáles ya están hechas?» se omite |
+| 44 | La copia limpia (B2) | `VERSION` en la carpeta del lanzador, y buscar ahí `CLAUDE.md`, `pendientes.md`, `docs` y `transcripciones` | `VERSION` trae commit y fecha, y esos cuatro faltan |
+| 45 | La batería sin sesiones de más (B2b) | la lista de sesiones antes y después de la batería | la misma lista; la app de Claude sigue sin sesiones nuevas |
+| 46 | La escucha con guion (opcional, B15a) | un evento que empieza en 10 minutos con la liga a una paginita del proyecto, y Escuchar, Empezar | salen las tarjetas «Junta en curso» y «Guion de hoy» |
+| 47 | Dialogar (B15c) | Dialogar, una pregunta y silencio | se envía solo y la respuesta se oye; Terminar y atrás desde Proyectos sale del lanzador |
+| 48 | «Abre» por voz (B15e) | el micrófono del filtro, y decir «Abre» con el nombre de un proyecto | se abre su menú; sin llave de A8 el filtro sigue sin micrófono |
+| 49 | Dictar al crear (B15g) | + Nuevo proyecto, Dictar bajo «¿De qué se trata?» | el texto dictado aparece en el campo |
 
 > 📌 **Cómo se comprueba el renglón 22, con un proyecto de prueba.** En un proyecto
 > desechable (`prueba-urgentes`), un `pendientes.md` con una sola tarea:

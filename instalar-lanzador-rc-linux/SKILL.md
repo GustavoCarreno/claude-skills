@@ -59,6 +59,9 @@ orden. Para Windows existe el equivalente en `instalar-lanzador-rc-windows`.
 | **Una tarea se atiende sin salir de lo que está viendo** (requiere la fase B) | Tocar una tarea en el principal, en la tarjeta Hoy o en Enfoque abre su ficha: la nota completa, lo que dictó y los botones Hecha, Descartar y Dejar retro. Se resuelve ahí, sin abrir la lista entera del proyecto, y la tarea desaparece de la tarjeta en el acto |
 | **Las facturas que toca emitir, en rojo** (requiere la fase B) | Cada contrato mensual dice qué día se factura. Cuando llega el día, sale en rojo arriba de todo, y un botón la da por emitida |
 | **Un repaso diario de sus promesas** (opcional, requiere la fase B) | La primera vez que abre el lanzador en el día, un repaso busca lo que prometió con fecha y quedó sin tarea, y lo anota en sus pendientes. Un botón lo vuelve a correr cuando quiera |
+| **La escucha llega preparada** (requiere la fase B y B8) | Al empezar a escuchar una junta, la primera tarjeta dice qué junta es y la segunda trae el guion que dejó ligado en el evento del calendario. El resumen del proyecto se guarda y la siguiente junta solo lee lo que cambió. Ver B15a y B15b |
+| **Platicar con su proyecto, de viva voz** (requiere la fase B y A8) | El botón Dialogar, junto a Escuchar: pregunta en voz alta, se envía solo al callar, y la respuesta se oye. Habla con la sesión que tiene abierta, así que sabe de qué venían platicando. Ver B15c |
+| **«Abre adco»** (requiere la fase B y A8) | En el filtro de proyectos hay un micrófono: dice «Abre» y el nombre, y se abre ese proyecto. Ver B15e |
 
 ## El reparto, y conviene decirlo antes de empezar
 
@@ -142,6 +145,7 @@ la primera sesión justamente para no descubrirlo aquí.
 | B12 | [`referencia/b12-junta-completa-al-arrancar.md`](referencia/b12-junta-completa-al-arrancar.md) | La junta completa al arrancar: la escucha, Drive y las capturas de pantalla, en una casilla |
 | B13 | [`referencia/b13-cuenta-de-claude.md`](referencia/b13-cuenta-de-claude.md) | Cuando la cuenta de Claude pide volver a entrar: el aviso 3 días antes y la entrada desde el teléfono |
 | B14 | [`referencia/b14-varias-personas.md`](referencia/b14-varias-personas.md) | Varias personas en una máquina: el alta, la llave colectiva, Integra y Propone, los estilos por rol (opcional) |
+| B15 | [`referencia/b15-dialogar-y-voz.md`](referencia/b15-dialogar-y-voz.md) | La junta con guion, el resumen guardado, Dialogar, «Abre» por voz, el rescate del toque, el mosaico ancho, la voz local y el resumen por la API |
 
 ---
 

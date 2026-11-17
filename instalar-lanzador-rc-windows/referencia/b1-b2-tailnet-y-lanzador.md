@@ -88,12 +88,34 @@ con el nodo marcado `offline` todo ese tiempo.
 
 > 🔴 **De dónde sale el código, porque este paso no se puede hacer sin traerlo.** A
 > diferencia de `bitacora.py` (A3), **el lanzador NO está en el repo público de skills** y no
-> hay URL de la que bajarlo. Vive en un repo privado, y **lo trae quien instala**: por red
-> desde tu equipo, en una memoria USB, o clonando el repo privado si la máquina tiene acceso.
-> Consíguelo **antes** de empezar esta fase.
+> hay URL de la que bajarlo. Vive en un repo privado, y **lo trae quien instala**. Consíguelo
+> **antes** de empezar esta fase.
+>
+> 🔴 **Y la copia se arma con `exportar-para-cliente.sh`, nunca copiando la carpeta del
+> lanzador completa** (desde el 17 de noviembre de 2026). La carpeta de trabajo del lanzador
+> trae, junto al código, la bitácora y los pendientes de quien lo construye, sus diálogos
+> grabados, sus diseños con ligas y claves, y los archivos de otras personas. Copiarla entera
+> le entrega todo eso al cliente. El guion copia solo lo confirmado en git que el lanzador
+> necesita para correr y para pasar su batería, escribe `VERSION` con el commit y la fecha, y
+> avisa en rojo si algo de la cuenta de quien instala se coló:
+>
+> ```bash
+> # en la máquina de quien instala, dentro del repo del lanzador
+> ./exportar-para-cliente.sh /ruta/destino/rc-launcher
+> ```
+>
+> **Usarlo siempre con carpeta destino.** Sin ella intenta armar un `.zip` con `zip`, y en una
+> máquina que carece de `zip` deja un archivo de 0 bytes sin marcar error (medido el 17 de
+> noviembre de 2026; pedido el arreglo en lanzador). El aviso rojo nombra hoy tres archivos
+> que se quedan a sabiendas: el propio guion y dos del modo de varias personas
+> (`multiusuario/README.md` y `alta-usuario.sh`), que traen de ejemplo un correo de la casa.
+> Para una sola persona en la máquina, ese modo sobra. Medido: 166 archivos, commit `71b2e3d`.
+>
+> La copia ya armada viaja a la laptop del cliente en una memoria USB, por la red o como
+> `.tar` (Windows 10 y 11 traen `tar`: `tar -xf copia.tar -C C:\copia-rc`).
 
 ```powershell
-# $ORIGEN es la copia del lanzador que TRAJISTE. Ajusta la ruta a donde la dejaste.
+# $ORIGEN es la copia que armó exportar-para-cliente.sh y TRAJISTE. Ajusta la ruta.
 $ORIGEN = "D:\ruta\a\tu\copia\de\rc-launcher"
 
 # el código va al perfil del usuario, no a Archivos de programa
@@ -105,6 +127,15 @@ New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\claude"
 > ⚠️ **`robocopy` sale con código 1 cuando copió bien.** No es un error: usa 0 para "nada
 > que copiar" y 1 para "copió archivos". Solo de 8 para arriba hay falla real.
 
+> 🔴 **Al 17 de noviembre de 2026, la versión actual del lanzador NO arranca en Windows.** Medido en
+> `win11-dogfood` con la copia de `exportar-para-cliente.sh` (commit `71b2e3d`): `accesos.py`, del modo
+> de varias personas, importa un módulo que solo existe en Linux, y desde el 24 de octubre de 2026 el
+> lanzador lo carga al arrancar. La tarea programada termina con resultado 1 y el puerto queda cerrado,
+> y la batería da error antes de correr una sola prueba. **El arreglo está pedido en lanzador.** Hasta
+> que llegue, no instalar ni actualizar una máquina Windows con una versión posterior al 24 de
+> octubre de 2026. Con un parche de prueba la batería dio 1835 en verde y 52 fallas, casi todas de
+> esa misma causa; las demás también quedaron pedidas.
+
 **Comprobar que llegó completo antes de seguir**, porque una copia a medias arranca igual y
 falla después, lejos de aquí:
 
@@ -114,6 +145,13 @@ foreach ($f in "app.py","sessions.py","procesos.py","procesos_windows.py","requi
 }
 "revisión terminada (sin líneas FALTA arriba = completo)"
 ```
+
+**Y la versión que llegó**, que es lo primero que se pregunta cuando algo falla:
+
+```powershell
+Get-Content "$env:USERPROFILE\rc-launcher\VERSION"   # commit y fecha de la copia
+```
+
 
 Ya con la copia completa:
 
@@ -208,6 +246,14 @@ python -m pytest -q                            # todas en verde ANTES de reinici
 > | El menú regresa a su tarjeta | Al 27 de octubre de 2026 (lanzador `1bfd932`): cerrar el menú de un proyecto deja la página en la tarjeta donde se tocó. Antes, en Chrome de Android, abrir un proyecto desde Principal, Fijados o la agenda y lanzar la sesión mandaba la página hasta el fondo, a la copia del proyecto en Todos, porque el mosaico se redibuja cada 8 s y el navegador devolvía el foco a esa copia al cerrar la ventana. Medido con el salto provocado: antes de 838 a 5431 px, con el arreglo se queda en 838. Viaja solo `templates/_script_menu.html`, sin pasos nuevos, y **se ve hasta recargar la pestaña del teléfono** (ver el aviso de abajo). **Falta medirlo en `win11-dogfood`** |
 > | La cuenta de Claude que vence | Al 27 de octubre de 2026 (lanzador `946d9af`): aviso en ámbar 3 días antes de que venza la cuenta; la detección de la sesión atorada y la entrada desde el teléfono todavía faltan en Windows. Viajan `cuenta.py`, `templates/_cuenta.html` y `templates/_cuenta_entrar.html`. Ver B13. **Pide el reinicio** |
 > | El arranque busca evidencia antes de preguntar | Al 28 de octubre de 2026 (lanzador `caecbd0`): antes de «¿Cuáles ya están hechas?», la sesión revisa los correos enviados (con `gws` donde exista, y si no con el conector de Gmail), el calendario (eventos con « ✓» o con «Atendido en sesión»), el historial de git y los archivos del proyecto, y las notas de cada tarea. Palomea sola lo comprobado, con una nota «palomeada por la sesión al arrancar el AAAA-MM-DD: <evidencia>», lo dice en un renglón «Ya estaban hechas y las palomeé:» y pregunta solo por lo demás. Con la retroalimentación dictada hace lo mismo: sella la que ya quedó atendida, sin borrar lo dictado. Ante la duda, pregunta. Viaja solo `pendientes.py`, sin configuración nueva, y vale igual por el lanzador que por `claude` directo con el gancho de arranque. El arranque tarda entre medio minuto y un minuto más cuando hay urgentes, dentro de la suscripción. Ver B11d. **Pide el reinicio**, o sea matar por PID al `python` del puerto 8765. **En Windows falta correr la batería en `win11-dogfood`, y falta medir la búsqueda en Enviados con el conector de Gmail.** |
+> | La escucha lee el evento y su guion | Al 22 de octubre de 2026 (lanzador `d732236`): al empezar una junta, una lectura aparte busca el evento en curso y su guion. Viaja solo `escucha_sesion.py`. **Pide `calendario.json` de B8.** Ver B15a. **Sin medir en Windows: al 17 de noviembre de 2026 el lanzador de esta versión no arranca allá (ver el aviso de B2)** |
+> | El resumen de Escuchar, guardado | Al 1 de noviembre de 2026: el resumen se guarda por proyecto y se pone al día por diferencias, con Compromisos armados por código. Viaja `resumen_proyecto.py`, nuevo. Ver B15b. **Sin medir en Windows: al 17 de noviembre de 2026 el lanzador de esta versión no arranca allá (ver el aviso de B2)** |
+> | Dialogar | Al 1 y 2 de noviembre de 2026: botón junto a Escuchar, envío al callar y voz por partes. Viajan `dialogo_real.py`, `sesion_viva.py`, `vad.py`, la carpeta `vad/` y `templates/_escucha.html`. Ver B15c. **Pide el reinicio**. **Sin medir en Windows: al 17 de noviembre de 2026 el lanzador de esta versión no arranca allá (ver el aviso de B2)** |
+> | El botón atrás y la tarjeta «Escuchando» | Al 2 de noviembre de 2026 (lanzador `17a880a`): atrás regresa a Proyectos sin reabrir Escuchar ni Dialogar, y la tarjeta dice cuánto lleva la junta. Solo de la página: **se ve hasta recargar la pestaña del teléfono**. Ver B15d. **Sin medir en Windows: al 17 de noviembre de 2026 el lanzador de esta versión no arranca allá (ver el aviso de B2)** |
+> | «Abre» por voz | Al 8 de noviembre de 2026: micrófono en «Filtrar proyectos». Viajan `orden_voz.py` y `templates/_script_voz.html`. **Pide la llave de A8.** Ver B15e. **Sin medir en Windows: al 17 de noviembre de 2026 el lanzador de esta versión no arranca allá (ver el aviso de B2)** |
+> | El mosaico ancho | Al 9 de noviembre de 2026: desde 1,024 px el mosaico usa las columnas que quepan. Solo CSS (`templates/_estilos.css`, `templates/index.html`). |
+> | El rescate del toque | Al 13 de noviembre de 2026: «Abriendo…», reintento a los 3 s y registro de toques lentos. Viaja `toques.py`, nuevo. Ver B15f. **Sin medir en Windows: al 17 de noviembre de 2026 el lanzador de esta versión no arranca allá (ver el aviso de B2)** |
+> | Dictar al crear un proyecto | Al 14 de octubre de 2026 (lanzador `736c101`): botón Dictar bajo «¿De qué se trata?». **Pide la llave de A8.** Ver B15g. **Sin medir en Windows: al 17 de noviembre de 2026 el lanzador de esta versión no arranca allá (ver el aviso de B2)** |
 >
 > **Las sesiones que ya estaban abiertas conservan el aviso de arranque viejo.** El nuevo sale
 > en la siguiente que se abra.
@@ -217,6 +263,20 @@ python -m pytest -q                            # todas en verde ANTES de reinici
 > ✅ **Medido en Windows el 11 de octubre de 2026:** este mismo B2b llevó el lanzador del 6 de octubre al del 11 en `win11-dogfood`, la batería pasó completa (1315 pruebas) y la escucha nueva funcionó con el teléfono (ver B9e).
 >
 > ✅ **Medido en Windows el 5 de octubre de 2026, en `win11-dogfood`:** la batería completa pasa (1188 pruebas), incluidas las de los títulos de sesiones previas, y el menú viaja comprimido por la tailnet (2,820 bytes contra 1,061 en un proyecto chico; la diferencia crece con el tamaño del menú).
+
+> 🔴 **Actualizar y reiniciar van en el mismo paso, y nunca con una junta abierta** (2 de
+> noviembre de 2026). La voz, la bitácora y el repaso corren como procesos aparte y toman el código
+> nuevo en cuanto se copia, aunque el servicio siga con el viejo; entre la copia y el reinicio,
+> la página y la voz quedan desfasadas. Antes de reiniciar, comprobar que no haya Escuchar ni
+> Dialogar abiertos:
+>
+> ```powershell
+> cd $env:USERPROFILE\rc-launcher; python -c "import escucha; print(escucha.juntas_abiertas())"
+> ```
+>
+> Debe imprimir una lista vacía. Y después de la batería, la lista de sesiones del lanzador debe
+> ser la misma de antes: una de más quiere decir que una prueba tocó sesiones reales.
+
 
 > 🔴 **La pestaña que el teléfono ya tenía abierta sigue corriendo el código anterior.** El
 > HTML y su script viajan juntos en la respuesta de la raíz, y una pestaña abierta conserva el

@@ -32,16 +32,28 @@ sección dice lo que hay que saber para llevarlo a otra máquina.
 | Una persona, su laptop | Las fases A y B, sin esta sección |
 | Dos o más personas, una máquina siempre encendida (en la oficina o en la nube) | Las fases A y B para el dueño de la máquina, y esta sección para cada persona más |
 
-🔴 **Dos avisos antes de prometerlo, los dos medidos el 28 de octubre de 2026:**
+🟡 **Lo que cambió desde el 28 de octubre de 2026, y lo que sigue pendiente:**
 
-1. **Los guiones del alta traen escritas las rutas de la máquina donde se construyeron**
-   (`/media/mortal/data`, el usuario `mortal`). `alta-usuario.sh` e `instalar-codigo.sh` hacen casi
-   todo el trabajo, pero en otra máquina hay que ajustar esas rutas antes de correrlos, y lo mismo
-   `base`, `raiz` y `mosaicos` en `accesos.json`. Volverlas configurables quedó pedido en el
-   proyecto del lanzador.
-2. **El modo de varias personas vive en la rama `multiusuario-sinai`, sin fusionar a `master`.** B2b
-   copia lo que tenga la carpeta del lanzador en ese momento, así que hay que confirmar antes de
-   copiar que la carpeta está en la rama que de verdad corre (`git branch --show-current`).
+1. **Las rutas ya se configuran** (30 de octubre de 2026). `alta-usuario.sh` e
+   `instalar-codigo.sh` leen `/etc/rc-launcher/maquina.env`, con renglones `CLAVE=valor`:
+   `RC_SERVICIO`, `RC_RAIZ`, `RC_PASO`, `RC_ORIGEN`, `RC_SKILLS` y `RC_ACCESOS`. El ejemplo
+   comentado está en `multiusuario/maquina.env.ejemplo`; sin el archivo salen los valores de la
+   máquina donde se construyó, así que **en la máquina de un cliente ese archivo va siempre**. El
+   servicio de cada persona también lo lee para `RC_ACCESOS`. Si la máquina usa otra ruta de
+   accesos, el lanzador del usuario de servicio y su `accesos.timer` también necesitan
+   `RC_ACCESOS` en su entorno. La carpeta de cada persona sale de `getent`, pero el servicio
+   todavía supone `/home/<usuario>`.
+2. **El alta ganó dos pasos** (8 de noviembre de 2026): corre `loginctl enable-linger` del usuario
+   de servicio, porque en una máquina sin escritorio, sin eso, se detienen sus relojes de usuario,
+   entre ellos el candado de accesos; y si la máquina tiene la pantalla virtual (`xvfb`, `openbox`,
+   `x11vnc`, `novnc`, `websockify`, `/usr/local/bin/pantalla-navegador` y `/opt/navegador`), publica
+   la ruta `/pantalla` en el puerto de la persona, para que inicie sesión en el navegador del
+   asistente sin regla nueva de Tailscale. **El alta completa quedó sin correr de punta a punta con
+   estos dos pasos**: solo se comprobó su sintaxis.
+3. **La rama.** El modo de varias personas se confirma en `master` y en `multiusuario-sinai`, pero
+   al 17 de noviembre de 2026 `master` va 5 commits atrás. `exportar-para-cliente.sh` (B2) copia lo
+   confirmado en la rama en curso, así que antes de armar la copia se confirma con
+   `git branch --show-current` que es la rama que de verdad corre.
 
 ### B14b. Así queda armado
 
