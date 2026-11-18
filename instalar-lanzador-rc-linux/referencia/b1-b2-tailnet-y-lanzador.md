@@ -78,9 +78,10 @@ no en la máquina, y sin ellos la instalación termina sin errores y no funciona
 > ./exportar-para-cliente.sh /ruta/destino/rc-launcher
 > ```
 >
-> **Usarlo siempre con carpeta destino.** Sin ella intenta armar un `.zip` con `zip`, y en una
-> máquina que carece de `zip` deja un archivo de 0 bytes sin marcar error (medido el 17 de
-> noviembre de 2026; pedido el arreglo en lanzador). El aviso rojo nombra hoy tres archivos
+> **Con carpeta destino deja la copia lista para llevar.** Sin destino arma
+> `salida/rc-launcher-AAAA-MM-DD.zip` con el `zipfile` de Python, lo verifica y solo entonces
+> lo deja ahí (lanzador `c379692`, 17 de noviembre de 2026). Antes usaba el programa `zip`, y en
+> una máquina que carecía de él dejaba un archivo de 0 bytes sin marcar error. El aviso rojo nombra hoy tres archivos
 > que se quedan a sabiendas: el propio guion y dos del modo de varias personas
 > (`multiusuario/README.md` y `alta-usuario.sh`), que traen de ejemplo un correo de la casa.
 > Para una sola persona en la máquina, ese modo sobra. Medido: 166 archivos, commit `71b2e3d`.
@@ -133,8 +134,8 @@ python3 -m venv .venv
 cd ~/rc-launcher && .venv/bin/python -m pytest -q
 ```
 
-Debe pasar **la suite completa, sin una sola falla**. Al 28 de octubre de 2026 son 1730 pruebas
-y corren en unos seis minutos en el iMac. **El número crece con cada versión, así que no lo trates como
+Debe pasar **la suite completa, sin una sola falla**. Al 17 de noviembre de 2026 son 1903 pruebas
+(una omitida) y corren en unos 16 minutos en bat. **El número crece con cada versión, así que no lo trates como
 contraseña**: lo que importa es que no falle ninguna, en la máquina del cliente, sin tocar
 una línea. Eso es lo que demuestra que el código no depende de la máquina donde nació.
 
@@ -167,6 +168,10 @@ cd ~/rc-launcher
 sudo systemctl restart rc-launcher
 curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8765/salud
 ```
+
+> ⚠️ **La batería ya tarda unos 16 minutos en Linux** (1902 pruebas en 970 s, 17 de noviembre de
+> 2026). Si se corre con un límite de tiempo, que pase de 20 minutos: uno de 15 la corta a la mitad
+> sin decir por qué, y parece que se colgó.
 
 > ✅ **Reiniciar el servicio NO mata las sesiones que estén trabajando**, gracias a
 > `KillMode=process` en el unit (B3). Se puede actualizar con el cliente usándolo.
@@ -215,6 +220,8 @@ curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8765/salud
 > | El mosaico ancho | Al 9 de noviembre de 2026: desde 1,024 px el mosaico usa las columnas que quepan. Solo CSS (`templates/_estilos.css`, `templates/index.html`). |
 > | El rescate del toque | Al 13 de noviembre de 2026: «Abriendo…», reintento a los 3 s y registro de toques lentos. Viaja `toques.py`, nuevo. Ver B15f. |
 > | Dictar al crear un proyecto | Al 14 de octubre de 2026 (lanzador `736c101`): botón Dictar bajo «¿De qué se trata?». **Pide la llave de A8.** Ver B15g. |
+> | Las notas de junta en el correo del arranque | Al 17 de noviembre de 2026 (lanzador `a1795ad`): la revisión de correo busca también los informes de Read AI y Fireflies que nombren al proyecto y los ofrece como `Junta`. Viaja solo `correo_sesion.py`; se configura con `notas_de_junta` en `correo.json`. Ver B11 |
+> | Un solo toque, una sola sesión | Al 17 de noviembre de 2026 (lanzador `a1795ad`): tocar dos veces seguidas Nueva sesión o Sesión rápida abre una sola sesión. El servidor rechaza una segunda del mismo proyecto creada hace menos de 60 s, y los botones se apagan al tocarlos. Salió de dos sesiones abiertas con un segundo de diferencia desde la tarjeta de la agenda. Viajan `app.py` y `templates/_menu.html`. **Pide el reinicio**, y la parte del botón se ve hasta recargar la pestaña del teléfono. |
 >
 > **Las sesiones que ya estaban abiertas conservan el aviso de arranque viejo.** El nuevo sale
 > en la siguiente que se abra.

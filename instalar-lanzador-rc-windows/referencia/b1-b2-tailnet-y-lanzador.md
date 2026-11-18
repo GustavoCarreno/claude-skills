@@ -104,15 +104,18 @@ con el nodo marcado `offline` todo ese tiempo.
 > ./exportar-para-cliente.sh /ruta/destino/rc-launcher
 > ```
 >
-> **Usarlo siempre con carpeta destino.** Sin ella intenta armar un `.zip` con `zip`, y en una
-> máquina que carece de `zip` deja un archivo de 0 bytes sin marcar error (medido el 17 de
-> noviembre de 2026; pedido el arreglo en lanzador). El aviso rojo nombra hoy tres archivos
+> **Con carpeta destino deja la copia lista para llevar.** Sin destino arma
+> `salida/rc-launcher-AAAA-MM-DD.zip` con el `zipfile` de Python, lo verifica y solo entonces
+> lo deja ahí (lanzador `c379692`, 17 de noviembre de 2026). Antes usaba el programa `zip`, y en
+> una máquina que carecía de él dejaba un archivo de 0 bytes sin marcar error. El aviso rojo nombra hoy tres archivos
 > que se quedan a sabiendas: el propio guion y dos del modo de varias personas
 > (`multiusuario/README.md` y `alta-usuario.sh`), que traen de ejemplo un correo de la casa.
 > Para una sola persona en la máquina, ese modo sobra. Medido: 166 archivos, commit `71b2e3d`.
 >
-> La copia ya armada viaja a la laptop del cliente en una memoria USB, por la red o como
-> `.tar` (Windows 10 y 11 traen `tar`: `tar -xf copia.tar -C C:\copia-rc`).
+> La copia ya armada viaja a la laptop del cliente en una memoria USB o por la red, **comprimida**:
+> `tar -czf copia.tar.gz rc-launcher` del lado de quien instala, y `tar -xzf copia.tar.gz -C C:\copia-rc`
+> en la laptop (Windows 10 y 11 traen `tar`). Medido el 17 de noviembre de 2026 por el relevo de
+> Tailscale: el `.tar` de 18 MB se atoró en 7.5 MB, y el `.tar.gz` de 6.2 MB pasó en 14 segundos.
 
 ```powershell
 # $ORIGEN es la copia que armó exportar-para-cliente.sh y TRAJISTE. Ajusta la ruta.
@@ -127,14 +130,14 @@ New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\claude"
 > ⚠️ **`robocopy` sale con código 1 cuando copió bien.** No es un error: usa 0 para "nada
 > que copiar" y 1 para "copió archivos". Solo de 8 para arriba hay falla real.
 
-> 🔴 **Al 17 de noviembre de 2026, la versión actual del lanzador NO arranca en Windows.** Medido en
-> `win11-dogfood` con la copia de `exportar-para-cliente.sh` (commit `71b2e3d`): `accesos.py`, del modo
-> de varias personas, importa un módulo que solo existe en Linux, y desde el 24 de octubre de 2026 el
-> lanzador lo carga al arrancar. La tarea programada termina con resultado 1 y el puerto queda cerrado,
-> y la batería da error antes de correr una sola prueba. **El arreglo está pedido en lanzador.** Hasta
-> que llegue, no instalar ni actualizar una máquina Windows con una versión posterior al 24 de
-> octubre de 2026. Con un parche de prueba la batería dio 1835 en verde y 52 fallas, casi todas de
-> esa misma causa; las demás también quedaron pedidas.
+> ✅ **Desde lanzador `c379692` (17 de noviembre de 2026) el lanzador vuelve a arrancar en Windows.**
+> Entre el 24 de octubre y esa fecha no arrancaba: `accesos.py`, del modo de varias personas, importaba un
+> módulo que solo existe en Linux. Medido en `win11-dogfood` con la copia de `exportar-para-cliente.sh`
+> (commit `f01c037`): la tarea programada queda corriendo, el puerto 8765 escucha y `/salud` contesta
+> `ok`. La batería dio 1842 en verde, 58 omitidas y 3 fallas en 23.7 minutos, y **las tres son de las
+> pruebas y no del lanzador**: esperan `python3` escrito fijo (dos son del modo de varias personas, que es
+> solo de Linux) o simulan Linux con rutas de Windows. Están pedidas en lanzador. **Una copia anterior a
+> `c379692` sigue sin arrancar en Windows**: si una máquina quedó con una de esas, actualizarla con B2b.
 
 **Comprobar que llegó completo antes de seguir**, porque una copia a medias arranca igual y
 falla después, lejos de aquí:
@@ -161,7 +164,7 @@ python -m pytest -q        # deben pasar todas, sin una sola falla
 python app.py              # debe quedarse escuchando; Ctrl+C para salir
 ```
 
-Al 28 de octubre de 2026 son 1730 pruebas en Linux (1329 al 11 de octubre, cuando pasaron completas en Windows, medido en `win11-dogfood`, en poco más de tres minutos con `TMP` corto). **El número crece con cada versión, así que no lo
+Al 17 de noviembre de 2026 son 1903 pruebas en Linux. En `win11-dogfood`, con `TMP` corto, ese día dieron 1842 en verde, 58 omitidas y 3 fallas de las propias pruebas en 23.7 minutos (ver el aviso de arriba). **El número crece con cada versión, así que no lo
 trates como contraseña**: lo que importa es que no falle ninguna.
 
 > ⚠️ **Si fallan por rutas demasiado largas, no es defecto del lanzador.** Windows corta en
@@ -199,6 +202,10 @@ cd $env:USERPROFILE\rc-launcher
 python -m pip install -q -r requirements.txt   # por si la versión nueva pide algo más
 python -m pytest -q                            # todas en verde ANTES de reiniciar
 ```
+
+> ⚠️ **La batería ya tarda unos 16 minutos en Linux, y en Windows más** (1902 pruebas en 970 s, 17 de noviembre de
+> 2026). Si se corre con un límite de tiempo, que pase de 20 minutos: uno de 15 la corta a la mitad
+> sin decir por qué, y parece que se colgó.
 
 > 🔴 **Reiniciar la tarea programada NO basta, y este es el error que más caro sale.**
 > `schtasks /end` termina el `.cmd` pero **deja vivo al `python` que ese `.cmd` lanzó**, que
@@ -246,14 +253,16 @@ python -m pytest -q                            # todas en verde ANTES de reinici
 > | El menú regresa a su tarjeta | Al 27 de octubre de 2026 (lanzador `1bfd932`): cerrar el menú de un proyecto deja la página en la tarjeta donde se tocó. Antes, en Chrome de Android, abrir un proyecto desde Principal, Fijados o la agenda y lanzar la sesión mandaba la página hasta el fondo, a la copia del proyecto en Todos, porque el mosaico se redibuja cada 8 s y el navegador devolvía el foco a esa copia al cerrar la ventana. Medido con el salto provocado: antes de 838 a 5431 px, con el arreglo se queda en 838. Viaja solo `templates/_script_menu.html`, sin pasos nuevos, y **se ve hasta recargar la pestaña del teléfono** (ver el aviso de abajo). **Falta medirlo en `win11-dogfood`** |
 > | La cuenta de Claude que vence | Al 27 de octubre de 2026 (lanzador `946d9af`): aviso en ámbar 3 días antes de que venza la cuenta; la detección de la sesión atorada y la entrada desde el teléfono todavía faltan en Windows. Viajan `cuenta.py`, `templates/_cuenta.html` y `templates/_cuenta_entrar.html`. Ver B13. **Pide el reinicio** |
 > | El arranque busca evidencia antes de preguntar | Al 28 de octubre de 2026 (lanzador `caecbd0`): antes de «¿Cuáles ya están hechas?», la sesión revisa los correos enviados (con `gws` donde exista, y si no con el conector de Gmail), el calendario (eventos con « ✓» o con «Atendido en sesión»), el historial de git y los archivos del proyecto, y las notas de cada tarea. Palomea sola lo comprobado, con una nota «palomeada por la sesión al arrancar el AAAA-MM-DD: <evidencia>», lo dice en un renglón «Ya estaban hechas y las palomeé:» y pregunta solo por lo demás. Con la retroalimentación dictada hace lo mismo: sella la que ya quedó atendida, sin borrar lo dictado. Ante la duda, pregunta. Viaja solo `pendientes.py`, sin configuración nueva, y vale igual por el lanzador que por `claude` directo con el gancho de arranque. El arranque tarda entre medio minuto y un minuto más cuando hay urgentes, dentro de la suscripción. Ver B11d. **Pide el reinicio**, o sea matar por PID al `python` del puerto 8765. **En Windows falta correr la batería en `win11-dogfood`, y falta medir la búsqueda en Enviados con el conector de Gmail.** |
-> | La escucha lee el evento y su guion | Al 22 de octubre de 2026 (lanzador `d732236`): al empezar una junta, una lectura aparte busca el evento en curso y su guion. Viaja solo `escucha_sesion.py`. **Pide `calendario.json` de B8.** Ver B15a. **Sin medir en Windows: al 17 de noviembre de 2026 el lanzador de esta versión no arranca allá (ver el aviso de B2)** |
-> | El resumen de Escuchar, guardado | Al 1 de noviembre de 2026: el resumen se guarda por proyecto y se pone al día por diferencias, con Compromisos armados por código. Viaja `resumen_proyecto.py`, nuevo. Ver B15b. **Sin medir en Windows: al 17 de noviembre de 2026 el lanzador de esta versión no arranca allá (ver el aviso de B2)** |
-> | Dialogar | Al 1 y 2 de noviembre de 2026: botón junto a Escuchar, envío al callar y voz por partes. Viajan `dialogo_real.py`, `sesion_viva.py`, `vad.py`, la carpeta `vad/` y `templates/_escucha.html`. Ver B15c. **Pide el reinicio**. **Sin medir en Windows: al 17 de noviembre de 2026 el lanzador de esta versión no arranca allá (ver el aviso de B2)** |
-> | El botón atrás y la tarjeta «Escuchando» | Al 2 de noviembre de 2026 (lanzador `17a880a`): atrás regresa a Proyectos sin reabrir Escuchar ni Dialogar, y la tarjeta dice cuánto lleva la junta. Solo de la página: **se ve hasta recargar la pestaña del teléfono**. Ver B15d. **Sin medir en Windows: al 17 de noviembre de 2026 el lanzador de esta versión no arranca allá (ver el aviso de B2)** |
-> | «Abre» por voz | Al 8 de noviembre de 2026: micrófono en «Filtrar proyectos». Viajan `orden_voz.py` y `templates/_script_voz.html`. **Pide la llave de A8.** Ver B15e. **Sin medir en Windows: al 17 de noviembre de 2026 el lanzador de esta versión no arranca allá (ver el aviso de B2)** |
+> | La escucha lee el evento y su guion | Al 22 de octubre de 2026 (lanzador `d732236`): al empezar una junta, una lectura aparte busca el evento en curso y su guion. Viaja solo `escucha_sesion.py`. **Pide `calendario.json` de B8.** Ver B15a. **Sin medir en Windows: el lanzador ya arranca allá desde `c379692`, falta probarlo con el teléfono** |
+> | El resumen de Escuchar, guardado | Al 1 de noviembre de 2026: el resumen se guarda por proyecto y se pone al día por diferencias, con Compromisos armados por código. Viaja `resumen_proyecto.py`, nuevo. Ver B15b. **Sin medir en Windows: el lanzador ya arranca allá desde `c379692`, falta probarlo con el teléfono** |
+> | Dialogar | Al 1 y 2 de noviembre de 2026: botón junto a Escuchar, envío al callar y voz por partes. Viajan `dialogo_real.py`, `sesion_viva.py`, `vad.py`, la carpeta `vad/` y `templates/_escucha.html`. Ver B15c. **Pide el reinicio**. **Sin medir en Windows: el lanzador ya arranca allá desde `c379692`, falta probarlo con el teléfono** |
+> | El botón atrás y la tarjeta «Escuchando» | Al 2 de noviembre de 2026 (lanzador `17a880a`): atrás regresa a Proyectos sin reabrir Escuchar ni Dialogar, y la tarjeta dice cuánto lleva la junta. Solo de la página: **se ve hasta recargar la pestaña del teléfono**. Ver B15d. **Sin medir en Windows: el lanzador ya arranca allá desde `c379692`, falta probarlo con el teléfono** |
+> | «Abre» por voz | Al 8 de noviembre de 2026: micrófono en «Filtrar proyectos». Viajan `orden_voz.py` y `templates/_script_voz.html`. **Pide la llave de A8.** Ver B15e. **Sin medir en Windows: el lanzador ya arranca allá desde `c379692`, falta probarlo con el teléfono** |
 > | El mosaico ancho | Al 9 de noviembre de 2026: desde 1,024 px el mosaico usa las columnas que quepan. Solo CSS (`templates/_estilos.css`, `templates/index.html`). |
-> | El rescate del toque | Al 13 de noviembre de 2026: «Abriendo…», reintento a los 3 s y registro de toques lentos. Viaja `toques.py`, nuevo. Ver B15f. **Sin medir en Windows: al 17 de noviembre de 2026 el lanzador de esta versión no arranca allá (ver el aviso de B2)** |
-> | Dictar al crear un proyecto | Al 14 de octubre de 2026 (lanzador `736c101`): botón Dictar bajo «¿De qué se trata?». **Pide la llave de A8.** Ver B15g. **Sin medir en Windows: al 17 de noviembre de 2026 el lanzador de esta versión no arranca allá (ver el aviso de B2)** |
+> | El rescate del toque | Al 13 de noviembre de 2026: «Abriendo…», reintento a los 3 s y registro de toques lentos. Viaja `toques.py`, nuevo. Ver B15f. **Sin medir en Windows: el lanzador ya arranca allá desde `c379692`, falta probarlo con el teléfono** |
+> | Dictar al crear un proyecto | Al 14 de octubre de 2026 (lanzador `736c101`): botón Dictar bajo «¿De qué se trata?». **Pide la llave de A8.** Ver B15g. **Sin medir en Windows: el lanzador ya arranca allá desde `c379692`, falta probarlo con el teléfono** |
+> | Las notas de junta en el correo del arranque | Al 17 de noviembre de 2026 (lanzador `a1795ad`): la revisión de correo busca también los informes de Read AI y Fireflies que nombren al proyecto y los ofrece como `Junta`. Viaja solo `correo_sesion.py`; se configura con `notas_de_junta` en `correo.json`. Ver B11 |
+> | Un solo toque, una sola sesión | Al 17 de noviembre de 2026 (lanzador `a1795ad`): tocar dos veces seguidas Nueva sesión o Sesión rápida abre una sola sesión. El servidor rechaza una segunda del mismo proyecto creada hace menos de 60 s, y los botones se apagan al tocarlos. Salió de dos sesiones abiertas con un segundo de diferencia desde la tarjeta de la agenda. Viajan `app.py` y `templates/_menu.html`. **Pide el reinicio**, y la parte del botón se ve hasta recargar la pestaña del teléfono. **Medido en `win11-dogfood` el 17 de noviembre de 2026**: dos lanzamientos con 0.8 s de diferencia, los dos con 200, y una sola sesión, porque la lista de sesiones de Windows sí trae su fecha de creación |
 >
 > **Las sesiones que ya estaban abiertas conservan el aviso de arranque viejo.** El nuevo sale
 > en la siguiente que se abra.

@@ -23,6 +23,12 @@ etiqueta **«Procesado»**, y le dice al cliente en un renglón quién escribe y
 Con su sí, lo procesa: lo lee completo, lleva a `pendientes.md` y al `CLAUDE.md` lo que salga de
 él, deja en Borradores la respuesta si hace falta (**nunca la envía**) y le pone la etiqueta.
 
+**Busca además los informes de notas de junta** (desde el 17 de noviembre de 2026, lanzador
+`a1795ad`): los que mandan Read AI (`executiveassistant@e.read.ai`) y Fireflies
+(`fred@fireflies.ai`), aunque vengan de fuera del proyecto, y se queda con los que nombren al
+proyecto, a su gente o una junta de su calendario. Los ofrece con la clase `Junta`. Un informe
+vacío (la junta no se dio) también se etiqueta al procesarlo, para que deje de ofrecerse.
+
 **La etiqueta es lo que evita que el mismo correo se ofrezca dos veces**, en ese proyecto o en
 otro. Hace con el correo lo mismo que la subcarpeta «Procesadas» hace con las transcripciones de B7.
 
@@ -61,8 +67,11 @@ cat > ~/.config/rc-launcher/correo.json << 'FIN'
 FIN
 ```
 
-> 📌 **Las tres claves son opcionales** y tienen valor de fábrica: 3 días, la etiqueta
-> «Procesado», y sin herramienta nombrada (la sesión escoge la que tenga). Conviene escribirlas
+> 📌 **Las cuatro claves son opcionales** y tienen valor de fábrica: 3 días, la etiqueta
+> «Procesado», sin herramienta nombrada (la sesión escoge la que tenga), y `notas_de_junta`
+> con los dos remitentes de Read AI y Fireflies. Si el cliente usa otro servicio de notas de
+> junta, su remitente va en esa lista (`"notas_de_junta": ["notas@otro-servicio.com"]`);
+> con la lista vacía (`[]`) esa parte se apaga y queda solo la gente del proyecto. Conviene escribirlas
 > igual, para que se vea qué está encendido. Si el cliente contrató Composio y conectó ahí su
 > Gmail, la herramienta puede ser `"Composio"`. En la máquina de Gustavo dice
 > `"el CLI gws (nunca el conector de Gmail)"`, que es su regla y no viaja.
@@ -93,6 +102,13 @@ Primero que la configuración se lee y que la instrucción habla del cliente (de
 
 ```bash
 cd ~/rc-launcher && .venv/bin/python -c "import correo_sesion as c; t = c.instruccion_para_la_sesion('prueba'); print(t is not None); print('Gustavo' in t); import usuario; print(usuario.quien())"
+```
+
+Y que la instrucción trae los informes de junta (debe imprimir `True`; con `"notas_de_junta": []`
+en `correo.json`, `False`):
+
+```bash
+cd ~/rc-launcher && .venv/bin/python -c "import correo_sesion as c; print('notas de junta' in c.instruccion_para_la_sesion('prueba'))"
 ```
 
 Y la prueba completa, con el cliente enfrente:

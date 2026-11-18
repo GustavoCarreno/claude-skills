@@ -75,6 +75,7 @@ Cada paso falla distinto, así que conviene hacerlos en orden y no saltarse ning
 | 47 | Dialogar (B15c) | Dialogar, una pregunta y silencio | se envía solo y la respuesta se oye; Terminar y atrás desde Proyectos sale del lanzador |
 | 48 | «Abre» por voz (B15e) | el micrófono del filtro, y decir «Abre» con el nombre de un proyecto | se abre su menú; sin llave de A8 el filtro sigue sin micrófono |
 | 49 | Dictar al crear (B15g) | + Nuevo proyecto, Dictar bajo «¿De qué se trata?» | el texto dictado aparece en el campo |
+| 50 | Un solo toque, una sola sesión (B2b) | tocar dos veces seguidas Nueva sesión en un proyecto sin sesión abierta | se abre una sola sesión, y el botón se ve apagado tras el primer toque. |
 
 > 📌 **Cómo se comprueba el renglón 22, con un proyecto de prueba.** En un proyecto
 > desechable (`prueba-urgentes`), un `pendientes.md` con una sola tarea:
