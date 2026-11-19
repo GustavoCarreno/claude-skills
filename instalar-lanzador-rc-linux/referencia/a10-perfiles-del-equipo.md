@@ -96,7 +96,7 @@ Al 28 de octubre de 2026. Tres piezas que viajan en la misma carpeta `perfiles/b
 |---|---|---|
 | `reglas-redaccion.md` | Las reglas del método: se pide y no se ordena, preguntas con signos, sin jerga o definida, sin frases hechas, cero dobles negativos, guion con cada referencia ligada, cuándo correr los barridos y el ciclo de corrección | Al final del `CLAUDE.md` global, con marcas |
 | `reglas-regionales-norte.md` | «Si te acomoda» y el doble sentido, para quien escribe a gente del norte de México. **Se pregunta al cliente** si las quiere | Igual, con sus propias marcas |
-| `barridos/` | `servicio.py` (tono mandón) y `albures.py` (doble sentido), con sus listas de frases en `servicio-frases.txt` y `albures-frases.txt`, que el cliente puede ampliar | `~/.claude/barridos/` |
+| `barridos/` | `servicio.py` (tono mandón), `albures.py` (doble sentido) y `cotejo_sumas.py` (las cuentas, que corre CYF), con las listas de frases en `servicio-frases.txt` y `albures-frases.txt`, que el cliente puede ampliar | `~/.claude/barridos/` |
 | `reglas-catalogo.md` | Las reglas personales que se le ofrecen en la entrevista inicial (horas en am y pm, «buen día», sin rayas largas, la familia con mayúscula, estadounidense) | `~/.claude/reglas-catalogo.md` |
 
 El fragmento **quita primero los bloques anteriores y pone los nuevos**, así que correrlo dos veces
@@ -116,8 +116,10 @@ cat "$ORIGEN/base/reglas-redaccion.md" >> ~/.claude/CLAUDE.md
 [ "$NORTE" = si ] && cat "$ORIGEN/base/reglas-regionales-norte.md" >> ~/.claude/CLAUDE.md
 grep -c "reglas-de-redaccion\|reglas-regionales-norte" ~/.claude/CLAUDE.md   # 4 con el norte, 2 sin él
 python3 ~/.claude/barridos/servicio.py --probar && python3 ~/.claude/barridos/albures.py --probar
+python3 ~/.claude/barridos/cotejo_sumas.py --probar   # seis renglones con ✓, y sale con 0
 ```
 
 ✅ **Medido el 28 de octubre de 2026** con una carpeta personal desechable: dos corridas dejan un solo
 bloque de cada uno, una frase agregada a `servicio-frases.txt` sobrevive la segunda corrida, y los dos
-`--probar` contestan «sabe fallar: sí».
+`--probar` contestan «sabe fallar: sí». El de `cotejo_sumas.py` se agregó el 18 de noviembre de 2026 y
+se midió en Linux: sus seis casos salen con ✓.
